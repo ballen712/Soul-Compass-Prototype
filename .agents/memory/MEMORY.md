@@ -1,0 +1,1 @@
+- [Expo Go tunnels](expo-go-tunnels.md) — Use a public Expo tunnel for iPhone testing; Replit development hostnames may not resolve on-device.

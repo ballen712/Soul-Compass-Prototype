@@ -7,4 +7,4 @@ Use Expo CLI tunnel mode and its required `@expo/ngrok` dependency for physical-
 
 **Why:** a cloud-hosted Metro server must be reachable through a public hostname; the Replit development hostname previously printed in the Expo QR could not be resolved by the user's iPhone.
 
-**How to apply:** inspect the current `dev` script and workflow logs. Trust the printed `exp://…on.expo.app` tunnel address only after its hostname resolves and `/status` responds with `packager-status:running`.
+**How to apply:** inspect the current `dev` script and workflow logs. Each workflow restart creates a new `on.expo.app` hostname; don't reuse an older QR. Confirm the current host resolves and `/status` responds with `packager-status:running`.

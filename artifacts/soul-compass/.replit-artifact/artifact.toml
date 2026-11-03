@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Soul Compass"
+description = "An iPhone-first reflective companion with daily horoscope inspiration and a curated crystal guide, using local sample content."
+version = "1.0.0"
+id = "artifacts/soul-compass"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 20060
+
+[services.development]
+run = "pnpm --filter @workspace/soul-compass run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/soul-compass", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/soul-compass", "run", "serve" ]
+
+[services.env]
+PORT = "20060"
+BASE_PATH = "/"

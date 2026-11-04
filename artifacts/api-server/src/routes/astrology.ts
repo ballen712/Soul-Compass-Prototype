@@ -20,7 +20,7 @@ router.post("/astrology/positions", (req, res) => {
     return;
   }
   const at = new Date(atUtc);
-  if (!Number.isFinite(at.getTime())) {
+  if (!Number.isFinite(at.getTime()) || at.toISOString().slice(0, 19) !== atUtc.slice(0, 19)) {
     res.status(400).json({ error: "atUtc is not a valid timestamp." });
     return;
   }
@@ -44,11 +44,11 @@ router.post("/astrology/positions", (req, res) => {
 router.post("/astrology/natal-chart", (req, res) => {
   const body = req.body;
   if (!body || typeof body !== "object"
-    || typeof body.birthDate !== "string"
+    || Array.isArray(body) || typeof body.birthDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.birthDate)
     || !body.birthTime || !["known", "unknown"].includes(body.birthTime.status)
     || !body.birthPlace || typeof body.birthPlace !== "object"
     || typeof body.birthPlace.latitude !== "number" || typeof body.birthPlace.longitude !== "number"
-    || typeof body.birthPlace.timeZone !== "string") {
+    || typeof body.birthPlace.timeZone !== "string" || body.birthPlace.timeZone.length > 100) {
     res.status(400).json({ error: "Birth date, birth-time status, birthplace coordinates, and IANA time zone are required." });
     return;
   }
@@ -60,8 +60,13 @@ router.post("/astrology/natal-chart", (req, res) => {
     res.status(400).json({ error: "Only the tropical zodiac is currently supported." });
     return;
   }
-  if (body.birthTime.status === "known" && typeof body.birthTime.localTime !== "string") {
+  if (body.birthTime.status === "known" && (typeof body.birthTime.localTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.birthTime.localTime))) {
     res.status(400).json({ error: "Known birth time requires localTime in HH:mm format." });
+    return;
+  }
+  if (body.orbs !== undefined && (!body.orbs || typeof body.orbs !== "object" || Array.isArray(body.orbs)
+    || ![body.orbs.luminary, body.orbs.other].every((orb) => typeof orb === "number" && Number.isFinite(orb) && orb > 0 && orb <= 15))) {
+    res.status(400).json({ error: "Aspect orbs must be numeric, greater than zero and at most 15 degrees." });
     return;
   }
   if (body.birthTime.disambiguation !== undefined && !["earlier", "later"].includes(body.birthTime.disambiguation)) {
@@ -71,10 +76,12 @@ router.post("/astrology/natal-chart", (req, res) => {
   try {
     const chart = calculateNatalChart({
       birthDate: body.birthDate,
-      birthTime: body.birthTime,
-      birthPlace: body.birthPlace,
+      birthTime: body.birthTime.status === "unknown" ? { status: "unknown" } : {
+        status: "known", localTime: body.birthTime.localTime, disambiguation: body.birthTime.disambiguation,
+      },
+      birthPlace: { latitude: body.birthPlace.latitude, longitude: body.birthPlace.longitude, timeZone: body.birthPlace.timeZone },
       houseSystem: body.houseSystem ?? "placidus",
-      orbs: body.orbs,
+      orbs: body.orbs ? { luminary: body.orbs.luminary, other: body.orbs.other } : undefined,
     });
     res.json(chart);
   } catch (error) {

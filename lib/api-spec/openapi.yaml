@@ -60,6 +60,10 @@ paths:
           description: Invalid request
         "422":
           description: Calculation failed
+        "403": { description: Browser origin not permitted }
+        "413": { description: JSON body exceeds 16 KiB }
+        "415": { description: Only uncompressed application/json is accepted }
+        "429": { description: Calculation request limit reached; Retry-After header supplied }
   /astrology/natal-chart:
     post:
       operationId: calculateNatalChart
@@ -82,6 +86,10 @@ paths:
           description: Invalid request
         "422":
           description: Birth time or chart calculation cannot be resolved
+        "403": { description: Browser origin not permitted }
+        "413": { description: JSON body exceeds 16 KiB }
+        "415": { description: Only uncompressed application/json is accepted }
+        "429": { description: Calculation request limit reached; Retry-After header supplied }
 components:
   schemas:
     HealthStatus:
@@ -208,7 +216,11 @@ components:
     NatalChartResponse:
       type: object
       properties:
-        input: { type: object }
+        input:
+          type: object
+          properties:
+            birthTimeKnown: { type: boolean }
+          required: [birthTimeKnown]
         calculation: { $ref: "#/components/schemas/NatalCalculation" }
         planets:
           type: array

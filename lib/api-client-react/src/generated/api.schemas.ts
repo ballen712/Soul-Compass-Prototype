@@ -148,7 +148,9 @@ export interface NatalAspect {
   exact: boolean;
 }
 
-export type NatalChartResponseInput = { [key: string]: unknown };
+export type NatalChartResponseInput = {
+  birthTimeKnown: boolean;
+};
 
 export type NatalCalculationBirthTimeResolution = typeof NatalCalculationBirthTimeResolution[keyof typeof NatalCalculationBirthTimeResolution];
 

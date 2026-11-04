@@ -284,7 +284,7 @@ export function calculateNatalChart(input: NatalChartInput) {
     }
   }
   return {
-    input: { birthDate: input.birthDate, birthTime: input.birthTime, birthPlace: input.birthPlace },
+    input: { birthTimeKnown: input.birthTime.status === "known" },
     calculation: {
       instantUtc: instant.toISOString(), birthTimeResolution,
       zodiac: "tropical", coordinateSystem: "geocentric apparent true ecliptic of date",

@@ -6,4 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type NatalChartResponseInput = { [key: string]: unknown };
+export type NatalChartResponseInput = {
+  birthTimeKnown: boolean;
+};

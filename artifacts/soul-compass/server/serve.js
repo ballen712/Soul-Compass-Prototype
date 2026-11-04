@@ -12,10 +12,12 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { indexPublicAssets } = require('./public-assets');
 
 const STATIC_ROOT = path.resolve(__dirname, '..', 'static-build');
 const TEMPLATE_PATH = path.resolve(__dirname, 'templates', 'landing-page.html');
 const basePath = (process.env.BASE_PATH || '/').replace(/\/+$/, '');
+const publicAssets = indexPublicAssets(STATIC_ROOT);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -64,12 +66,13 @@ function toScriptString(value) {
 }
 
 function serveManifest(platform, res) {
-  const manifestPath = path.join(STATIC_ROOT, platform, 'manifest.json');
+  const manifestPath = platform === 'ios' ? publicAssets.get('/ios/manifest.json')
+    : platform === 'android' ? publicAssets.get('/android/manifest.json') : undefined;
 
-  if (!fs.existsSync(manifestPath)) {
+  if (!manifestPath) {
     res.writeHead(404, { 'content-type': 'application/json' });
     res.end(
-      JSON.stringify({ error: `Manifest not found for platform: ${platform}` }),
+      JSON.stringify({ error: 'Platform manifest not found.' }),
     );
     return;
   }
@@ -85,13 +88,15 @@ function serveManifest(platform, res) {
 
 function serveLandingPage(req, res, landingPageTemplate, appName) {
   const forwardedProto = req.headers['x-forwarded-proto'];
-  const protocol = forwardedProto || 'https';
-  const host = req.headers['x-forwarded-host'] || req.headers['host'];
+  const protocol = forwardedProto === 'http' ? 'http' : 'https';
+  const suppliedHost = req.headers['x-forwarded-host'] || req.headers['host'];
+  const host = typeof suppliedHost === 'string' && /^[a-z0-9.-]+(?::\d{1,5})?$/i.test(suppliedHost)
+    ? suppliedHost : 'localhost';
   const baseUrl = `${protocol}://${host}`;
   const expsUrl = `exps://${host}${basePath}`;
 
   const html = landingPageTemplate
-    .replace(/BASE_URL_PLACEHOLDER/g, baseUrl)
+    .replace(/BASE_URL_PLACEHOLDER/g, escapeHtml(baseUrl))
     .replace(/EXPS_URL_ATTRIBUTE_PLACEHOLDER/g, escapeHtml(expsUrl))
     .replace(/EXPS_URL_JSON_PLACEHOLDER/g, toScriptString(expsUrl))
     .replace(/APP_NAME_PLACEHOLDER/g, escapeHtml(appName));
@@ -101,16 +106,8 @@ function serveLandingPage(req, res, landingPageTemplate, appName) {
 }
 
 function serveStaticFile(urlPath, res) {
-  const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = path.join(STATIC_ROOT, safePath);
-
-  if (!filePath.startsWith(STATIC_ROOT)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
-
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+  const filePath = publicAssets.get(urlPath);
+  if (!filePath) {
     res.writeHead(404);
     res.end('Not Found');
     return;
@@ -127,10 +124,19 @@ const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
 const appName = getAppName();
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url || '/', `http://${req.headers.host}`);
-  let pathname = url.pathname;
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405); res.end('Method Not Allowed'); return;
+  }
+  let pathname;
+  try { pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname); }
+  catch { res.writeHead(400); res.end('Bad Request'); return; }
+  if (pathname.includes('\0') || pathname.includes('\\') || pathname.split('/').includes('..')) {
+    res.writeHead(400); res.end('Bad Request'); return;
+  }
 
-  if (basePath && pathname.startsWith(basePath)) {
+  if (basePath && (pathname === basePath || pathname.startsWith(basePath + '/'))) {
     pathname = pathname.slice(basePath.length) || '/';
   }
 

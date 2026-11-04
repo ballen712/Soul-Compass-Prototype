@@ -106,8 +106,8 @@ export const calculateNatalChartResponsePlanetaryHousesItemHouseMax = 12;
 
 
 export const CalculateNatalChartResponse = zod.object({
-  "input": zod.looseObject({
-
+  "input": zod.object({
+  "birthTimeKnown": zod.boolean()
 }),
   "calculation": zod.object({
   "instantUtc": zod.coerce.date(),

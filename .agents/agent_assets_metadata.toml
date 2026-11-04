@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "LAz669q-pvUBK5sQuXwhE"
+uri = "file://reports/soul-compass-security-review.html"
+type = "html"
+title = "Soul Compass security review"
+description = "All 19 findings, exact dependency versions, application hardening, test results, and remaining account/privacy limitations."
+logical_id = "72c2bb10-8348-429b-9f6e-bb9840970276"
+content_hash = "sha256:1de90d365b2229ec58520c3724596877c50b73087193c955ebd5b82f92fbc081"
+size = 12882
+mtime_ms = 1793798273276
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/72c2bb10-8348-429b-9f6e-bb9840970276/dbe49a0a-4313-4bfb-8555-6d9fae1ae796"
+storage_version_token = "1793798274312938"
+content_type = "text/html"

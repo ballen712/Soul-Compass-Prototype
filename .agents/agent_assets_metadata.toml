@@ -14,3 +14,17 @@ mtime_ms = 1793798273276
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/72c2bb10-8348-429b-9f6e-bb9840970276/dbe49a0a-4313-4bfb-8555-6d9fae1ae796"
 storage_version_token = "1793798274312938"
 content_type = "text/html"
+
+[[outputs]]
+id = "msQjK5GYO2P_aU9Rp82kx"
+uri = "file://reports/soul-compass-phase3-handoff.html"
+type = "html"
+title = "Phase 3 setup checklist and implementation report"
+description = "Step-by-step Supabase and Google setup, secure configuration names, prepared migration/RLS policies, passed tests, and unverified live flows."
+logical_id = "c4e55d32-5cc8-41c4-b1e5-bd935fadc140"
+content_hash = "sha256:f8f482a1c6b9c85bd817a08752addeb5f8dda8085e42fd9ae9c282e290ffbe7f"
+size = 17609
+mtime_ms = 1793801410513
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/c4e55d32-5cc8-41c4-b1e5-bd935fadc140/4a6a2786-8165-4543-b1e9-7a56932a00ae"
+storage_version_token = "1793801411323267"
+content_type = "text/html"

@@ -2,8 +2,9 @@ import {
   angularSeparation,
   calculateMajorAspects,
   calculatePlanetaryPositions,
+  astronomyEngineProvider,
+  earthOrientation,
   normalizeLongitude,
-  zodiacPlacement,
   type PlanetaryPosition,
 } from "./ephemeris";
 
@@ -75,14 +76,25 @@ export function localDateBounds(date: string, timeZone: string) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!m) throw new Error("Date must use YYYY-MM-DD.");
   const year = Number(m[1]), month = Number(m[2]), day = Number(m[3]);
-  const midnight = resolveLocalBirthTime(date, "00:00", timeZone);
-  if (midnight.status === "nonexistent") throw new Error("Local midnight does not exist for this date.");
-  const start = midnight.status === "unique" ? midnight.instant : midnight.candidates[0];
+  resolveLocalBirthTime(date, "12:00", timeZone); // Validate calendar date and zone.
+  const boundary = (target: string, anchor: number) => {
+    let low = anchor - 48 * 3600_000, high = anchor + 48 * 3600_000;
+    const localDate = (value: number) => {
+      const p = localParts(new Date(value), timeZone);
+      return `${p.year.toString().padStart(4,"0")}-${p.month.toString().padStart(2,"0")}-${p.day.toString().padStart(2,"0")}`;
+    };
+    while (high - low > 1) {
+      const mid = Math.floor((low + high) / 2);
+      if (localDate(mid) >= target) high = mid; else low = mid;
+    }
+    return { instant: new Date(high), date: localDate(high) };
+  };
+  const startResult = boundary(date, Date.UTC(year, month - 1, day));
+  if (startResult.date !== date) throw new Error("This local calendar date was skipped in this time zone.");
+  const start = startResult.instant;
   const next = new Date(Date.UTC(year, month - 1, day + 1));
   const nextDate = `${next.getUTCFullYear().toString().padStart(4, "0")}-${(next.getUTCMonth()+1).toString().padStart(2,"0")}-${next.getUTCDate().toString().padStart(2,"0")}`;
-  const nextMidnight = resolveLocalBirthTime(nextDate, "00:00", timeZone);
-  if (nextMidnight.status === "nonexistent") throw new Error("The next local midnight does not exist.");
-  const end = nextMidnight.status === "unique" ? nextMidnight.instant : nextMidnight.candidates[0];
+  const end = boundary(nextDate, next.getTime()).instant;
   if (end <= start) throw new Error("Local date has no representable duration in this time zone.");
   return { start, end, durationHours: (end.getTime() - start.getTime()) / 3_600_000 };
 }
@@ -91,21 +103,6 @@ function wrapSigned(degrees: number) {
   return ((degrees + 180) % 360 + 360) % 360 - 180;
 }
 
-function obliquityDegrees(jd: number) {
-  const t = (jd - 2451545) / 36525;
-  return 23 + (26 + (21.448 - 46.815 * t - 0.00059 * t * t + 0.001813 * t * t * t) / 60) / 60;
-}
-
-function julianDay(date: Date) {
-  return date.getTime() / 86_400_000 + 2440587.5;
-}
-
-function localSiderealDegrees(date: Date, longitude: number) {
-  const jd = julianDay(date);
-  const t = (jd - 2451545) / 36525;
-  const gmst = 280.46061837 + 360.98564736629 * (jd - 2451545) + 0.000387933 * t * t - t * t * t / 38710000;
-  return normalizeLongitude(gmst + longitude);
-}
 
 function equatorial(longitude: number, obliquity: number) {
   const l = longitude * RAD, e = obliquity * RAD;
@@ -144,7 +141,8 @@ function findRoots(fn: (x: number) => number) {
     const f1 = fn(x);
     if (Number.isFinite(f0) && Number.isFinite(f1) && f0 * f1 <= 0) {
       const root = solveRoot(fn, x0, x);
-      if (root !== null && !roots.some((r) => angularSeparation(r, root) < 1e-5)) roots.push(root);
+      if (root !== null && Math.abs(fn(root)) < 1e-6
+        && !roots.some((r) => angularSeparation(r, root) < 1e-5)) roots.push(root);
     }
     x0 = x; f0 = f1;
   }
@@ -158,14 +156,14 @@ function placidusSemiarc(longitude: number, latitude: number, obliquity: number)
   return Math.acos(argument) * DEG;
 }
 
-function cuspAtPlacidusFraction(fraction: number, jd: number, sidereal: number, latitude: number, obliquity: number) {
+function cuspAtPlacidusFraction(fraction: number, sidereal: number, latitude: number, obliquity: number) {
   const fn = (longitude: number) => {
     const semi = placidusSemiarc(longitude, latitude, obliquity);
     if (semi === null) return Number.NaN;
     const targetHourAngle = fraction <= 1
       ? semi * fraction
       : semi + (180 - semi) * (fraction - 1);
-    return wrapSigned(hourAngle(longitude, sidereal, obliquity) - targetHourAngle);
+    return wrapSigned(hourAngle(longitude, sidereal, obliquity) + targetHourAngle);
   };
   const roots = findRoots(fn);
   if (roots.length !== 1) throw new Error(`Placidus cusp fraction ${fraction} is not uniquely defined at this latitude and time (${roots.length} roots).`);
@@ -174,10 +172,37 @@ function cuspAtPlacidusFraction(fraction: number, jd: number, sidereal: number, 
 
 export type NatalChartInput = {
   birthDate: string;
-  birthTime: { status: "known"; localTime: string } | { status: "unknown" };
+  birthTime: { status: "known"; localTime: string; disambiguation?: "earlier" | "later" } | { status: "unknown" };
   birthPlace: { latitude: number; longitude: number; timeZone: string };
   houseSystem?: "placidus";
+  orbs?: { luminary: number; other: number };
 };
+
+export function calculateNatalAspects(planets: readonly PlanetaryPosition[], orbs = { luminary: 8, other: 6 }) {
+  if (![orbs.luminary, orbs.other].every((orb) => Number.isFinite(orb) && orb > 0 && orb <= 15)) throw new Error("Aspect orbs must be greater than zero and at most 15 degrees.");
+  return calculateMajorAspects(planets, orbs).map((aspect) => {
+    const a = planets.find((p) => p.planet === aspect.first)!;
+    const b = planets.find((p) => p.planet === aspect.second)!;
+    const relativeSpeed = Math.sign(wrapSigned(b.longitude - a.longitude)) * (b.speedDegreesPerDay - a.speedDegreesPerDay);
+    const signedError = aspect.separation - aspect.angle;
+    const orbLimit = a.planet === "Sun" || a.planet === "Moon" || b.planet === "Sun" || b.planet === "Moon" ? orbs.luminary : orbs.other;
+    return {
+      ...aspect,
+      applying: aspect.orb < 1e-8 || Math.abs(relativeSpeed) < 1e-10 ? null : signedError * relativeSpeed < 0,
+      strength: Math.max(0, 1 - aspect.orb / orbLimit),
+      exact: aspect.orb <= 1,
+    };
+  });
+}
+
+export function houseForLongitude(longitude: number, cusps: readonly number[]) {
+  if (cusps.length !== 12) throw new Error("Twelve house cusps are required.");
+  for (let i = 0; i < 12; i++) {
+    const distance = normalizeLongitude(longitude - cusps[i]);
+    if (distance < normalizeLongitude(cusps[(i + 1) % 12] - cusps[i])) return i + 1;
+  }
+  throw new Error("House cusps do not form a complete zodiac circle.");
+}
 
 export function calculateNatalChart(input: NatalChartInput) {
   const { latitude, longitude, timeZone } = input.birthPlace;
@@ -192,8 +217,10 @@ export function calculateNatalChart(input: NatalChartInput) {
   if (input.birthTime.status === "known") {
     const resolution = resolveLocalBirthTime(input.birthDate, input.birthTime.localTime, timeZone);
     if (resolution.status === "nonexistent") throw new Error("That local birth time did not occur because clocks moved forward.");
-    if (resolution.status === "ambiguous") throw new Error(`That local birth time occurred twice. Choose a specific UTC instant: ${resolution.candidates.map((d) => d.toISOString()).join(", ")}.`);
-    instant = resolution.instant;
+    if (resolution.status === "ambiguous" && !input.birthTime.disambiguation) throw new Error(`That local birth time occurred twice. Choose earlier or later occurrence: ${resolution.candidates.map((d) => d.toISOString()).join(", ")}.`);
+    instant = resolution.status === "unique" ? resolution.instant
+      : resolution.candidates[input.birthTime.disambiguation === "later" ? resolution.candidates.length - 1 : 0];
+    if (resolution.status === "ambiguous") warnings.push(`Repeated local time: the ${input.birthTime.disambiguation} occurrence was explicitly selected.`);
     birthTimeResolution = "known";
   } else {
     const noon = resolveLocalBirthTime(input.birthDate, "12:00", timeZone);
@@ -205,34 +232,25 @@ export function calculateNatalChart(input: NatalChartInput) {
     const step = 30 * 60_000;
     const signs = new Set<string>();
     for (let t = bounds.start.getTime(); t < bounds.end.getTime(); t += step) {
-      signs.add(calculatePlanetaryPositions(new Date(t)).find((p) => p.planet === "Moon")!.sign);
+      signs.add(astronomyEngineProvider.position("Moon", new Date(t)).sign);
     }
-    signs.add(calculatePlanetaryPositions(new Date(bounds.end.getTime() - 1)).find((p) => p.planet === "Moon")!.sign);
+    signs.add(astronomyEngineProvider.position("Moon", new Date(bounds.end.getTime() - 1)).sign);
     moonSignRange = [...signs];
     if (moonSignRange.length > 1) warnings.push(`The Moon changes sign during this local birth day; possible signs: ${moonSignRange.join(", ")}.`);
+    warnings.push("All placements and aspects represent the reference instant; their exact degrees and motion are time-dependent.");
   }
 
   const planets = calculatePlanetaryPositions(instant);
-  const aspects = calculateMajorAspects(planets).map((aspect) => {
-    const a = planets.find((p) => p.planet === aspect.first)!;
-    const b = planets.find((p) => p.planet === aspect.second)!;
-    const relativeSpeed = (a.speedDegreesPerDay - b.speedDegreesPerDay) * (aspect.separation > 180 ? -1 : 1);
-    const signedError = aspect.separation - aspect.angle;
-    const orbLimit = a.planet === "Sun" || a.planet === "Moon" || b.planet === "Sun" || b.planet === "Moon" ? 8 : 6;
-    return {
-      ...aspect,
-      applying: signedError === 0 ? null : signedError * relativeSpeed < 0,
-      strength: Math.max(0, 1 - aspect.orb / orbLimit),
-      exact: aspect.orb <= 1,
-    };
-  });
+  const aspects = calculateNatalAspects(planets, input.orbs);
 
   let angles: Record<string, number> | null = null;
   let houseCusps: { house: number; longitude: number }[] = [];
   let planetaryHouses: { planet: string; house: number; cuspDistanceDegrees: number }[] = [];
   if (input.birthTime.status === "known") {
-    const jd = julianDay(instant), obliquity = obliquityDegrees(jd);
-    const sidereal = localSiderealDegrees(instant, longitude);
+    try {
+    const orientation = earthOrientation(instant);
+    const obliquity = orientation.obliquityDegrees;
+    const sidereal = normalizeLongitude(orientation.siderealDegrees + longitude);
     const ascRoots = findRoots((l) => altitude(l, sidereal, latitude, obliquity));
     const asc = ascRoots.find((l) => hourAngle(l, sidereal, obliquity) < 0);
     if (asc === undefined) throw new Error("The Ascendant could not be resolved for this location.");
@@ -240,26 +258,30 @@ export function calculateNatalChart(input: NatalChartInput) {
     const mc = normalizeLongitude(Math.atan2(Math.sin(mcRa), Math.cos(mcRa) * Math.cos(e)) * DEG);
     const cusps: number[] = Array(13).fill(0);
     cusps[1] = asc; cusps[4] = normalizeLongitude(mc + 180); cusps[7] = normalizeLongitude(asc + 180); cusps[10] = mc;
-    cusps[11] = cuspAtPlacidusFraction(1 / 3, jd, sidereal, latitude, obliquity);
-    cusps[12] = cuspAtPlacidusFraction(2 / 3, jd, sidereal, latitude, obliquity);
-    cusps[8] = cuspAtPlacidusFraction(4 / 3, jd, sidereal, latitude, obliquity);
-    cusps[9] = cuspAtPlacidusFraction(5 / 3, jd, sidereal, latitude, obliquity);
-    cusps[2] = normalizeLongitude(cusps[8] + 180); cusps[3] = normalizeLongitude(cusps[9] + 180);
-    cusps[5] = normalizeLongitude(cusps[11] + 180); cusps[6] = normalizeLongitude(cusps[12] + 180);
     angles = { ascendant: asc, descendant: cusps[7], midheaven: mc, imumCoeli: cusps[4] };
+    try {
+    if (Math.abs(latitude) >= 90 - obliquity) throw new Error("Placidus houses are unavailable inside the polar circles; no alternate house system was substituted.");
+    cusps[11] = cuspAtPlacidusFraction(1 / 3, sidereal, latitude, obliquity);
+    cusps[12] = cuspAtPlacidusFraction(2 / 3, sidereal, latitude, obliquity);
+    cusps[2] = cuspAtPlacidusFraction(4 / 3, sidereal, latitude, obliquity);
+    cusps[3] = cuspAtPlacidusFraction(5 / 3, sidereal, latitude, obliquity);
+    cusps[8] = normalizeLongitude(cusps[2] + 180); cusps[9] = normalizeLongitude(cusps[3] + 180);
+    cusps[5] = normalizeLongitude(cusps[11] + 180); cusps[6] = normalizeLongitude(cusps[12] + 180);
     houseCusps = cusps.slice(1).map((value, index) => ({ house: index + 1, longitude: value }));
     const ordered = houseCusps.map((c) => c.longitude);
     planetaryHouses = planets.map((planet) => {
-      let house = 12;
-      for (let i = 0; i < 12; i++) {
-        const start = ordered[i], end = ordered[(i + 1) % 12];
-        const distance = normalizeLongitude(planet.longitude - start);
-        if (distance < normalizeLongitude(end - start)) { house = i + 1; break; }
-      }
+      const house = houseForLongitude(planet.longitude, ordered);
       const cuspDistanceDegrees = Math.min(...ordered.map((c) => angularSeparation(c, planet.longitude)));
       return { planet: planet.planet, house, cuspDistanceDegrees };
     });
     if (latitude > 66 || latitude < -66) warnings.push("High latitude: Placidus house cusps are especially sensitive to polar geometry.");
+    } catch (error) {
+      houseCusps = []; planetaryHouses = [];
+      warnings.push(error instanceof Error ? error.message : "Placidus houses could not be calculated; no substitute was used.");
+    }
+    } catch (error) {
+      warnings.push(error instanceof Error ? error.message : "Angles are unavailable at this location.");
+    }
   }
   return {
     input: { birthDate: input.birthDate, birthTime: input.birthTime, birthPlace: input.birthPlace },
@@ -267,9 +289,14 @@ export function calculateNatalChart(input: NatalChartInput) {
       instantUtc: instant.toISOString(), birthTimeResolution,
       zodiac: "tropical", coordinateSystem: "geocentric apparent true ecliptic of date",
       houseSystem: input.birthTime.status === "known" ? "Placidus" : null,
+      houseStatus: houseCusps.length ? "available" : input.birthTime.status === "known" ? "unavailable" : "unknown-birth-time",
       houseCuspBoundary: "Cusps are inclusive; a planet belongs to the house beginning at that cusp. Near-cusp distance is reported in degrees.",
       applyingRule: "Applying when the absolute aspect error is decreasing under current relative longitude speed; null when exact.",
       provider: "astronomy-engine", providerVersion: "2.1.19",
+      timeZoneDatabase: `Node ICU ${process.versions.icu}; tzdata ${process.versions.tz ?? "host supplied"}`,
+      angleConvention: "Apparent sidereal time and true obliquity of date; geodetic latitude and east-positive longitude; geometric horizon without refraction.",
+      orbs: input.orbs ?? { luminary: 8, other: 6 },
+      exactnessThresholdDegrees: 1,
     },
     planets, angles, houseCusps, planetaryHouses, aspects, moonSignRange, warnings,
   };

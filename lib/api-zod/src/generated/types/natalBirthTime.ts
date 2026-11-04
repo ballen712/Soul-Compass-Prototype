@@ -10,6 +10,7 @@ export type NatalBirthTime = {
   status: 'known';
   /** @pattern ^[0-2][0-9]:[0-5][0-9]$ */
   localTime: string;
+  disambiguation?: 'earlier' | 'later';
 } | {
   status: 'unknown';
 };

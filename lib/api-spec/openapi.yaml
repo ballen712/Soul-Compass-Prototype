@@ -143,6 +143,7 @@ components:
           properties:
             status: { const: known }
             localTime: { type: string, pattern: "^[0-2][0-9]:[0-5][0-9]$" }
+            disambiguation: { type: string, enum: [earlier, later] }
           required: [status, localTime]
         - type: object
           properties:
@@ -163,6 +164,12 @@ components:
         birthPlace: { $ref: "#/components/schemas/NatalBirthPlace" }
         houseSystem: { type: string, enum: [placidus] }
         zodiac: { type: string, enum: [tropical] }
+        orbs:
+          type: object
+          properties:
+            luminary: { type: number, exclusiveMinimum: 0, maximum: 15 }
+            other: { type: number, exclusiveMinimum: 0, maximum: 15 }
+          required: [luminary, other]
       required: [birthDate, birthTime, birthPlace]
     NatalAngle:
       type: object
@@ -202,7 +209,7 @@ components:
       type: object
       properties:
         input: { type: object }
-        calculation: { type: object }
+        calculation: { $ref: "#/components/schemas/NatalCalculation" }
         planets:
           type: array
           items: { $ref: "#/components/schemas/PlanetaryPosition" }
@@ -223,4 +230,27 @@ components:
           type: array
           items: { type: string }
       required: [input, calculation, planets, angles, houseCusps, planetaryHouses, aspects, moonSignRange, warnings]
+    NatalCalculation:
+      type: object
+      properties:
+        instantUtc: { type: string, format: date-time }
+        birthTimeResolution: { type: string, enum: [known, unknown-reference-local-noon] }
+        zodiac: { type: string }
+        coordinateSystem: { type: string }
+        houseSystem: { type: [string, "null"] }
+        houseStatus: { type: string }
+        houseCuspBoundary: { type: string }
+        applyingRule: { type: string }
+        provider: { type: string }
+        providerVersion: { type: string }
+        timeZoneDatabase: { type: string }
+        angleConvention: { type: string }
+        exactnessThresholdDegrees: { type: number }
+        orbs:
+          type: object
+          properties:
+            luminary: { type: number }
+            other: { type: number }
+          required: [luminary, other]
+      required: [instantUtc, birthTimeResolution, zodiac, coordinateSystem, houseSystem, houseStatus, houseCuspBoundary, applyingRule, provider, providerVersion, timeZoneDatabase, angleConvention, orbs, exactnessThresholdDegrees]
 

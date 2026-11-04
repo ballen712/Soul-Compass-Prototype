@@ -54,6 +54,7 @@ export type NatalBirthTime = {
   status: 'known';
   /** @pattern ^[0-2][0-9]:[0-5][0-9]$ */
   localTime: string;
+  disambiguation?: 'earlier' | 'later';
 } | {
   status: 'unknown';
 };
@@ -86,12 +87,26 @@ export const NatalChartRequestZodiac = {
   tropical: 'tropical',
 } as const;
 
+export type NatalChartRequestOrbs = {
+  /**
+     * @maximum 15
+     * @exclusiveMinimum 0
+     */
+  luminary: number;
+  /**
+     * @maximum 15
+     * @exclusiveMinimum 0
+     */
+  other: number;
+};
+
 export interface NatalChartRequest {
   birthDate: string;
   birthTime: NatalBirthTime;
   birthPlace: NatalBirthPlace;
   houseSystem?: NatalChartRequestHouseSystem;
   zodiac?: NatalChartRequestZodiac;
+  orbs?: NatalChartRequestOrbs;
 }
 
 export interface NatalAngle {
@@ -135,11 +150,40 @@ export interface NatalAspect {
 
 export type NatalChartResponseInput = { [key: string]: unknown };
 
-export type NatalChartResponseCalculation = { [key: string]: unknown };
+export type NatalCalculationBirthTimeResolution = typeof NatalCalculationBirthTimeResolution[keyof typeof NatalCalculationBirthTimeResolution];
+
+
+export const NatalCalculationBirthTimeResolution = {
+  known: 'known',
+  'unknown-reference-local-noon': 'unknown-reference-local-noon',
+} as const;
+
+export type NatalCalculationOrbs = {
+  luminary: number;
+  other: number;
+};
+
+export interface NatalCalculation {
+  instantUtc: string;
+  birthTimeResolution: NatalCalculationBirthTimeResolution;
+  zodiac: string;
+  coordinateSystem: string;
+  /** @nullable */
+  houseSystem: string | null;
+  houseStatus: string;
+  houseCuspBoundary: string;
+  applyingRule: string;
+  provider: string;
+  providerVersion: string;
+  timeZoneDatabase: string;
+  angleConvention: string;
+  exactnessThresholdDegrees: number;
+  orbs: NatalCalculationOrbs;
+}
 
 export interface NatalChartResponse {
   input: NatalChartResponseInput;
-  calculation: NatalChartResponseCalculation;
+  calculation: NatalCalculation;
   planets: PlanetaryPosition[];
   angles: NatalAngle | null;
   houseCusps: NatalHouseCusp[];

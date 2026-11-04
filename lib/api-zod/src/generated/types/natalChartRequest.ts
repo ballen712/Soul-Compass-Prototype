@@ -8,6 +8,7 @@
 import type { NatalBirthPlace } from './natalBirthPlace';
 import type { NatalBirthTime } from './natalBirthTime';
 import type { NatalChartRequestHouseSystem } from './natalChartRequestHouseSystem';
+import type { NatalChartRequestOrbs } from './natalChartRequestOrbs';
 import type { NatalChartRequestZodiac } from './natalChartRequestZodiac';
 
 export interface NatalChartRequest {
@@ -16,4 +17,5 @@ export interface NatalChartRequest {
   birthPlace: NatalBirthPlace;
   houseSystem?: NatalChartRequestHouseSystem;
   zodiac?: NatalChartRequestZodiac;
+  orbs?: NatalChartRequestOrbs;
 }

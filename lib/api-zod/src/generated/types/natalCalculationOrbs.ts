@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type NatalChartResponseCalculation = { [key: string]: unknown };
+export type NatalCalculationOrbs = {
+  luminary: number;
+  other: number;
+};

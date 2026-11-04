@@ -69,13 +69,20 @@ export const calculateNatalChartBodyBirthPlaceLatitudeMax = 90;
 export const calculateNatalChartBodyBirthPlaceLongitudeMin = -180;
 export const calculateNatalChartBodyBirthPlaceLongitudeMax = 180;
 
+export const calculateNatalChartBodyOrbsLuminaryExclusiveMin = 0;
+export const calculateNatalChartBodyOrbsLuminaryMax = 15;
+
+export const calculateNatalChartBodyOrbsOtherExclusiveMin = 0;
+export const calculateNatalChartBodyOrbsOtherMax = 15;
+
 
 
 export const CalculateNatalChartBody = zod.object({
   "birthDate": zod.coerce.date(),
   "birthTime": zod.union([zod.object({
   "status": zod.literal("known"),
-  "localTime": zod.string().regex(calculateNatalChartBodyBirthTimeOneLocalTimeRegExp)
+  "localTime": zod.string().regex(calculateNatalChartBodyBirthTimeOneLocalTimeRegExp),
+  "disambiguation": zod.enum(['earlier', 'later']).optional()
 }),zod.object({
   "status": zod.literal("unknown")
 })]),
@@ -85,7 +92,11 @@ export const CalculateNatalChartBody = zod.object({
   "timeZone": zod.string()
 }),
   "houseSystem": zod.enum(['placidus']).optional(),
-  "zodiac": zod.enum(['tropical']).optional()
+  "zodiac": zod.enum(['tropical']).optional(),
+  "orbs": zod.object({
+  "luminary": zod.number().gt(calculateNatalChartBodyOrbsLuminaryExclusiveMin).max(calculateNatalChartBodyOrbsLuminaryMax),
+  "other": zod.number().gt(calculateNatalChartBodyOrbsOtherExclusiveMin).max(calculateNatalChartBodyOrbsOtherMax)
+}).optional()
 })
 
 export const calculateNatalChartResponseHouseCuspsItemHouseMax = 12;
@@ -99,8 +110,24 @@ export const CalculateNatalChartResponse = zod.object({
 
 }).passthrough(),
   "calculation": zod.object({
-
-}).passthrough(),
+  "instantUtc": zod.coerce.date(),
+  "birthTimeResolution": zod.enum(['known', 'unknown-reference-local-noon']),
+  "zodiac": zod.string(),
+  "coordinateSystem": zod.string(),
+  "houseSystem": zod.string().nullable(),
+  "houseStatus": zod.string(),
+  "houseCuspBoundary": zod.string(),
+  "applyingRule": zod.string(),
+  "provider": zod.string(),
+  "providerVersion": zod.string(),
+  "timeZoneDatabase": zod.string(),
+  "angleConvention": zod.string(),
+  "exactnessThresholdDegrees": zod.number(),
+  "orbs": zod.object({
+  "luminary": zod.number(),
+  "other": zod.number()
+})
+}),
   "planets": zod.array(zod.object({
   "planet": zod.string(),
   "longitude": zod.number(),

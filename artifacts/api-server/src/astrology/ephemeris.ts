@@ -83,6 +83,13 @@ export function calculatePlanetaryPositions(at: Date, provider = astronomyEngine
   return PLANETS.map((planet) => provider.position(planet, at));
 }
 
+export function earthOrientation(at: Date) {
+  return {
+    siderealDegrees: astronomy.SiderealTime(at) * 15,
+    obliquityDegrees: astronomy.e_tilt(astronomy.MakeTime(at)).tobl,
+  };
+}
+
 export type MajorAspectType = "conjunction" | "sextile" | "square" | "trine" | "opposition";
 
 export function angularSeparation(a: number, b: number): number {

@@ -7,7 +7,7 @@
  */
 import type { NatalAngle } from './natalAngle';
 import type { NatalAspect } from './natalAspect';
-import type { NatalChartResponseCalculation } from './natalChartResponseCalculation';
+import type { NatalCalculation } from './natalCalculation';
 import type { NatalChartResponseInput } from './natalChartResponseInput';
 import type { NatalHouseCusp } from './natalHouseCusp';
 import type { NatalPlanetHouse } from './natalPlanetHouse';
@@ -15,7 +15,7 @@ import type { PlanetaryPosition } from './planetaryPosition';
 
 export interface NatalChartResponse {
   input: NatalChartResponseInput;
-  calculation: NatalChartResponseCalculation;
+  calculation: NatalCalculation;
   planets: PlanetaryPosition[];
   angles: NatalAngle | null;
   houseCusps: NatalHouseCusp[];

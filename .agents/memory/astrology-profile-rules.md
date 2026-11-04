@@ -11,8 +11,14 @@ Birth time is optional. Onboarding must include an explicit “I don't know my b
 
 **How to apply:** carry these constraints through onboarding, profile storage and editing, calculation inputs, reading language, and crystal recommendation rules. Test both known-time and unknown-time profiles, ensuring natal inputs use birthplace and local reading dates use current residence only.
 
-An initial server-side position-calculation foundation uses MIT-licensed Astronomy Engine to stay in the existing TypeScript API and avoid a separate Python service. It uses bundled formulas/coefficients, not a JPL DE dataset, and has not been independently accuracy-validated.
+Retain MIT-licensed Astronomy Engine behind the existing provider boundary unless there is a compelling technical reason to replace it. Do not add Swiss Ephemeris, GPL/AGPL dependencies, paid APIs/datasets, or commercial ephemeris licensing. A limited independent comparison is not permission to claim universal precision or JPL DE-file usage.
 
-**Why:** the project brief prioritizes a maintainable, permissively licensed engine, but explicitly requires verified ephemeris sources and tests before calculated readings are presented as accurate.
+**Why:** the user explicitly required this in the natal-engine phase, preserving the existing TypeScript architecture rather than replacing the provider.
 
-**How to apply:** treat this provider as an initial calculation slice only. Do not claim DE440/DE441 coverage or personalized natal/transit accuracy; validate a JPL-backed alternative and complete time-zone, house, event, and regression testing before replacing sample reading content.
+**How to apply:** keep astronomical calculations server-side and distinguish calculated natal data from sample daily readings. Extend independent reference coverage as needed instead of silently swapping providers.
+
+Default houses must be Placidus; if unsuitable, warn without silently substituting a system. Unknown-time natal charts may use a documented local-noon reference but must omit angles/houses and explain Moon uncertainty. Repeated birth wall-clock times require an explicit occurrence choice, not an assumed offset.
+
+**Why:** the user requires honest precision and no fabricated birth moment or hidden house-system fallback.
+
+**How to apply:** retain these distinctions in future calculation APIs, chart displays and interpretations; never treat reference-noon placements as a known birth instant.

@@ -21,6 +21,12 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>CRYSTALS</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="natal">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'circle.circle', selected: 'circle.circle.fill' }}
+        />
+        <NativeTabs.Trigger.Label>NATAL</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -73,6 +79,23 @@ function ClassicTabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Feather
               name="hexagon"
+              size={19}
+              color={
+                focused
+                  ? colors.navigation.foreground
+                  : colors.navigation.mutedForeground
+              }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="natal"
+        options={{
+          title: 'NATAL',
+          tabBarIcon: ({ focused }) => (
+            <Feather
+              name="target"
               size={19}
               color={
                 focused

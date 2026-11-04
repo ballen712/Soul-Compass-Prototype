@@ -2,7 +2,7 @@
 
 Expo + React Native app with COSMOS and CRYSTALS tabs, local profile storage, birthplace/current-residence separation, optional birth time, and public city search.
 
-The API server now has an initial astronomy calculation endpoint. It is a foundation, not a complete personalized astrology product: the UI still displays clearly labeled sample content until natal charts and daily transit interpretation are integrated and validated.
+The API server calculates planetary snapshots and natal charts. The NATAL tab consumes saved birth details and displays real positions, angles, Placidus houses and aspects, with explicit unknown-time and polar limitations. COSMOS and CRYSTALS daily readings remain clearly labeled sample content; daily transit interpretation is not yet personalized.
 
 ## Development
 

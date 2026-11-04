@@ -64,12 +64,17 @@ router.post("/astrology/natal-chart", (req, res) => {
     res.status(400).json({ error: "Known birth time requires localTime in HH:mm format." });
     return;
   }
+  if (body.birthTime.disambiguation !== undefined && !["earlier", "later"].includes(body.birthTime.disambiguation)) {
+    res.status(400).json({ error: "Birth-time disambiguation must be earlier or later." });
+    return;
+  }
   try {
     const chart = calculateNatalChart({
       birthDate: body.birthDate,
       birthTime: body.birthTime,
       birthPlace: body.birthPlace,
       houseSystem: body.houseSystem ?? "placidus",
+      orbs: body.orbs,
     });
     res.json(chart);
   } catch (error) {

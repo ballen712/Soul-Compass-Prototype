@@ -135,7 +135,7 @@ export default function CrystalsScreen() {
                     { color: colors.crystals.badgeForeground },
                   ]}
                 >
-                  STONE FOR TODAY
+                  SAMPLE STONE
                 </Text>
               </View>
             </View>

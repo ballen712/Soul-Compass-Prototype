@@ -1,5 +1,5 @@
 export const dailyReading = {
-  label: 'A DAILY HOROSCOPE',
+  label: 'SAMPLE HOROSCOPE · PROTOTYPE',
   title: 'A quieter kind of clarity.',
   body:
     'You do not need to answer every open question at once. Choose the one conversation, task, or feeling that deserves your full attention, and let the rest wait.',

@@ -34,8 +34,8 @@ export function getChartPrecision(profile: UserProfile): ChartPrecision {
     mayUseHouses: birthTimeKnown,
     mayUseTimeSensitiveInterpretations: birthTimeKnown,
     precisionNote: birthTimeKnown
-      ? 'Sample content only; chart calculations are not connected yet.'
-      : 'Birth time is unknown, so this reading has reduced precision. It does not use the Ascendant, Midheaven, houses, or other time-sensitive chart details. Sample content only; chart calculations are not connected yet.',
+      ? 'Prototype sample only: this horoscope and crystal suggestion are not personalized or calculated.'
+      : 'Prototype sample only: this horoscope and crystal suggestion are not personalized or calculated. Birth time is unknown, so future chart readings would have reduced precision and omit the Ascendant, Midheaven, houses, and other time-sensitive details.',
   };
 }
 

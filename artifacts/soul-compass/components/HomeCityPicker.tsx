@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { HomeLocation } from '@/profile/profile';
-
-type SearchResult = {
-  name: string;
-  country: string;
-  admin1?: string;
-  latitude: number;
-  longitude: number;
-  timezone?: string;
-};
+import { searchHomeCities } from '@/services/geocoding';
+import type { HomeCitySearchResult } from '@/services/geocoding';
 
 type Props = {
   value: HomeLocation | null;
@@ -18,7 +11,7 @@ type Props = {
 
 export function HomeCityPicker({ value, onSelect }: Props) {
   const [query, setQuery] = useState(value?.city ?? '');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<HomeCitySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,14 +25,7 @@ export function HomeCityPicker({ value, onSelect }: Props) {
     setError('');
     setResults([]);
     try {
-      const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(search)}&count=8&language=en&format=json`,
-      );
-      if (!response.ok) throw new Error('City search is temporarily unavailable.');
-      const data = (await response.json()) as { results?: SearchResult[] };
-      const matches = (data.results ?? []).filter(
-        (result) => result.timezone && Number.isFinite(result.latitude) && Number.isFinite(result.longitude),
-      );
+      const matches = await searchHomeCities(search);
       setResults(matches);
       if (matches.length === 0) setError('No matching cities with time-zone data were found.');
     } catch {
@@ -75,29 +61,43 @@ export function HomeCityPicker({ value, onSelect }: Props) {
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {results.map((result) => {
         const location: HomeLocation = {
-          city: result.name,
+          city: result.city,
           country: result.country,
           latitude: result.latitude,
           longitude: result.longitude,
-          timeZone: result.timezone!,
+          timeZone: result.timeZone,
         };
         return (
           <Pressable
             accessibilityRole="button"
-            key={`${result.name}-${result.latitude}-${result.longitude}`}
+            key={`${result.city}-${result.country}-${result.latitude}-${result.longitude}`}
             onPress={() => {
               onSelect(location);
-              setQuery(result.name);
+              setQuery(result.city);
               setResults([]);
             }}
             style={styles.result}
           >
-            <Text style={styles.city}>{result.name}{result.admin1 ? `, ${result.admin1}` : ''}</Text>
-            <Text style={styles.country}>{result.country} · {result.timezone}</Text>
+            <Text style={styles.city}>{result.city}{result.admin1 ? `, ${result.admin1}` : ''}</Text>
+            <Text style={styles.country}>{result.country} · {result.timeZone}</Text>
           </Pressable>
         );
       })}
-      <Text style={styles.attribution}>Search uses Open-Meteo city data. No GPS location is requested.</Text>
+      <Text style={styles.attribution}>
+        Location data based on{' '}
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geonames.org/')} style={styles.attributionLink}>
+          GeoNames
+        </Text>
+        {' '}via{' '}
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://open-meteo.com/en/terms')} style={styles.attributionLink}>
+          Open-Meteo
+        </Text>
+        {' '}·{' '}
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://creativecommons.org/licenses/by/4.0/')} style={styles.attributionLink}>
+          CC BY 4.0
+        </Text>
+        . Free lookup is for non-commercial use. Only the typed city name is searched; no GPS is used.
+      </Text>
     </View>
   );
 }
@@ -132,4 +132,5 @@ const styles = StyleSheet.create({
   city: { color: '#242720', fontSize: 15, fontWeight: '600' },
   country: { color: '#77756F', fontSize: 12, marginTop: 3 },
   attribution: { color: '#89867E', fontSize: 11, lineHeight: 16 },
+  attributionLink: { color: '#52604F', textDecorationLine: 'underline' },
 });

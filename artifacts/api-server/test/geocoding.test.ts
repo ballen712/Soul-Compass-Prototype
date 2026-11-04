@@ -6,6 +6,17 @@ import express from "express";
 import { createCitySearch, normalizeCities } from "../src/geocoding/geoapify";
 import { createGeocodingRouter } from "../src/routes/geocoding";
 import { createApp } from "../src/app";
+import { geocodingConfig } from "../src/geocoding/config";
+import { developmentQuota } from "../src/geocoding/quota";
+
+function testSearch(options: Parameters<typeof createCitySearch>[0] = {}) {
+  const config = { ...geocodingConfig({}), requestsPerSecond: 2, ...options.config };
+  if (options.dailyLimit !== undefined) {
+    config.hardCeiling = options.dailyLimit; config.sourcePerDay = options.dailyLimit;
+  }
+  return createCitySearch({ ...options, config, production: false, event: () => {},
+    store: developmentQuota(config, options.now) });
+}
 
 const city = { city: "Budapest", country: "Hungary", state: "Central Hungary",
   lat: 47.4979, lon: 19.0402, timezone: { name: "Europe/Budapest" } };
@@ -28,7 +39,7 @@ test("normalizes lat/lon and IANA zone, distinguishes ambiguous states, drops in
 
 test("only explicit query and fixed parameters reach provider; no profile, client headers or raw response leaks", async () => {
   let received: URL | undefined, init: RequestInit | undefined;
-  const search = createCitySearch({
+  const search = testSearch({
     getKey: () => "test-placeholder",
     request: (async (url, options) => { received = new URL(String(url)); init = options;
       return json({ results: [{ ...city, apiKey: "must-not-return", datasource: { secret: "excluded" } }] });
@@ -49,11 +60,11 @@ test("only explicit query and fixed parameters reach provider; no profile, clien
 });
 
 test("no retry or key/error-body disclosure on missing key, denial, quota, timeout, network or malformed response", async () => {
-  const missing = createCitySearch({ getKey: () => undefined });
+  const missing = testSearch({ getKey: () => undefined });
   await assert.rejects(missing("Budapest"), { status: 503 });
   for (const status of [401, 403, 429, 500]) {
     let calls = 0;
-    const search = createCitySearch({ getKey: () => "test-placeholder",
+    const search = testSearch({ getKey: () => "test-placeholder",
       request: (async () => { calls++; return json({ error: "test-placeholder" }, status); }) as typeof fetch });
     await assert.rejects(search("Budapest"), (error: any) => {
       assert.equal(error.status, status === 429 ? 429 : 503);
@@ -66,7 +77,7 @@ test("no retry or key/error-body disclosure on missing key, denial, quota, timeo
     [new Error("https://provider.example/?apiKey=private"), 502],
     [new SyntaxError("invalid JSON"), 502],
   ] as const) {
-    const search = createCitySearch({ getKey: () => "test-placeholder",
+    const search = testSearch({ getKey: () => "test-placeholder",
       request: (async () => { throw failure; }) as typeof fetch });
     await assert.rejects(search("Budapest"), (error: any) => {
       assert.equal(error.status, status); assert.doesNotMatch(error.message, /private|sensitive|apiKey/); return true;
@@ -76,7 +87,7 @@ test("no retry or key/error-body disclosure on missing key, denial, quota, timeo
 
 test("conservative per-second and rolling-day limits prevent upstream calls beyond capacity", async () => {
   let now = 1000, calls = 0;
-  const search = createCitySearch({ getKey: () => "test-placeholder", now: () => now, dailyLimit: 3,
+  const search = testSearch({ getKey: () => "test-placeholder", now: () => now, dailyLimit: 3,
     request: (async () => { calls++; return json({ results: [] }); }) as typeof fetch });
   await search("Berlin"); await search("Budapest");
   await assert.rejects(search("Paris"), { status: 429 });
@@ -103,14 +114,15 @@ test("route rejects extra/profile parameters, repeated/invalid queries; peer lim
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 
-test("24-hour budget retains later calls rather than resetting a whole calendar bucket", async () => {
+test("daily budget resets at UTC midnight, not the server's local timezone", async () => {
   let now = 1000;
-  const search = createCitySearch({ getKey: () => "test-placeholder", now: () => now, dailyLimit: 2,
+  const search = testSearch({ getKey: () => "test-placeholder", now: () => now, dailyLimit: 2,
     request: (async () => json({ results: [] })) as typeof fetch });
   await search("Berlin");
   now += 23 * 3_600_000; await search("Budapest");
   now += 3_600_001; await search("Paris");
-  await assert.rejects(search("Tokyo"), { status: 429 });
+  await search("Tokyo");
+  await assert.rejects(search("Vienna"), { status: 429 });
 });
 
 test("geocoding inherits existing CORS, no-store, and nosniff safeguards", async () => {

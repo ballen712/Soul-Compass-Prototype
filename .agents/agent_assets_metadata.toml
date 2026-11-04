@@ -70,3 +70,17 @@ mtime_ms = 1793814477936
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/6074398e-5b14-4d11-b483-3827076b9510/b73b60ed-8d4d-47df-a020-465cb4264ba6"
 storage_version_token = "1793814506425628"
 content_type = "text/html"
+
+[[outputs]]
+id = "Qt5P4gDh572hms3Se6FBY"
+uri = "file://artifacts/soul-compass/GEOAPIFY_HARDENING.html"
+type = "html"
+title = "Geoapify hardening and verification report"
+description = "Complete A–H report: shared quota architecture, exact tests, changed files, production configuration steps and remaining release gates."
+logical_id = "2174e862-3cac-41d4-96b5-739d06e86a0d"
+content_hash = "sha256:446803b42a2c6b7aeb7489a62798b06db20e3d67983e0ce50e7054d974e6fe12"
+size = 20487
+mtime_ms = 1793816708348
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/2174e862-3cac-41d4-96b5-739d06e86a0d/bb96c3ed-8241-42d3-a9ca-478cf66df007"
+storage_version_token = "1793816808483402"
+content_type = "text/html"

@@ -26,7 +26,7 @@ export function createGeocodingRouter(search = createCitySearch()) {
       res.setHeader("Retry-After", String(Math.max(1, Math.ceil((bucket.expires - now) / 1000))));
       res.status(429).json({ error: "Too many city searches. Please wait a minute." }); return;
     }
-    try { res.json({ results: await search(q) }); }
+    try { res.json({ results: await search(q, peer) }); }
     catch (error) {
       const safe = error instanceof CitySearchError ? error
         : new CitySearchError(502, "City search is temporarily unavailable.");

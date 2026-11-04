@@ -157,6 +157,7 @@ export default function SettingsScreen() {
             <>
               <Section title="What runs on this device" description="Daily reflections and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
               <Section title="What uses the network" description="City search sends only your typed query through the Soul Compass server to Geoapify, not your saved birth profile. Geoapify receives normal server connection metadata; we do not forward your device IP or headers. The current-sky snapshot sends only the current time to the Soul Compass server. Search runs only when you tap Search." />
+              <Section title="City search protection" description="To protect city search, our server keeps daily keyed source hashes and usage counters. These counters contain no raw IPs, search queries, profiles or birth data. Source hashes change daily; expired entries are removed when search traffic resumes." />
               <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
                   The full natal chart is calculated on the Soul Compass server. It is only requested after you allow it here or on the Natal tab and then tap Calculate; opening a screen never sends it. The request contains your birth date, birth time if known, and your birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included.

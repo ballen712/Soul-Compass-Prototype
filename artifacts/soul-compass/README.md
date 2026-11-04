@@ -1,5 +1,7 @@
 # Soul Compass
 
+Current Geoapify operational/release guidance: [production hardening report](GEOAPIFY_HARDENING.html). Owner-approved Replit PostgreSQL now enforces shared UTC budgets/source limits; no profiles moved off-device and no deployment was published.
+
 Local-first Expo + React Native app with COSMOS, CRYSTALS and NATAL tabs. No registration or authentication. A versioned AsyncStorage record holds birth details, optional residence, preferences, collection and revocable astrology API consent.
 
 The API server calculates planetary snapshots and full natal charts. NATAL sends minimal birth inputs only after explicit consent AND a Calculate chart action. It displays real positions, angles, Placidus houses and aspects, with explicit unknown-time and polar limitations. COSMOS also uses the existing on-device Astronomy Engine for limited personal daily transit reflections when a separate current residence is saved. CRYSTALS ranks the three-stone catalog from eligible chart themes and recognized intentions; symbolic meanings are not scientific/medical effects. Unavailable daily calculations retain clearly labeled sample content.

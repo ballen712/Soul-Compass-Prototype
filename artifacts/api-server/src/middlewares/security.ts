@@ -5,7 +5,9 @@ import type { RequestHandler } from "express";
 export function calculationRateLimit(maxRequests = 120, windowMs = 60_000): RequestHandler {
   const buckets = new Map<string, { count: number; expires: number }>();
   return (req, res, next) => {
-    if (req.method !== "POST" || !["/api/astrology/positions", "/api/astrology/natal-chart"].includes(req.path)) return next();
+    const calculation = req.method === "POST" && ["/api/astrology/positions", "/api/astrology/natal-chart"].includes(req.path);
+    const privateRequest = req.path.startsWith("/api/me/") && req.method !== "OPTIONS";
+    if (!calculation && !privateRequest) return next();
     const now = Date.now();
     for (const [key, bucket] of buckets) if (bucket.expires <= now) buckets.delete(key);
     const key = req.socket.remoteAddress ?? "unknown";

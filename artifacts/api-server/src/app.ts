@@ -41,10 +41,10 @@ app.use("/api", (req, res, next) => {
   }
   next();
 });
-app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST", "OPTIONS"], credentials: false }));
+app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], credentials: false }));
 app.use(calculationRateLimit(options.rateLimit));
 app.use("/api", (req, res, next) => {
-  if (req.method === "POST" && !req.is("application/json")) {
+  if (["POST", "PUT"].includes(req.method) && !req.is("application/json")) {
     res.status(415).json({ error: "Calculation requests must use application/json." });
     return;
   }

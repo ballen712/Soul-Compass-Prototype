@@ -11,7 +11,7 @@ code{font-size:.88em;overflow-wrap:anywhere}table{border-collapse:collapse;width
 </style></head><body><main>
 <p>SOUL COMPASS · 4 NOVEMBER 2026</p>
 <h1>Local-first implementation and verification</h1>
-<p class="note">The registration-free application is implemented and running. Local persistence, consent and calculation journeys passed browser checks. One environment check remains failing: Expo dependency-version alignment is blocked by the existing package-release-age safeguard. Physical iPhone testing is not claimed.</p>
+<p class="note"><strong>Compatibility update, 4 November 2026:</strong> the earlier Expo blocker described below is resolved in the current checkout. Standard <code>expo install --fix</code> and <code>--check</code> succeed, Doctor passes 20/20, and typecheck, tests, builds and scans pass without changing package-safety settings. See <code>EXPO_COMPATIBILITY_VERIFICATION.md</code> for the current evidence. The rest of this document preserves the original milestone results; physical iPhone testing is still not claimed.</p>
 <h2>Acceptance results</h2>
 <table><tr><th>Criterion</th><th>Status</th><th>Evidence / limitation</th></tr>
 <tr><td>No mandatory authentication or cloud profile</td><td class="pass">PASS</td><td>Active routes have no login or account flow; browser recorded zero matching Supabase/Auth or /api/me calls.</td></tr>

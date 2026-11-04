@@ -2,6 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ProfileReadingNote } from '@/components/ProfileReadingNote';
+import { SettingsButton } from '@/components/SettingsButton';
 import { alternativeCrystals, primaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
 
@@ -61,7 +63,9 @@ export default function CrystalsScreen() {
             >
               THE STONE GUIDE
             </Text>
+            <SettingsButton />
           </View>
+          <ProfileReadingNote tone="light" />
 
           <View style={styles.intro}>
             <View style={styles.eyebrowRow}>

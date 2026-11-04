@@ -12,7 +12,9 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ProfileProvider, useProfile } from '@/profile/ProfileContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -20,9 +22,23 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { profile, loaded, error } = useProfile();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loaded || error) return;
+    if (!profile && pathname !== '/onboarding') router.replace('/onboarding');
+    else if (profile && pathname === '/onboarding') router.replace('/(tabs)');
+  }, [error, loaded, pathname, profile, router]);
+
+  if (!loaded || error) return null;
+
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back' }}>
+    <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -45,15 +61,17 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <ProfileProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </ProfileProvider>
     </SafeAreaProvider>
   );
 }

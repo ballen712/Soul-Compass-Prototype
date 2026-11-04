@@ -7,7 +7,7 @@ import type { HomeCitySearchResult } from '@/services/geocoding';
 type Props = {
   label: string;
   value: HomeLocation | null;
-  onSelect: (location: HomeLocation) => void;
+  onSelect: (location: HomeLocation | null) => void;
   purpose?: 'home' | 'birth';
 };
 
@@ -69,7 +69,10 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
         <TextInput
           accessibilityLabel={label}
           autoCapitalize="words"
-          onChangeText={changeQuery}
+          onChangeText={(text) => {
+            changeQuery(text);
+            if (value && text !== value.city) onSelect(null);
+          }}
           onSubmitEditing={searchCities}
           placeholder={`Search ${label.toLowerCase()}`}
           placeholderTextColor="#8B877F"

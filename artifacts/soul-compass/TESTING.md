@@ -4,7 +4,9 @@
 
 The product-readiness pass adds city-search race/data validation, local-clock/foreground refresh, minute-cache/midnight and intention/hidden-stone recommendation regressions. Current suite: 40 Vitest client cases, 10 Node daily-astrology cases and 25 API cases. Expo Doctor now passes 20/20 following normal SDK-compatible alignment after the package-release-age window elapsed. See LAUNCH_READINESS.html for current production-build/browser evidence and remaining device gates; the historical milestone counts below are not current totals.
 
-Run `pnpm --filter @workspace/soul-compass test` for local store/provider and consent tests. They exercise validated profile creation/updates, reloads, legacy migrations, corrupt/future-schema preservation, failed writes, serialized independent updates, collection changes, consent grant/revoke/versioning, in-flight cancellation, payload minimization, request deduplication and no automatic retries/sends. Storage and HTTP are explicit test doubles, not actual native-device persistence.
+Run `pnpm --filter @workspace/soul-compass test` for the Vitest suite and astronomy regressions. Use `pnpm --filter @workspace/soul-compass test:local` to run Vitest alone. Coverage includes validated profile creation and edits, known and unknown birth-time onboarding, selected city coordinates and time-zone persistence after reload, Settings edits that preserve unrelated profile values, invalid dates and unselected city edits, legacy migrations, corrupt/future-schema preservation, failed writes, serialized independent updates, collection changes, consent grant/revoke/versioning, in-flight cancellation, payload minimization, request deduplication, and no automatic retries or sends. Storage and HTTP are explicit test doubles, not actual native-device persistence.
+
+The separate astronomy regression suite can be run with `pnpm --filter @workspace/soul-compass test:astrology`.
 
 Backend tests now include protected cloud-route contracts and security alongside the 14 astronomy regressions described below; those endpoints remain protected although the client no longer calls them.
 

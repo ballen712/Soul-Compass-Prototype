@@ -4,3 +4,4 @@
 - [Local-first product](local-first-product.md) — Registration-free AsyncStorage app; birth-data requests require revocable consent; dormant Supabase infrastructure stays untouched.
 - [Post-merge verification](post-merge-verification.md) — Setup success alone does not guarantee services started; check actual workflow status and logs.
 - [Launch boundaries](launch-scope.md) — Finish existing gaps, preserve identity, label symbolic/sample scope honestly; major expansion, external changes and publication need approval.
+- [Workspace dependency links](workspace-dependency-links.md) — Check pnpm links and catalog compatibility before interpreting missing test/type packages as source errors.

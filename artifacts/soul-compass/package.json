@@ -9,7 +9,9 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --require ./profile/test-assets.cjs --import tsx --test profile/astrology.test.ts"
+    "test": "pnpm run test:local && pnpm run test:astrology",
+    "test:local": "vitest run",
+    "test:astrology": "node --require ./profile/test-assets.cjs --import tsx --test profile/astrology.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

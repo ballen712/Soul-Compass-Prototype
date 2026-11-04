@@ -19,7 +19,7 @@ catalogs:
       specifier: ^5.90.21
       version: 5.104.1
     '@types/node':
-      specifier: 25.9.9
+      specifier: ^25.3.3
       version: 25.9.9
     '@types/react':
       specifier: ^19.2.0
@@ -428,6 +428,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.118.0
         version: 2.118.0
+      astronomy-engine:
+        specifier: ^2.1.19
+        version: 2.1.19
       expo-auth-session:
         specifier: ~58.0.16
         version: 58.0.16(expo@58.0.22)(react-native@0.88.0(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
@@ -437,9 +440,6 @@ importers:
       react-native-url-polyfill:
         specifier: ^4.0.0
         version: 4.0.0(react-native@0.88.0(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))
-      astronomy-engine:
-        specifier: ^2.1.19
-        version: 2.1.19
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -8444,7 +8444,7 @@ snapshots:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': tsx@4.21.0
       esbuild: 0.28.2
-      tsx: 4.23.15
+      tsx: 4.21.0
 
   drizzle-orm@0.45.4(@types/pg@8.23.1)(pg@8.23.1):
     optionalDependencies:

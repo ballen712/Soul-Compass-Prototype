@@ -1,4 +1,8 @@
 #!/bin/bash
-set -e
-pnpm install --frozen-lockfile
-pnpm --filter db push
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+CI=1 pnpm install --frozen-lockfile
+
+# Schema changes require separate, explicit approval. Never migrate or push a
+# database as a side effect of merging application code.

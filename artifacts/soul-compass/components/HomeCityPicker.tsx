@@ -5,11 +5,12 @@ import { searchHomeCities } from '@/services/geocoding';
 import type { HomeCitySearchResult } from '@/services/geocoding';
 
 type Props = {
+  label: string;
   value: HomeLocation | null;
   onSelect: (location: HomeLocation) => void;
 };
 
-export function HomeCityPicker({ value, onSelect }: Props) {
+export function HomeCityPicker({ label, value, onSelect }: Props) {
   const [query, setQuery] = useState(value?.city ?? '');
   const [results, setResults] = useState<HomeCitySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,11 +40,11 @@ export function HomeCityPicker({ value, onSelect }: Props) {
     <View style={styles.container}>
       <View style={styles.searchRow}>
         <TextInput
-          accessibilityLabel="Home city"
+          accessibilityLabel={label}
           autoCapitalize="words"
           onChangeText={setQuery}
           onSubmitEditing={searchCities}
-          placeholder="Search your home city"
+          placeholder={`Search ${label.toLowerCase()}`}
           placeholderTextColor="#8B877F"
           returnKeyType="search"
           style={styles.input}

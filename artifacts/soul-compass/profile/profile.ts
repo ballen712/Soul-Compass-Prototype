@@ -13,7 +13,14 @@ export type HomeLocation = {
 export type UserProfile = {
   birthDate: string;
   birthTime: BirthTime;
-  homeLocation: HomeLocation;
+  birthPlace: HomeLocation;
+  currentResidence: HomeLocation | null;
+};
+
+export type ProfileFormDraft = {
+  birthDate?: string;
+  birthTime?: BirthTime;
+  currentResidence?: HomeLocation | null;
 };
 
 export type ChartPrecision = {

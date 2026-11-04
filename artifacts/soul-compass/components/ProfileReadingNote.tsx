@@ -10,10 +10,13 @@ export function ProfileReadingNote({ tone }: Props) {
   if (!profile) return null;
   const precision = getChartPrecision(profile);
   const dark = tone === 'dark';
+  const residence = profile.currentResidence;
   return (
     <View style={[styles.container, dark ? styles.dark : styles.light]}>
       <Text style={[styles.location, dark ? styles.darkText : styles.lightText]}>
-        {getHomeDateTimeLabel(profile.homeLocation.timeZone)} · {profile.homeLocation.city}, {profile.homeLocation.country}
+        {residence
+          ? `${getHomeDateTimeLabel(residence.timeZone)} · ${residence.city}, ${residence.country}`
+          : 'Current residence not set · add it in Settings for local date and time'}
       </Text>
       <Text style={[styles.note, dark ? styles.darkMuted : styles.lightMuted]}>
         {precision.precisionNote}

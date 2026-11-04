@@ -1,23 +1,29 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
-import type { HomeLocation, UserProfile } from '@/profile/profile';
+import type { HomeLocation, ProfileFormDraft, UserProfile } from '@/profile/profile';
 
 type Props = {
   initialProfile?: UserProfile | null;
+  initialDraft?: ProfileFormDraft | null;
   submitLabel: string;
   onSubmit: (profile: UserProfile) => Promise<void>;
 };
 
-export function ProfileForm({ initialProfile, submitLabel, onSubmit }: Props) {
-  const [birthDate, setBirthDate] = useState(initialProfile?.birthDate ?? '');
-  const [birthTimeKnown, setBirthTimeKnown] = useState(initialProfile?.birthTime.status === 'known');
+export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmit }: Props) {
+  const initialBirthTime = initialProfile?.birthTime ?? initialDraft?.birthTime;
+  const [birthDate, setBirthDate] = useState(initialProfile?.birthDate ?? initialDraft?.birthDate ?? '');
+  const [birthTimeKnown, setBirthTimeKnown] = useState(initialBirthTime?.status === 'known');
   const [birthTime, setBirthTime] = useState(
-    initialProfile?.birthTime.status === 'known' ? initialProfile.birthTime.localTime : '',
+    initialBirthTime?.status === 'known' ? initialBirthTime.localTime : '',
   );
-  const [homeLocation, setHomeLocation] = useState<HomeLocation | null>(
-    initialProfile?.homeLocation ?? null,
+  const [birthPlace, setBirthPlace] = useState<HomeLocation | null>(
+    initialProfile?.birthPlace ?? null,
   );
+  const [currentResidence, setCurrentResidence] = useState<HomeLocation | null>(
+    initialProfile?.currentResidence ?? initialDraft?.currentResidence ?? null,
+  );
+  const [residenceEnabled, setResidenceEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,8 +46,8 @@ export function ProfileForm({ initialProfile, submitLabel, onSubmit }: Props) {
       setError('Enter your birth time as HH:MM or choose that you do not know it.');
       return;
     }
-    if (!homeLocation) {
-      setError('Search for and select your home city.');
+    if (!birthPlace) {
+      setError('Search for and select your place of birth.');
       return;
     }
 
@@ -53,7 +59,8 @@ export function ProfileForm({ initialProfile, submitLabel, onSubmit }: Props) {
         birthTime: birthTimeKnown
           ? { status: 'known', localTime: birthTime }
           : { status: 'unknown' },
-        homeLocation,
+        birthPlace,
+        currentResidence: residenceEnabled ? currentResidence : null,
       });
     } catch {
       setError('Your profile could not be saved. Please try again.');
@@ -67,7 +74,7 @@ export function ProfileForm({ initialProfile, submitLabel, onSubmit }: Props) {
       <Text style={styles.eyebrow}>YOUR PERSONAL COMPASS</Text>
       <Text style={styles.title}>A little about you.</Text>
       <Text style={styles.description}>
-        Your birth details help shape future readings. Your home city sets the local day for them.
+        Your birthplace is essential for a future natal chart. Birth time is optional.
       </Text>
 
       <Text style={styles.label}>DATE OF BIRTH</Text>
@@ -114,8 +121,36 @@ export function ProfileForm({ initialProfile, submitLabel, onSubmit }: Props) {
         </Text>
       )}
 
-      <Text style={styles.label}>HOME CITY</Text>
-      <HomeCityPicker value={homeLocation} onSelect={setHomeLocation} />
+      <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Place of Birth' : 'Place of Birth'}</Text>
+      <Text style={styles.sectionDescription}>Required for natal-chart calculations. This is where you were born, not where you live now.</Text>
+      <HomeCityPicker label="Place of birth" value={birthPlace} onSelect={setBirthPlace} />
+
+      <View style={styles.sectionDivider} />
+      <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Current Residence' : 'Current Residence'}</Text>
+      <Text style={styles.sectionDescription}>Recommended for local dates and location-dependent daily readings. You can add this later in Settings.</Text>
+      {residenceEnabled ? (
+        <>
+          <HomeCityPicker label="Current residence" value={currentResidence} onSelect={setCurrentResidence} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setResidenceEnabled(false);
+              setCurrentResidence(null);
+            }}
+            style={styles.skipResidence}
+          >
+            <Text style={styles.skipResidenceText}>Skip current residence for now</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setResidenceEnabled(true)}
+          style={styles.addResidence}
+        >
+          <Text style={styles.addResidenceText}>Add current residence</Text>
+        </Pressable>
+      )}
 
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       <Pressable
@@ -136,6 +171,9 @@ const styles = StyleSheet.create({
   title: { color: '#22241F', fontSize: 32, lineHeight: 40, fontWeight: '400', marginTop: 6 },
   description: { color: '#77756F', fontSize: 15, lineHeight: 23, marginBottom: 12 },
   label: { color: '#55574F', fontSize: 11, letterSpacing: 1.4, marginTop: 12 },
+  sectionTitle: { color: '#30352D', fontSize: 18, fontWeight: '600', marginTop: 14 },
+  sectionDescription: { color: '#77756F', fontSize: 13, lineHeight: 19 },
+  sectionDivider: { height: 1, backgroundColor: '#DED9CE', marginTop: 10 },
   input: {
     minHeight: 48,
     borderWidth: 1,
@@ -153,6 +191,10 @@ const styles = StyleSheet.create({
   checkmark: { color: '#FFFFFF', fontSize: 13, lineHeight: 16 },
   unknownText: { color: '#45473F', fontSize: 14 },
   precisionNote: { color: '#77756F', fontSize: 13, lineHeight: 19, marginTop: -4 },
+  skipResidence: { alignSelf: 'flex-start', paddingVertical: 6 },
+  skipResidenceText: { color: '#58664F', fontSize: 13, textDecorationLine: 'underline' },
+  addResidence: { minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#D9D3C7', alignItems: 'center', justifyContent: 'center' },
+  addResidenceText: { color: '#58664F', fontSize: 14, fontWeight: '600' },
   error: { color: '#9C423B', fontSize: 13 },
   submit: { minHeight: 52, borderRadius: 14, backgroundColor: '#25344D', alignItems: 'center', justifyContent: 'center', marginTop: 18 },
   submitDisabled: { opacity: 0.6 },

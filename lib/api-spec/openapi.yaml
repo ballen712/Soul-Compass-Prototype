@@ -60,6 +60,28 @@ paths:
           description: Invalid request
         "422":
           description: Calculation failed
+  /astrology/natal-chart:
+    post:
+      operationId: calculateNatalChart
+      tags: [astrology]
+      summary: Calculate a natal chart from birth details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NatalChartRequest"
+      responses:
+        "200":
+          description: Natal chart and calculation metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NatalChartResponse"
+        "400":
+          description: Invalid request
+        "422":
+          description: Birth time or chart calculation cannot be resolved
 components:
   schemas:
     HealthStatus:
@@ -115,4 +137,90 @@ components:
           type: array
           items: { $ref: "#/components/schemas/PlanetaryPosition" }
       required: [input, metadata, positions]
+    NatalBirthTime:
+      oneOf:
+        - type: object
+          properties:
+            status: { const: known }
+            localTime: { type: string, pattern: "^[0-2][0-9]:[0-5][0-9]$" }
+          required: [status, localTime]
+        - type: object
+          properties:
+            status: { const: unknown }
+          required: [status]
+    NatalBirthPlace:
+      type: object
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        timeZone: { type: string }
+      required: [latitude, longitude, timeZone]
+    NatalChartRequest:
+      type: object
+      properties:
+        birthDate: { type: string, format: date }
+        birthTime: { $ref: "#/components/schemas/NatalBirthTime" }
+        birthPlace: { $ref: "#/components/schemas/NatalBirthPlace" }
+        houseSystem: { type: string, enum: [placidus] }
+        zodiac: { type: string, enum: [tropical] }
+      required: [birthDate, birthTime, birthPlace]
+    NatalAngle:
+      type: object
+      properties:
+        ascendant: { type: number }
+        descendant: { type: number }
+        midheaven: { type: number }
+        imumCoeli: { type: number }
+      required: [ascendant, descendant, midheaven, imumCoeli]
+    NatalHouseCusp:
+      type: object
+      properties:
+        house: { type: integer, minimum: 1, maximum: 12 }
+        longitude: { type: number }
+      required: [house, longitude]
+    NatalPlanetHouse:
+      type: object
+      properties:
+        planet: { type: string }
+        house: { type: integer, minimum: 1, maximum: 12 }
+        cuspDistanceDegrees: { type: number }
+      required: [planet, house, cuspDistanceDegrees]
+    NatalAspect:
+      type: object
+      properties:
+        first: { type: string }
+        second: { type: string }
+        type: { type: string }
+        angle: { type: number }
+        separation: { type: number }
+        orb: { type: number }
+        applying: { type: [boolean, "null"] }
+        strength: { type: number }
+        exact: { type: boolean }
+      required: [first, second, type, angle, separation, orb, applying, strength, exact]
+    NatalChartResponse:
+      type: object
+      properties:
+        input: { type: object }
+        calculation: { type: object }
+        planets:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryPosition" }
+        angles: { oneOf: [{ $ref: "#/components/schemas/NatalAngle" }, { type: "null" }] }
+        houseCusps:
+          type: array
+          items: { $ref: "#/components/schemas/NatalHouseCusp" }
+        planetaryHouses:
+          type: array
+          items: { $ref: "#/components/schemas/NatalPlanetHouse" }
+        aspects:
+          type: array
+          items: { $ref: "#/components/schemas/NatalAspect" }
+        moonSignRange:
+          type: array
+          items: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
+      required: [input, calculation, planets, angles, houseCusps, planetaryHouses, aspects, moonSignRange, warnings]
 

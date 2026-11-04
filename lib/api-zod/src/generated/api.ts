@@ -59,3 +59,86 @@ export const CalculatePlanetaryPositionsResponse = zod.object({
 })
 
 
+/**
+ * @summary Calculate a natal chart from birth details
+ */
+export const calculateNatalChartBodyBirthTimeOneLocalTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
+export const calculateNatalChartBodyBirthPlaceLatitudeMin = -90;
+export const calculateNatalChartBodyBirthPlaceLatitudeMax = 90;
+
+export const calculateNatalChartBodyBirthPlaceLongitudeMin = -180;
+export const calculateNatalChartBodyBirthPlaceLongitudeMax = 180;
+
+
+
+export const CalculateNatalChartBody = zod.object({
+  "birthDate": zod.coerce.date(),
+  "birthTime": zod.union([zod.object({
+  "status": zod.literal("known"),
+  "localTime": zod.string().regex(calculateNatalChartBodyBirthTimeOneLocalTimeRegExp)
+}),zod.object({
+  "status": zod.literal("unknown")
+})]),
+  "birthPlace": zod.object({
+  "latitude": zod.number().min(calculateNatalChartBodyBirthPlaceLatitudeMin).max(calculateNatalChartBodyBirthPlaceLatitudeMax),
+  "longitude": zod.number().min(calculateNatalChartBodyBirthPlaceLongitudeMin).max(calculateNatalChartBodyBirthPlaceLongitudeMax),
+  "timeZone": zod.string()
+}),
+  "houseSystem": zod.enum(['placidus']).optional(),
+  "zodiac": zod.enum(['tropical']).optional()
+})
+
+export const calculateNatalChartResponseHouseCuspsItemHouseMax = 12;
+
+export const calculateNatalChartResponsePlanetaryHousesItemHouseMax = 12;
+
+
+
+export const CalculateNatalChartResponse = zod.object({
+  "input": zod.object({
+
+}).passthrough(),
+  "calculation": zod.object({
+
+}).passthrough(),
+  "planets": zod.array(zod.object({
+  "planet": zod.string(),
+  "longitude": zod.number(),
+  "latitude": zod.number(),
+  "sign": zod.string(),
+  "degreeInSign": zod.number(),
+  "speedDegreesPerDay": zod.number(),
+  "retrograde": zod.boolean(),
+  "atUtc": zod.coerce.date()
+})),
+  "angles": zod.union([zod.object({
+  "ascendant": zod.number(),
+  "descendant": zod.number(),
+  "midheaven": zod.number(),
+  "imumCoeli": zod.number()
+}),zod.null()]),
+  "houseCusps": zod.array(zod.object({
+  "house": zod.number().int().min(1).max(calculateNatalChartResponseHouseCuspsItemHouseMax),
+  "longitude": zod.number()
+})),
+  "planetaryHouses": zod.array(zod.object({
+  "planet": zod.string(),
+  "house": zod.number().int().min(1).max(calculateNatalChartResponsePlanetaryHousesItemHouseMax),
+  "cuspDistanceDegrees": zod.number()
+})),
+  "aspects": zod.array(zod.object({
+  "first": zod.string(),
+  "second": zod.string(),
+  "type": zod.string(),
+  "angle": zod.number(),
+  "separation": zod.number(),
+  "orb": zod.number(),
+  "applying": zod.boolean().nullable(),
+  "strength": zod.number(),
+  "exact": zod.boolean()
+})),
+  "moonSignRange": zod.array(zod.string()),
+  "warnings": zod.array(zod.string())
+})
+
+

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { calculatePlanetaryPositions } from "../astrology/ephemeris";
+import { calculateNatalChart } from "../astrology/natal";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,42 @@ router.post("/astrology/positions", (req, res) => {
     });
   } catch {
     res.status(422).json({ error: "The astronomy provider could not calculate that date." });
+  }
+});
+
+router.post("/astrology/natal-chart", (req, res) => {
+  const body = req.body;
+  if (!body || typeof body !== "object"
+    || typeof body.birthDate !== "string"
+    || !body.birthTime || !["known", "unknown"].includes(body.birthTime.status)
+    || !body.birthPlace || typeof body.birthPlace !== "object"
+    || typeof body.birthPlace.latitude !== "number" || typeof body.birthPlace.longitude !== "number"
+    || typeof body.birthPlace.timeZone !== "string") {
+    res.status(400).json({ error: "Birth date, birth-time status, birthplace coordinates, and IANA time zone are required." });
+    return;
+  }
+  if (body.houseSystem !== undefined && body.houseSystem !== "placidus") {
+    res.status(400).json({ error: "Only the Placidus house system is currently supported; no substitute is applied." });
+    return;
+  }
+  if (body.zodiac !== undefined && body.zodiac !== "tropical") {
+    res.status(400).json({ error: "Only the tropical zodiac is currently supported." });
+    return;
+  }
+  if (body.birthTime.status === "known" && typeof body.birthTime.localTime !== "string") {
+    res.status(400).json({ error: "Known birth time requires localTime in HH:mm format." });
+    return;
+  }
+  try {
+    const chart = calculateNatalChart({
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      birthPlace: body.birthPlace,
+      houseSystem: body.houseSystem ?? "placidus",
+    });
+    res.json(chart);
+  } catch (error) {
+    res.status(422).json({ error: error instanceof Error ? error.message : "Natal chart calculation failed." });
   }
 });
 

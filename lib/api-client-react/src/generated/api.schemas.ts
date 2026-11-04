@@ -50,3 +50,102 @@ export interface PlanetaryPositionsResponse {
   positions: PlanetaryPosition[];
 }
 
+export type NatalBirthTime = {
+  status: 'known';
+  /** @pattern ^[0-2][0-9]:[0-5][0-9]$ */
+  localTime: string;
+} | {
+  status: 'unknown';
+};
+
+export interface NatalBirthPlace {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  timeZone: string;
+}
+
+export type NatalChartRequestHouseSystem = typeof NatalChartRequestHouseSystem[keyof typeof NatalChartRequestHouseSystem];
+
+
+export const NatalChartRequestHouseSystem = {
+  placidus: 'placidus',
+} as const;
+
+export type NatalChartRequestZodiac = typeof NatalChartRequestZodiac[keyof typeof NatalChartRequestZodiac];
+
+
+export const NatalChartRequestZodiac = {
+  tropical: 'tropical',
+} as const;
+
+export interface NatalChartRequest {
+  birthDate: string;
+  birthTime: NatalBirthTime;
+  birthPlace: NatalBirthPlace;
+  houseSystem?: NatalChartRequestHouseSystem;
+  zodiac?: NatalChartRequestZodiac;
+}
+
+export interface NatalAngle {
+  ascendant: number;
+  descendant: number;
+  midheaven: number;
+  imumCoeli: number;
+}
+
+export interface NatalHouseCusp {
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  house: number;
+  longitude: number;
+}
+
+export interface NatalPlanetHouse {
+  planet: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  house: number;
+  cuspDistanceDegrees: number;
+}
+
+export interface NatalAspect {
+  first: string;
+  second: string;
+  type: string;
+  angle: number;
+  separation: number;
+  orb: number;
+  /** @nullable */
+  applying: boolean | null;
+  strength: number;
+  exact: boolean;
+}
+
+export type NatalChartResponseInput = { [key: string]: unknown };
+
+export type NatalChartResponseCalculation = { [key: string]: unknown };
+
+export interface NatalChartResponse {
+  input: NatalChartResponseInput;
+  calculation: NatalChartResponseCalculation;
+  planets: PlanetaryPosition[];
+  angles: NatalAngle | null;
+  houseCusps: NatalHouseCusp[];
+  planetaryHouses: NatalPlanetHouse[];
+  aspects: NatalAspect[];
+  moonSignRange: string[];
+  warnings: string[];
+}
+

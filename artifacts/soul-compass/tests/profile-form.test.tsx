@@ -100,9 +100,42 @@ function pressText(root: ReactTestInstance, label: string) {
   return pressable.props.onPress();
 }
 function input(root: ReactTestInstance, label: string, value: string) {
+  const field = textInput(root, label);
+  act(() => field.props.onChangeText(value));
+}
+function textInput(root: ReactTestInstance, label: string) {
   const field = root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === label);
   if (!field) throw new Error(`Could not find input: ${label}`);
-  act(() => field.props.onChangeText(value));
+  return field;
+}
+function typeDigits(root: ReactTestInstance, label: string, digits: string) {
+  for (const digit of digits) {
+    const field = textInput(root, label);
+    const { value, selection } = field.props;
+    const start = selection?.start ?? value.length;
+    const end = selection?.end ?? start;
+    input(root, label, `${value.slice(0, start)}${digit}${value.slice(end)}`);
+  }
+}
+function setSelection(root: ReactTestInstance, label: string, start: number, end = start) {
+  const field = textInput(root, label);
+  act(() => field.props.onSelectionChange({ nativeEvent: { selection: { start, end } } }));
+}
+function selectionOf(root: ReactTestInstance, label: string) {
+  return textInput(root, label).props.selection;
+}
+function replaceRange(root: ReactTestInstance, label: string, start: number, end: number, replacement: string) {
+  const field = textInput(root, label);
+  setSelection(root, label, start, end);
+  input(root, label, `${field.props.value.slice(0, start)}${replacement}${field.props.value.slice(end)}`);
+}
+function backspace(root: ReactTestInstance, label: string) {
+  const field = textInput(root, label);
+  const { value, selection } = field.props;
+  const start = selection?.start ?? value.length;
+  const end = selection?.end ?? start;
+  const deleteStart = start === end ? Math.max(0, start - 1) : start;
+  input(root, label, `${value.slice(0, deleteStart)}${value.slice(end)}`);
 }
 function setBirthTimeKnown(root: ReactTestInstance) {
   const unknownChoice = root.findAllByType(Pressable).find(node => node.props.accessibilityRole === 'checkbox');
@@ -151,6 +184,57 @@ test('onboarding accepts a known birth time', async () => {
     birthPlace: selectedBirthPlace,
     currentResidence: null,
   });
+});
+
+test('birth date and time add separators while typing digits and keep the caret after them', async () => {
+  await render(<ProfileForm submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
+  const root = renderer!.root;
+  typeDigits(root, 'Date of birth', '20000229');
+  expect(textInput(root, 'Date of birth').props.value).toBe('2000-02-29');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 10, end: 10 });
+  expect(textInput(root, 'Date of birth').props.keyboardType).toBe('number-pad');
+
+  setBirthTimeKnown(root);
+  typeDigits(root, 'Birth time', '1951');
+  expect(textInput(root, 'Birth time').props.value).toBe('19:51');
+  expect(selectionOf(root, 'Birth time')).toEqual({ start: 5, end: 5 });
+  expect(textInput(root, 'Birth time').props.keyboardType).toBe('number-pad');
+});
+
+test('backspace through an automatic separator removes a digit and remains editable', async () => {
+  await render(<ProfileForm submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
+  const root = renderer!.root;
+  typeDigits(root, 'Date of birth', '1991');
+  expect(textInput(root, 'Date of birth').props.value).toBe('1991-');
+  backspace(root, 'Date of birth');
+  expect(textInput(root, 'Date of birth').props.value).toBe('199');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 3, end: 3 });
+
+  setBirthTimeKnown(root);
+  typeDigits(root, 'Birth time', '19');
+  expect(textInput(root, 'Birth time').props.value).toBe('19:');
+  backspace(root, 'Birth time');
+  expect(textInput(root, 'Birth time').props.value).toBe('1');
+  expect(selectionOf(root, 'Birth time')).toEqual({ start: 1, end: 1 });
+});
+
+test('pasting digits or separated dates formats them, and replacing middle digits preserves the cursor', async () => {
+  await render(<ProfileForm submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
+  const root = renderer!.root;
+  input(root, 'Date of birth', '1991/06/20');
+  expect(textInput(root, 'Date of birth').props.value).toBe('1991-06-20');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 10, end: 10 });
+
+  replaceRange(root, 'Date of birth', 5, 7, '12');
+  expect(textInput(root, 'Date of birth').props.value).toBe('1991-12-20');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 8, end: 8 });
+
+  setBirthTimeKnown(root);
+  input(root, 'Birth time', '1951');
+  expect(textInput(root, 'Birth time').props.value).toBe('19:51');
+  replaceRange(root, 'Birth time', 3, 4, '4');
+  expect(textInput(root, 'Birth time').props.value).toBe('19:41');
+  expect(selectionOf(root, 'Birth time')).toEqual({ start: 4, end: 4 });
 });
 
 test('onboarding explicitly accepts an unknown time and selected location survives provider reload', async () => {

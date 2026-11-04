@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ProfileSchema } from '@/profile/local';
 import type { HomeLocation, ProfileFormDraft, UserProfile } from '@/profile/profile';
+import {
+  formatBirthInputChange,
+  type BirthInputKind,
+  type InputSelection,
+} from '@/components/birthInputFormatting';
 
 type Props = {
   initialProfile?: UserProfile | null;
@@ -13,13 +18,44 @@ type Props = {
   onSubmit: (profile: UserProfile) => Promise<void>;
 };
 
+function useFormattedBirthInput(initialValue: string, kind: BirthInputKind) {
+  const [value, setValue] = useState(initialValue);
+  const [selection, setSelection] = useState<InputSelection>({
+    start: initialValue.length,
+    end: initialValue.length,
+  });
+  const valueRef = useRef(initialValue);
+  const selectionRef = useRef(selection);
+
+  function onChangeText(nextText: string) {
+    const next = formatBirthInputChange(valueRef.current, nextText, selectionRef.current, kind);
+    valueRef.current = next.value;
+    selectionRef.current = next.selection;
+    setValue(next.value);
+    setSelection(next.selection);
+  }
+
+  function onSelectionChange(nextSelection: InputSelection) {
+    selectionRef.current = nextSelection;
+    setSelection(nextSelection);
+  }
+
+  return { value, selection, onChangeText, onSelectionChange };
+}
+
 export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmit }: Props) {
   const initialBirthTime = initialProfile?.birthTime ?? initialDraft?.birthTime;
-  const [birthDate, setBirthDate] = useState(initialProfile?.birthDate ?? initialDraft?.birthDate ?? '');
-  const [birthTimeKnown, setBirthTimeKnown] = useState(initialBirthTime?.status === 'known');
-  const [birthTime, setBirthTime] = useState(
-    initialBirthTime?.status === 'known' ? initialBirthTime.localTime : '',
+  const birthDateInput = useFormattedBirthInput(
+    initialProfile?.birthDate ?? initialDraft?.birthDate ?? '',
+    'date',
   );
+  const birthDate = birthDateInput.value;
+  const [birthTimeKnown, setBirthTimeKnown] = useState(initialBirthTime?.status === 'known');
+  const birthTimeInput = useFormattedBirthInput(
+    initialBirthTime?.status === 'known' ? initialBirthTime.localTime : '',
+    'time',
+  );
+  const birthTime = birthTimeInput.value;
   const [birthPlace, setBirthPlace] = useState<HomeLocation | null>(
     initialProfile?.birthPlace ?? null,
   );
@@ -98,11 +134,13 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       <Text style={styles.label}>DATE OF BIRTH</Text>
       <TextInput
         accessibilityLabel="Date of birth"
-        keyboardType="numbers-and-punctuation"
+        keyboardType="number-pad"
         maxLength={10}
-        onChangeText={setBirthDate}
+        onChangeText={birthDateInput.onChangeText}
+        onSelectionChange={(event) => birthDateInput.onSelectionChange(event.nativeEvent.selection)}
         placeholder="YYYY-MM-DD"
         placeholderTextColor="#8B877F"
+        selection={birthDateInput.selection}
         style={styles.input}
         value={birthDate}
       />
@@ -111,11 +149,13 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       <TextInput
         accessibilityLabel="Birth time"
         editable={birthTimeKnown}
-        keyboardType="numbers-and-punctuation"
+        keyboardType="number-pad"
         maxLength={5}
-        onChangeText={setBirthTime}
+        onChangeText={birthTimeInput.onChangeText}
+        onSelectionChange={(event) => birthTimeInput.onSelectionChange(event.nativeEvent.selection)}
         placeholder="HH:MM"
         placeholderTextColor="#8B877F"
+        selection={birthTimeInput.selection}
         style={[styles.input, !birthTimeKnown && styles.disabledInput]}
         value={birthTime}
       />

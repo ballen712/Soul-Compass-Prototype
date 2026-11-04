@@ -42,3 +42,19 @@ The API is stateless and unauthenticated: it computes only from the submitting c
 Requests must be uncompressed JSON, at most 16 KiB. Malformed JSON returns a sanitized 400; oversized/compressed/wrong-content-type requests return 413/415. Calculation POSTs are limited to 120 per minute per socket peer, per API process. Behind a reverse proxy this is deliberately a shared limit; spoofed forwarded IPs are not trusted. A 429 response includes Retry-After. This is basic protection, not distributed DDoS protection.
 
 Browser origins must exactly match `CORS_ALLOWED_ORIGINS` (comma-separated HTTP(S) origins) or the deployment's supplied Replit/Expo host origins. No wildcard or credentialed CORS is enabled. Verify the production browser origin before publishing; custom hosts must be explicitly configured. Native requests without Origin remain permitted: CORS is not authentication.
+
+## Private cloud account API (configuration required)
+
+All `/api/me/*` operations require `Authorization: Bearer <Supabase access token>`; the API verifies the identity with Supabase Auth. Profile operations execute using that same user JWT and RLS. Administrative credentials are used only for explicit account deletion, never ordinary profile reads/writes. Responses are `no-store`; failures never echo profile contents or provider error details.
+
+| Method/path | Behavior |
+|---|---|
+| GET `/api/me/profile` | Returns `{record:null}` or `{record:{profile,preferences,version}}` for the authenticated user only |
+| POST `/api/me/profile` | Strict `{profile,preferences}`; creates one own record (201), or 409 if one already exists |
+| PUT `/api/me/profile` | Strict `{profile,preferences,expectedVersion}`; updates only own matching version, otherwise 409 |
+| DELETE `/api/me/profile` | Deletes own profile only (204); does not delete the Auth identity |
+| DELETE `/api/me/account` | JSON `{confirmation:"DELETE"}` and sign-in within 15 minutes required; deletes verified Auth identity and cascaded profile (204) |
+
+Missing/invalid credentials: 401. Recent sign-in needed: 403. Validation: 400. Provider/configuration unavailable: 503. Private operations share the bounded per-peer process limiter (429); PUT is JSON-only and CORS methods include PUT/DELETE. No client-provided user ID is used for ownership.
+
+Profile data and preferences follow `lib/api-zod/src/profile.ts`; ownership/version/timestamps cannot be supplied in profile create/update bodies. See `PHASE3_IMPLEMENTATION.md` and `PHASE3_SETUP.md`. Live RLS/provider flows remain unverified until setup.

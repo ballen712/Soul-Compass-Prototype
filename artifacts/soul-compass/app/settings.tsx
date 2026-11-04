@@ -23,7 +23,9 @@ export default function SettingsScreen() {
           <Text style={styles.back}>Back</Text>
         </Pressable>
         <Text style={styles.heading}>Settings</Text>
-        <View style={styles.spacer} />
+        <Pressable accessibilityRole="link" accessibilityLabel="Open account" onPress={() => router.push('/account')}>
+          <Text style={styles.back}>Account</Text>
+        </Pressable>
       </View>
       <ProfileForm initialProfile={profile} submitLabel="Save changes" onSubmit={submit} />
     </SafeAreaView>

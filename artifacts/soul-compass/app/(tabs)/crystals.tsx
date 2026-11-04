@@ -1,11 +1,47 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
 import { SettingsButton } from '@/components/SettingsButton';
 import { alternativeCrystals, primaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
+import { useAuth } from '@/auth/AuthContext';
+import { useProfile } from '@/profile/ProfileContext';
+
+const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
+
+function CollectionToggle({ name }: { name: string }) {
+  const colors = useColors();
+  const { configured, session } = useAuth();
+  const { preferences, savePreferences, cloudVersion } = useProfile();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const slug = slugOf(name);
+  const inCollection = preferences.crystalCollection.includes(slug);
+  const available = configured && !!session && cloudVersion != null;
+  async function toggle() {
+    if (!available || busy) return;
+    setBusy(true); setError(null);
+    try {
+      const next = inCollection ? preferences.crystalCollection.filter(s => s !== slug) : [...preferences.crystalCollection, slug];
+      await savePreferences({ ...preferences, crystalCollection: next });
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update your collection.'); }
+    finally { setBusy(false); }
+  }
+  const label = !configured ? 'Collection needs cloud sign-in (setup pending)' : !available ? 'Sign in to keep a collection' : inCollection ? 'In your collection' : 'Add to collection';
+  return (
+    <View style={styles.collectWrap}>
+      <Pressable accessibilityRole="switch" accessibilityLabel={`${name}: ${label}`} accessibilityState={{ checked: inCollection, disabled: !available || busy, busy }} disabled={!available || busy} onPress={toggle}
+        style={[styles.collectButton, { borderColor: colors.crystals.border }, inCollection && { backgroundColor: colors.crystals.secondary, borderColor: colors.crystals.secondary }, !available && { opacity: 0.55 }]}>
+        {busy ? <ActivityIndicator size="small" color={colors.crystals.secondary} /> : <Feather name={inCollection ? 'check' : available ? 'plus' : 'lock'} size={11} color={inCollection ? colors.crystals.card : colors.crystals.secondary} />}
+        <Text style={[styles.collectText, { color: inCollection ? colors.crystals.card : colors.crystals.secondary }]}>{label}</Text>
+      </Pressable>
+      {error ? <Text style={[styles.collectError, { color: colors.destructive }]}>{error}</Text> : null}
+    </View>
+  );
+}
 
 export default function CrystalsScreen() {
   const colors = useColors();
@@ -180,6 +216,7 @@ export default function CrystalsScreen() {
               >
                 {primaryCrystal.description}
               </Text>
+              <CollectionToggle name={primaryCrystal.name} />
             </View>
           </View>
 
@@ -253,6 +290,7 @@ export default function CrystalsScreen() {
                   >
                     {crystal.description}
                   </Text>
+                  <CollectionToggle name={crystal.name} />
                 </View>
               </View>
             ))}
@@ -482,6 +520,10 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     marginTop: 6,
   },
+  collectWrap: { marginTop: 10, alignItems: 'flex-start' },
+  collectButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6, minHeight: 28 },
+  collectText: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+  collectError: { fontFamily: 'Inter_400Regular', fontSize: 10, marginTop: 4 },
   footerMark: {
     alignItems: 'center',
     flexDirection: 'row',

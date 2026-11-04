@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, Text, View, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
+import { PlanetarySnapshot } from '@/components/PlanetarySnapshot';
 import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
@@ -221,6 +222,8 @@ export default function CosmosScreen() {
               </Text>
             </View>
           </View>
+
+          <PlanetarySnapshot />
 
           <View style={styles.footerMark}>
             <View

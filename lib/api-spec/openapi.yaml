@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: astrology
+    description: Astronomy calculation operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /astrology/health:
+    get:
+      operationId: astrologyHealth
+      tags: [astrology]
+      summary: Check calculation provider availability
+      responses:
+        "200":
+          description: Calculation provider status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AstrologyHealth"
+  /astrology/positions:
+    post:
+      operationId: calculatePlanetaryPositions
+      tags: [astrology]
+      summary: Calculate geocentric planetary positions for a UTC instant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PositionRequest"
+      responses:
+        "200":
+          description: Planetary positions and calculation metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanetaryPositionsResponse"
+        "400":
+          description: Invalid request
+        "422":
+          description: Calculation failed
 components:
   schemas:
     HealthStatus:
@@ -33,4 +69,50 @@ components:
           type: string
       required:
         - status
+    AstrologyHealth:
+      type: object
+      properties:
+        status: { type: string }
+        provider: { type: string }
+        providerVersion: { type: string }
+        calculationsAvailable: { type: boolean }
+      required: [status, provider, providerVersion, calculationsAvailable]
+    PositionRequest:
+      type: object
+      properties:
+        atUtc: { type: string, format: date-time }
+      required: [atUtc]
+    PlanetaryPosition:
+      type: object
+      properties:
+        planet: { type: string }
+        longitude: { type: number }
+        latitude: { type: number }
+        sign: { type: string }
+        degreeInSign: { type: number }
+        speedDegreesPerDay: { type: number }
+        retrograde: { type: boolean }
+        atUtc: { type: string, format: date-time }
+      required: [planet, longitude, latitude, sign, degreeInSign, speedDegreesPerDay, retrograde, atUtc]
+    PlanetaryPositionsResponse:
+      type: object
+      properties:
+        input:
+          type: object
+          properties:
+            atUtc: { type: string, format: date-time }
+          required: [atUtc]
+        metadata:
+          type: object
+          properties:
+            provider: { type: string }
+            providerVersion: { type: string }
+            zodiac: { type: string }
+            coordinateSystem: { type: string }
+            externalEphemerisFile: { type: [string, "null"] }
+          required: [provider, providerVersion, zodiac, coordinateSystem, externalEphemerisFile]
+        positions:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryPosition" }
+      required: [input, metadata, positions]
 

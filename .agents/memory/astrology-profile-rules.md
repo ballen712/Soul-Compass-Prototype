@@ -10,3 +10,9 @@ Birth time is optional. Onboarding must include an explicit “I don't know my b
 **Why:** the user confirmed these product and architecture decisions.
 
 **How to apply:** carry these constraints through onboarding, profile storage and editing, calculation inputs, reading language, and crystal recommendation rules. Test both known-time and unknown-time profiles, ensuring natal inputs use birthplace and local reading dates use current residence only.
+
+An initial server-side position-calculation foundation uses MIT-licensed Astronomy Engine to stay in the existing TypeScript API and avoid a separate Python service. It uses bundled formulas/coefficients, not a JPL DE dataset, and has not been independently accuracy-validated.
+
+**Why:** the project brief prioritizes a maintainable, permissively licensed engine, but explicitly requires verified ephemeris sources and tests before calculated readings are presented as accurate.
+
+**How to apply:** treat this provider as an initial calculation slice only. Do not claim DE440/DE441 coverage or personalized natal/transit accuracy; validate a JPL-backed alternative and complete time-zone, house, event, and regression testing before replacing sample reading content.

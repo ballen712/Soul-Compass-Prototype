@@ -106,9 +106,9 @@ export const calculateNatalChartResponsePlanetaryHousesItemHouseMax = 12;
 
 
 export const CalculateNatalChartResponse = zod.object({
-  "input": zod.object({
+  "input": zod.looseObject({
 
-}).passthrough(),
+}),
   "calculation": zod.object({
   "instantUtc": zod.coerce.date(),
   "birthTimeResolution": zod.enum(['known', 'unknown-reference-local-noon']),
@@ -145,12 +145,12 @@ export const CalculateNatalChartResponse = zod.object({
   "imumCoeli": zod.number()
 }),zod.null()]),
   "houseCusps": zod.array(zod.object({
-  "house": zod.number().int().min(1).max(calculateNatalChartResponseHouseCuspsItemHouseMax),
+  "house": zod.int().min(1).max(calculateNatalChartResponseHouseCuspsItemHouseMax),
   "longitude": zod.number()
 })),
   "planetaryHouses": zod.array(zod.object({
   "planet": zod.string(),
-  "house": zod.number().int().min(1).max(calculateNatalChartResponsePlanetaryHousesItemHouseMax),
+  "house": zod.int().min(1).max(calculateNatalChartResponsePlanetaryHousesItemHouseMax),
   "cuspDistanceDegrees": zod.number()
 })),
   "aspects": zod.array(zod.object({

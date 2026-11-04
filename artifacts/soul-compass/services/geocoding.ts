@@ -31,23 +31,29 @@ function isIanaTimeZone(value: unknown): value is string {
  * sent as search data; this service never reads device location or profile data.
  * Open-Meteo supplies coordinates and a time-zone-database (IANA) identifier.
  */
-export async function searchHomeCities(cityName: string): Promise<HomeCitySearchResult[]> {
+export async function searchHomeCities(cityName: string, signal?: AbortSignal): Promise<HomeCitySearchResult[]> {
   const name = cityName.trim();
   if (name.length < 2) return [];
 
   const params = new URLSearchParams({ name, count: '8', language: 'en', format: 'json' });
-  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`);
+  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, { signal });
   if (!response.ok) throw new Error('City search is temporarily unavailable.');
 
   const data = (await response.json()) as { results?: OpenMeteoLocation[] };
-  return (data.results ?? []).flatMap((entry) => {
+  if (data.results !== undefined && !Array.isArray(data.results)) throw new Error('Unexpected city search response.');
+  return (data.results ?? []).slice(0, 8).flatMap((entry) => {
     if (
+      !entry ||
       typeof entry.name !== 'string' ||
+      !entry.name.trim() ||
       typeof entry.country !== 'string' ||
+      !entry.country.trim() ||
       typeof entry.latitude !== 'number' ||
       !Number.isFinite(entry.latitude) ||
+      Math.abs(entry.latitude) > 90 ||
       typeof entry.longitude !== 'number' ||
       !Number.isFinite(entry.longitude) ||
+      Math.abs(entry.longitude) > 180 ||
       !isIanaTimeZone(entry.timezone)
     ) {
       return [];

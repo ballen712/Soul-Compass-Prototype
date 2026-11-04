@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileForm } from '@/components/ProfileForm';
 import { useProfile } from '@/profile/ProfileContext';
 import type { UserProfile } from '@/profile/profile';
 import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
+import { PRODUCT } from '@/constants/product';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
@@ -99,15 +100,15 @@ export default function SettingsScreen() {
 
           {tab === 'preferences' ? (
             <>
-              <Section title="Language" description="Soul Compass is currently written in English only. This preference is stored for the future and does not translate the app.">
+              <Section title="Future language preference" description="English is the only language available right now. Choosing another option only records your preference for possible future versions. It does not translate any screen today.">
                 <View style={styles.chips}>
-                  {LANGUAGES.map((l) => (
+                  {[...LANGUAGES, ...(LANGUAGES.some((l) => l.code === preferences.language) || !preferences.language ? [] : [{ code: preferences.language, label: `Saved: ${preferences.language}` }])].map((l) => (
                     <Chip key={l.code} label={l.label} active={preferences.language === l.code}
-                      onPress={() => void run(() => savePreferences({ ...preferences, language: l.code }), 'Language saved.')} />
+                      onPress={() => void run(() => savePreferences({ ...preferences, language: l.code }), 'Future language preference saved. The app stays in English.')} />
                   ))}
                 </View>
               </Section>
-              <Section title="Intentions" description="Words you want to keep in mind. They are saved for you; they do not change which stone is shown.">
+              <Section title="Intentions" description="Recognized intentions help rank a stone from the full catalog, owned or not. With a daily chart available, its leading theme also contributes. Rest, Focus, Reflection, Courage, Connection, Change, calm, clarity, stillness, curiosity and intuition are recognized; other words stay saved without an automatic match. This is reflection, not a prediction or health advice.">
                 <View style={styles.chips}>
                   {Array.from(new Set([...INTENTIONS, ...preferences.crystalPreferences.intentions])).map((i) => (
                     <Chip key={i} label={i} active={preferences.crystalPreferences.intentions.includes(i)} onPress={() => toggleIntention(i)} />
@@ -120,7 +121,7 @@ export default function SettingsScreen() {
                     intentions: Array.from(new Set(customIntentions.split(',').map(value => value.trim()).filter(Boolean))) },
                 }), 'Intentions saved.')}><Text style={styles.back}>Save custom intentions</Text></Pressable>
               </Section>
-              <Section title="Your collection" description="Stones you own or want to keep track of.">
+              <Section title="Your collection" description="Stones you own or want to keep track of. Your collection does not limit which stone can be suggested.">
                 {CATALOG.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
                   return (
@@ -154,12 +155,14 @@ export default function SettingsScreen() {
 
           {tab === 'privacy' ? (
             <>
-              <Section title="Chart calculations">
+              <Section title="What runs on this device" description="Daily reflections and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
+              <Section title="What uses the network" description="City search sends the text you type to a city lookup service. The current-sky snapshot sends only the current time to the Soul Compass server. Neither includes your birth details." />
+              <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
-                  To calculate your chart, Soul Compass sends your birth date, birth time if known, and your birthplace coordinates and time zone to the Soul Compass calculation server. This happens only after you agree.
+                  The full natal chart is calculated on the Soul Compass server. It is only requested after you allow it here or on the Natal tab and then tap Calculate; opening a screen never sends it. The request contains your birth date, birth time if known, and your birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included.
                 </Text>
                 <Text style={styles.body}>
-                  Your profile, preferences, and crystal collection stay on this device. Server calculations need an internet connection. You can withdraw consent at any time.
+                  You can withdraw permission at any time. Withdrawing stops future requests but cannot undo a request already sent. This calculation needs an internet connection.
                 </Text>
                 <Text style={styles.status}>
                   Status: {privacy.astrologyApiConsent ? 'Allowed' : privacy.revokedAt ? 'Withdrawn' : 'Not allowed'}
@@ -168,13 +171,13 @@ export default function SettingsScreen() {
                 </Text>
                 {privacy.astrologyApiConsent ? (
                   <Pressable testID="consent-revoke" accessibilityRole="button" disabled={busy}
-                    onPress={() => void run(() => setConsent(false), 'Consent withdrawn. Chart calculations are off.')} style={styles.secondaryButton}>
+                    onPress={() => void run(() => setConsent(false), 'Permission withdrawn. No further natal chart requests will be sent.')} style={styles.secondaryButton}>
                     <Text style={styles.secondaryText}>Withdraw consent</Text>
                   </Pressable>
                 ) : reviewingConsent ? (
                   <View style={styles.consentBox}>
                     <Text style={styles.body}>
-                      By choosing I Agree, you allow Soul Compass to send the birth details listed above to its calculation server to produce your chart. Nothing else from your profile is sent.
+                      By choosing I Agree, you allow Soul Compass to send the birth details listed above to its calculation server when you tap Calculate on the Natal tab. Nothing else from your profile is sent.
                     </Text>
                     <View style={styles.buttonRow}>
                       <Pressable testID="consent-agree" accessibilityRole="button" disabled={busy}
@@ -192,15 +195,23 @@ export default function SettingsScreen() {
                   </Pressable>
                 )}
               </Section>
-              <Section title="Local storage" description="AsyncStorage is local storage, not encrypted storage. App deletion, device loss or clearing browser storage may cause data loss. There is no app cloud sync or export/import. Device-level backups may include application data." />
+              <Section title="Local storage" description="Your profile, preferences and collection are kept in this app's local storage, which is not encrypted. There is no account, cloud sync, or export. Deleting the app, losing the device or clearing browser data can erase it permanently. Your operating system's device backups may include this app's data." />
             </>
           ) : null}
 
           {tab === 'about' ? (
             <>
+              <Section title="Support" description={PRODUCT.supportEmail}>
+                <Text style={styles.body}>Please do not email birth details or private profile data. The app never attaches them automatically.</Text>
+                <Pressable accessibilityRole="link" onPress={() => void run(async () => {
+                  await Linking.openURL(`mailto:${PRODUCT.supportEmail}?subject=Soul%20Compass%20support`);
+                }, 'Email draft opened. No profile data was attached.')} style={styles.secondaryButton}>
+                  <Text style={styles.secondaryText}>Contact support</Text>
+                </Pressable>
+              </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
-              <Section title="Privacy" description="No account. Profile and collection live on this device. Birth details are sent for chart calculation only with your consent, which you can withdraw in Privacy." />
-              <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup uses Open-Meteo and GeoNames data (CC BY 4.0 attribution); their free endpoint has non-commercial restrictions. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes are for reflection, not medical or scientific advice." />
+              <Section title="Privacy" description="No account. Profile and collection are stored on this device. Daily reflections are calculated on-device. Birth details go to the server only for a natal chart you request after giving permission, which you can withdraw in Privacy." />
+              <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup uses Open-Meteo and GeoNames data (CC BY 4.0 attribution); their free endpoint has non-commercial restrictions. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes draw on traditional symbolism for reflection; they are not medical or scientific advice. The app is in English only." />
             </>
           ) : null}
         </ScrollView>

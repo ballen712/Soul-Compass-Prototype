@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
@@ -10,11 +11,13 @@ import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import {
-  calculateDailyAstrology,
   EPHEMERIS_SOURCE,
   getCrystalRecommendation,
+  getIntentionRecommendation,
   getSampleCrystal,
 } from '@/profile/astrology';
+import { getDailyAstrology } from '@/profile/daily-cache';
+import { useLocalClock } from '@/hooks/useLocalClock';
 
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -62,15 +65,17 @@ export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { preferences, profile } = useProfile();
+  const now = useLocalClock();
+  const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
   const astrology = useMemo(
-    () => (profile ? calculateDailyAstrology(profile) : null),
-    [profile],
+    () => (profile ? getDailyAstrology(profile, now) : null),
+    [profile, now],
   );
   const recommendation =
     astrology?.status === 'calculated'
-      ? getCrystalRecommendation(astrology)
-      : null;
+      ? getCrystalRecommendation(astrology, preferences.crystalPreferences)
+      : getIntentionRecommendation(preferences.crystalPreferences);
   const featuredCrystal = recommendation?.crystal ?? getSampleCrystal();
   const catalog = [samplePrimaryCrystal, ...alternativeCrystals];
   const showPrimary = !hidden.includes(slugOf(featuredCrystal.name));
@@ -179,7 +184,9 @@ export default function CrystalsScreen() {
               ]}
             >
               {recommendation
-                ? `Calculated from eligible chart factors using ${EPHEMERIS_SOURCE.name}. Crystal symbolism is reflective, not a scientific or medical claim.`
+                ? recommendation.basis === 'chart'
+                  ? `Planetary themes calculated on your device using ${EPHEMERIS_SOURCE.name}; the stone pairing uses traditional symbolism and your recognized intentions.`
+                  : 'An intention-based suggestion, not a chart calculation. Traditional symbolism is not a scientific or medical claim.'
                 : astrology?.status === 'unavailable'
                   ? astrology.message
                   : 'Sample crystal suggestions — not calculated from your chart.'}
@@ -187,6 +194,14 @@ export default function CrystalsScreen() {
           </View>
 
           <HiddenNote count={hiddenCount} />
+          {hiddenCount === catalog.length ? (
+            <View style={[styles.hiddenNote, { borderColor: colors.crystals.border, backgroundColor: colors.crystals.card, flexDirection: 'column', alignItems: 'flex-start' }]}>
+              <Text style={[styles.hiddenText, { color: colors.crystals.foreground }]}>All stones are hidden. Restore a stone in Settings to see suggestions again.</Text>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/settings')}>
+                <Text style={[styles.collectText, { color: colors.crystals.secondary, paddingVertical: 12 }]}>Open settings</Text>
+              </Pressable>
+            </View>
+          ) : null}
           {showPrimary ? (
           <View
             style={[
@@ -221,7 +236,7 @@ export default function CrystalsScreen() {
                     { color: colors.crystals.badgeForeground },
                   ]}
                 >
-                  {recommendation ? 'CALCULATED PICK' : 'SAMPLE ONLY'}
+                  {recommendation ? recommendation.basis === 'intention' ? 'INTENTION PICK' : 'SYMBOLIC CHART PAIRING' : 'SAMPLE ONLY'}
                 </Text>
               </View>
             </View>
@@ -291,7 +306,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                OTHER STONES · SAMPLE IDEAS
+                EXPLORE THE CATALOG · TRADITIONAL SYMBOLISM
               </Text>
               <Text
                 style={[

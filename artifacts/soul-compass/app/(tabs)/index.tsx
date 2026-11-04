@@ -1,7 +1,8 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View, Platform } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Platform, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
 import { PlanetarySnapshot } from '@/components/PlanetarySnapshot';
@@ -9,15 +10,18 @@ import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
-import { calculateDailyAstrology, EPHEMERIS_SOURCE } from '@/profile/astrology';
+import { getDailyAstrology } from '@/profile/daily-cache';
+import { useLocalClock } from '@/hooks/useLocalClock';
 
 export default function CosmosScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
+  const router = useRouter();
+  const now = useLocalClock();
   const astrology = useMemo(
-    () => (profile ? calculateDailyAstrology(profile) : null),
-    [profile],
+    () => (profile ? getDailyAstrology(profile, now) : null),
+    [profile, now],
   );
   const calculatedReading =
     astrology?.status === 'calculated' ? astrology.reading : null;
@@ -187,6 +191,18 @@ export default function CosmosScreen() {
                 {calculatedReading.factorSummary}
               </Text>
             ) : null}
+            {profile && !profile.currentResidence ? (
+              <Pressable accessibilityRole="button" onPress={() => router.push('/settings')}>
+                <Text style={[styles.factorSummary, { color: colors.cosmos.secondary, paddingVertical: 12 }]}>
+                  Add current residence for your daily reflection →
+                </Text>
+              </Pressable>
+            ) : null}
+            <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
+              {calculatedReading
+                ? 'A transit compares today’s planet positions with your birth chart. This reflection is calculated on your device; it does not send birth details.'
+                : 'This example is not personal guidance. Add your separate current residence in Settings to enable local daily reflections. Your full natal chart is available in NATAL independently.'}
+            </Text>
 
             <View
               style={[

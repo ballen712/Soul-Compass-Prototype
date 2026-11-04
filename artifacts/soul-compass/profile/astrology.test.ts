@@ -3,6 +3,8 @@ import test from 'node:test';
 import { calculateDailyAstrology, EPHEMERIS_SOURCE } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
+import { getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
+import { getDailyAstrology } from './daily-cache';
 
 const currentResidence = {
   city: 'New York',
@@ -110,6 +112,45 @@ test('daily calculation does not substitute birthplace when residence is unset',
   if (result.status === 'unavailable') {
     assert.match(result.message, /birth city is not used as a substitute/i);
   }
+});
+test('intentions change crystal ranking without requiring a collection', () => {
+  const chart = calculateDailyAstrology(makeProfile(), new Date('2026-06-01T01:00:00Z'));
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+  const focus = getCrystalRecommendation(chart, { intentions: ['Focus'] });
+  const change = getCrystalRecommendation(chart, { intentions: ['Change'] });
+  assert.equal(focus?.crystal.name, 'Amethyst');
+  assert.deepEqual(focus?.matchedIntentions, ['focus']);
+  assert.equal(change?.crystal.name, 'Labradorite');
+  assert.match(focus!.reason, /not a measured crystal effect/);
+  assert.match(focus!.reason, /whether or not you own/);
+});
+test('hidden recommendations are replaced from the remaining visible catalog', () => {
+  const chart = calculateDailyAstrology(makeProfile());
+  assert.equal(chart.status, 'calculated'); if (chart.status !== 'calculated') return;
+  const result = getCrystalRecommendation(chart, { intentions: ['Focus'], hiddenCrystals: ['amethyst'] });
+  assert.notEqual(result?.crystal.name, 'Amethyst');
+  assert.equal(getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] }), null);
+});
+test('intention-only suggestions are labeled and arbitrary custom words are not invented as matches', () => {
+  const result = getIntentionRecommendation({ intentions: [' focus ', 'FOCUS'] });
+  assert.equal(result?.basis, 'intention'); assert.equal(result?.crystal.name, 'Amethyst');
+  assert.deepEqual(result?.matchedIntentions, ['focus']);
+  assert.match(result!.reason, /not a calculated birth chart/);
+  assert.equal(getIntentionRecommendation({ intentions: ['unmapped custom word'] }), null);
+  assert.equal(getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] }), null);
+});
+test('minute cache is shared only for the same profile and refreshes after local midnight', () => {
+  const profile = makeProfile();
+  const first = getDailyAstrology(profile, new Date('2026-06-01T03:59:00Z'));
+  assert.equal(getDailyAstrology(profile, new Date('2026-06-01T03:59:30Z')), first);
+  const next = getDailyAstrology(profile, new Date('2026-06-01T04:00:00Z'));
+  assert.notEqual(next, first);
+  assert.equal(first.status, 'calculated'); assert.equal(next.status, 'calculated');
+  if (first.status === 'calculated' && next.status === 'calculated') {
+    assert.equal(first.calculationDate, 'May 31, 2026'); assert.equal(next.calculationDate, 'June 1, 2026');
+  }
+  assert.notEqual(getDailyAstrology({ ...profile, birthDate: '1991-01-01' }, new Date('2026-06-01T04:00:00Z')), next);
 });
 
 test('ambiguous and skipped daylight-saving birth times are not guessed', () => {

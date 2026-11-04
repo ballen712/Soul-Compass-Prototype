@@ -2,7 +2,7 @@
 
 Local-first Expo + React Native app with COSMOS, CRYSTALS and NATAL tabs. No registration or authentication. A versioned AsyncStorage record holds birth details, optional residence, preferences, collection and revocable astrology API consent.
 
-The API server calculates planetary snapshots and natal charts. NATAL sends minimal birth inputs only after explicit consent AND a Calculate chart action. It displays real positions, angles, Placidus houses and aspects, with explicit unknown-time and polar limitations. COSMOS and CRYSTALS daily readings remain clearly labeled sample content; daily transit interpretation is not yet personalized.
+The API server calculates planetary snapshots and full natal charts. NATAL sends minimal birth inputs only after explicit consent AND a Calculate chart action. It displays real positions, angles, Placidus houses and aspects, with explicit unknown-time and polar limitations. COSMOS also uses the existing on-device Astronomy Engine for limited personal daily transit reflections when a separate current residence is saved. CRYSTALS ranks the three-stone catalog from eligible chart themes and recognized intentions; symbolic meanings are not scientific/medical effects. Unavailable daily calculations retain clearly labeled sample content.
 
 Local data is not encrypted or synchronized. App/browser storage removal may lose data; OS backups may include app data. Export/import is not implemented. Cloud-only profiles remain untouched and are not automatically recovered. Supabase migrations, RLS and protected backend endpoints are preserved but not used by the active app. Historical Phase 3 documents describe the dormant account implementation, not current setup requirements.
 
@@ -18,3 +18,5 @@ Local data is not encrypted or synchronized. App/browser storage removal may los
 See [architecture](ARCHITECTURE.md), [engine notes](ASTROLOGY_ENGINE.md), [API](API_DOCUMENTATION.md), [testing](TESTING.md), [deployment](DEPLOYMENT.md), and [licenses](LICENSES_AND_DATA_SOURCES.md).
 
 See the [local-first implementation and verification report](LOCAL_FIRST_IMPLEMENTATION.html) for current results and remaining device/Expo checks.
+
+The newer [product audit and launch checklist](LAUNCH_READINESS.html) supersedes that earlier milestone's Expo and daily-feature status. The launch interface is English only; future-language preferences are not translations. Support: soulcompass.support@gmail.com. Commercial distribution requires a city-provider eligibility decision and the remaining device/privacy/release gates. Nothing has been published.

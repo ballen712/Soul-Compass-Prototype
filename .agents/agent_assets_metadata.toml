@@ -42,3 +42,17 @@ mtime_ms = 1793811096133
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/bd9c0f20-44d7-447e-80ca-05893d1fdcb7/a42c199f-c472-4331-9a78-73124d7d8e67"
 storage_version_token = "1793811125550696"
 content_type = "text/html"
+
+[[outputs]]
+id = "XDNbg4Hft-NU-kOoLrNA3"
+uri = "file://artifacts/soul-compass/LAUNCH_READINESS.html"
+type = "html"
+title = "Soul Compass — product audit and launch checklist"
+description = "Complete feature inventory, fixes, verification evidence, P0/P1/P2 priorities, recommended beta scope, store-copy draft and remaining release approvals."
+logical_id = "ae101c00-757f-49b1-a4c1-6afb3141289c"
+content_hash = "sha256:4894e12c66cd5b982519002383544cf977b93b2c1956f5a1a6f3a0c8ea8be584"
+size = 24079
+mtime_ms = 1793813150518
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/ae101c00-757f-49b1-a4c1-6afb3141289c/915ff754-070a-4e28-8e5d-cba992c93811"
+storage_version_token = "1793813186102563"
+content_type = "text/html"

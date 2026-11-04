@@ -1,5 +1,11 @@
 # Astrology engine status
 
+## Daily-reflection scope
+
+The merged daily feature also uses Astronomy Engine locally in Expo. It calculates eligible geocentric tropical natal/current planet factors and a conservative set of major transit aspects. Daily reflections require the separately saved current residence for the displayed local date; birthplace is never substituted. Full houses/angles and the authoritative detailed natal response remain server-based, behind saved consent and an explicit Calculate action. On-device daily use is not a claim that every calculation runs locally.
+
+The visible reading uses the leading eligible aspect with one of five reviewed reflective templates, or an eligible natal factor if no close aspect exists. The crystal rule set is a three-stone symbolic pairing plus recognized intentions, not a scientific prediction. Read LAUNCH_READINESS.html for the complete current product inventory and limits.
+
 ## Implemented foundation
 
 The Node API server wraps `astronomy-engine` 2.1.19 behind `EphemerisProvider`. It calculates Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto positions at a supplied UTC instant. The output uses geocentric apparent vectors transformed into the true ecliptic of date, tropical zodiac signs, and a centered 24-hour finite difference for daily longitude speed/retrograde status. Major aspect angular separation and configurable luminary/other orb matching helpers are present.

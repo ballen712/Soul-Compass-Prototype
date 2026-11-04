@@ -13,7 +13,13 @@ export default function OnboardingScreen() {
       <View style={styles.welcome}>
         <Text style={styles.welcomeEyebrow}>WELCOME</Text>
         <Text style={styles.welcomeText}>
-          No account needed. Your profile and crystal collection are saved only on this device. Chart calculations use our server only if you agree to it later in Settings.
+          Soul Compass turns today's sky and your birth details into a short daily reflection and a stone to sit with. Don't know your birth time? Leave it unknown; a few chart details will be skipped.
+        </Text>
+        <Text style={styles.welcomeText}>
+          Current residence is optional and separate from birthplace. It is used only to work out your local date for daily readings; your birthplace is never used for that.
+        </Text>
+        <Text style={styles.welcomeNote}>
+          No account. Your profile stays on this device. City search uses the network. A full natal chart is sent to our server only if you allow it later and tap Calculate.
         </Text>
       </View>
       <ProfileForm initialDraft={onboardingDraft} submitLabel="Enter Soul Compass" onSubmit={submit} />
@@ -26,4 +32,5 @@ const styles = StyleSheet.create({
   welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#DED9CE', backgroundColor: '#FBF8F1', gap: 6 },
   welcomeEyebrow: { color: '#8A815F', fontSize: 10, letterSpacing: 1.8 },
   welcomeText: { color: '#55574F', fontSize: 13, lineHeight: 19 },
+  welcomeNote: { color: '#77756F', fontSize: 12, lineHeight: 17 },
 });

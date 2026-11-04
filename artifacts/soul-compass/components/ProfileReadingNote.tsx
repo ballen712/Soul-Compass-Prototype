@@ -2,11 +2,13 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useProfile } from '@/profile/ProfileContext';
 import { getChartPrecision, getHomeDateTimeLabel } from '@/profile/profile';
+import { useLocalClock } from '@/hooks/useLocalClock';
 
 type Props = { tone: 'dark' | 'light' };
 
 export function ProfileReadingNote({ tone }: Props) {
   const { profile } = useProfile();
+  const now = useLocalClock();
   if (!profile) return null;
   const precision = getChartPrecision(profile);
   const dark = tone === 'dark';
@@ -15,7 +17,7 @@ export function ProfileReadingNote({ tone }: Props) {
     <View style={[styles.container, dark ? styles.dark : styles.light]}>
       <Text style={[styles.location, dark ? styles.darkText : styles.lightText]}>
         {residence
-          ? `${getHomeDateTimeLabel(residence.timeZone)} · ${residence.city}, ${residence.country}`
+          ? `${getHomeDateTimeLabel(residence.timeZone, now)} · ${residence.city}, ${residence.country}`
           : 'Current residence not set · add it in Settings for local date and time'}
       </Text>
       <Text style={[styles.note, dark ? styles.darkMuted : styles.lightMuted]}>

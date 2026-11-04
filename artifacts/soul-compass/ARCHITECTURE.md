@@ -2,7 +2,7 @@
 
 - Expo Router owns COSMOS/CRYSTALS/NATAL and onboarding/settings.
 - A serialized local store owns one schema-versioned AsyncStorage record containing birth details, mandatory `birthPlace`, optional `currentResidence`, preferences and consent. Existing legacy data is retained unchanged. No auth provider or cloud profile client is mounted.
-- The Express API server owns astronomy calculations; no astronomical library is imported into the Expo bundle.
+- The Express API server owns the full natal chart, houses, angles and current-sky endpoint. The merged daily-reflection feature also uses Astronomy Engine on-device for eligible natal/transit planet factors; do not confuse this with a full on-device natal service.
 - `EphemerisProvider` isolates calculations from the route layer and permits a future provider replacement.
 - The initial provider is Astronomy Engine. It runs offline and needs no calculation API key or downloaded data file.
 - Public city lookup is user-initiated and sends only the typed city string. It is not used for birth data transmission.
@@ -13,4 +13,4 @@ Natal data flow: saved local profile -> explicit consent -> Calculate chart -> r
 
 Only a previously saved local record is migrated. Cloud-only data remains in Supabase and is not recovered. Dormant auth modules and backend protected routes are retained for future optional accounts, but are unreachable from active app imports. Existing sessions are not read, refreshed or deleted.
 
-The current-sky snapshot still uses `/api/astrology/positions`. Daily event searches, generated daily interpretations and personalized crystals are not part of the natal service.
+The current-sky snapshot uses `/api/astrology/positions` and sends only the current UTC instant. Separate on-device daily reflections use actual current positions and conservative natal/transit factors, anchored to the saved residence's date. A shared one-minute in-memory cache refreshes while open and on foreground return, without uploading birth inputs. Five aspect-specific reflective templates and transparent three-stone intention/theme ranking are deliberately limited editorial scope; exhaustive transit event searches and a full interpretation library are not implemented.

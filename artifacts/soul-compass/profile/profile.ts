@@ -41,8 +41,8 @@ export function getChartPrecision(profile: UserProfile): ChartPrecision {
     mayUseHouses: false,
     mayUseTimeSensitiveInterpretations: birthTimeKnown,
     precisionNote: birthTimeKnown
-      ? 'Planet positions use your birth date, time, and birth city. Ascendant, Midheaven, and houses are not included.'
-      : 'Birth time is unknown, so only planet signs stable throughout the possible birth day are used. Ascendant, Midheaven, houses, and other time-sensitive chart details are excluded.',
+      ? 'Daily reflections use your birth date, time and birth city. For Ascendant, Midheaven and houses, calculate your full chart in NATAL.'
+      : 'Birth time is unknown. Daily reflections use only planet signs stable across a conservative birth-time range; rising sign and houses are not assumed.',
   };
 }
 

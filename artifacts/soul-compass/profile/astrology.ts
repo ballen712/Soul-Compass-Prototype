@@ -2,7 +2,6 @@ import { Body, Ecliptic, GeoVector } from 'astronomy-engine';
 import type { Crystal } from '@/constants/content';
 import {
   alternativeCrystals,
-  calculatedCrystalCatalog,
   samplePrimaryCrystal,
 } from '../constants/content';
 import type { HomeLocation, UserProfile } from './profile';
@@ -282,7 +281,6 @@ function makeCalculatedReading(
 ): CalculatedReading {
   const leadingAspect = aspects[0];
   if (leadingAspect) {
-    const supportive = leadingAspect.quality === 'supportive';
     const transitTheme: Record<Planet, string> = {
       Sun: 'confidence and direction',
       Moon: 'feelings and daily needs',
@@ -295,15 +293,19 @@ function makeCalculatedReading(
       Neptune: 'imagination and uncertainty',
       Pluto: 'deep change and boundaries',
     };
-    const focus = supportive ? 'Make room for support' : 'Choose a thoughtful response';
+    const aspectAdvice = {
+      conjunction: { title: 'Bring one strong theme into focus.', focus: 'Give one priority your attention', action: 'Choose one small action instead of trying to do everything at once', question: 'Where would a deliberate focus help' },
+      sextile: { title: 'Notice a small opening.', focus: 'Take a modest opportunity', action: 'Try a manageable step toward something you value', question: 'What small opportunity can I act on' },
+      square: { title: 'Make room for a different response.', focus: 'Work with a point of friction', action: 'Pause, name what feels difficult and adjust one expectation', question: 'What can I change about my response' },
+      trine: { title: 'Use what feels naturally available.', focus: 'Build on an existing strength', action: 'Use a familiar strength to support one practical task', question: 'Which existing strength can support me' },
+      opposition: { title: 'Consider both sides before deciding.', focus: 'Balance two competing needs', action: 'Listen to a different viewpoint before making a commitment', question: 'What other perspective deserves room' },
+    }[leadingAspect.aspect];
     return {
       label: 'CALCULATED TRANSIT · REFLECTIVE',
-      title: supportive ? 'Let what is working support you.' : 'Pause before choosing your next move.',
-      body: `The calculated ${leadingAspect.transitBody} in ${leadingAspect.transitSign} forms a ${leadingAspect.aspect} with your natal ${leadingAspect.natalBody} in ${leadingAspect.natalSign}. In astrological tradition, this pairing highlights ${transitTheme[leadingAspect.transitBody]}. Treat it as a prompt for reflection, not a prediction.`,
-      reflection: supportive
-        ? `Where can I accept support around ${transitTheme[leadingAspect.transitBody]} today?`
-        : `What would a considered response look like around ${transitTheme[leadingAspect.transitBody]}?`,
-      focus,
+      title: aspectAdvice.title,
+      body: `The calculated ${leadingAspect.transitBody} in ${leadingAspect.transitSign} forms a ${leadingAspect.aspect} with your natal ${leadingAspect.natalBody} in ${leadingAspect.natalSign}. In astrological tradition this connects ${transitTheme[leadingAspect.transitBody]} with ${transitTheme[leadingAspect.natalBody]}. ${aspectAdvice.action}. Treat this as a reflective suggestion, not a prediction.`,
+      reflection: `${aspectAdvice.question} around ${transitTheme[leadingAspect.transitBody]} today?`,
+      focus: aspectAdvice.focus,
       factorSummary: `${leadingAspect.transitBody} ${leadingAspect.aspect} natal ${leadingAspect.natalBody} · within ${leadingAspect.maxOrb.toFixed(1)}°`,
     };
   }
@@ -389,36 +391,7 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
   }
 }
 
-export type CrystalRecommendation = {
-  crystal: Crystal;
-  reason: string;
-};
-
-export function getCrystalRecommendation(
-  astrology: Extract<DailyAstrology, { status: 'calculated' }>,
-): CrystalRecommendation {
-  const aspect = astrology.aspects[0];
-  const natalSun = astrology.natalPlacements.find((placement) => placement.body === Body.Sun);
-
-  if (!aspect) {
-    return {
-      crystal: calculatedCrystalCatalog.Moonstone,
-      reason: natalSun
-        ? `Chosen from your calculated natal Sun in ${natalSun.sign}; this is a reflective crystal pairing, not a scientific or medical claim.`
-        : 'Chosen from an eligible calculated chart factor as a reflective prompt, not a scientific or medical claim.',
-    };
-  }
-
-  const name = aspect.quality === 'challenging'
-    ? 'Labradorite'
-    : aspect.aspect === 'conjunction'
-      ? 'Amethyst'
-      : 'Moonstone';
-  return {
-    crystal: calculatedCrystalCatalog[name],
-    reason: `Chosen from the calculated ${aspect.transitBody} ${aspect.aspect} natal ${aspect.natalBody} factor; crystal symbolism is reflective, not a scientific or medical claim.`,
-  };
-}
+export { getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
 
 export function getSampleCrystal(): Crystal {
   return samplePrimaryCrystal;

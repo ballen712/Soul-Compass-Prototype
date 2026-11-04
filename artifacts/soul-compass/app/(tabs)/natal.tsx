@@ -185,6 +185,7 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
 
   return (
     <View style={{ gap: 18 }}>
+      <Guide c={c} timeKnown={timeKnown} />
       {disambiguation ? (
         <Card c={c}>
           <Text style={[styles.body, { color: c.mutedForeground }]}>
@@ -296,6 +297,35 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
   );
 }
 
+function Guide({ c, timeKnown }: { c: Palette; timeKnown: boolean }) {
+  const [open, setOpen] = useState(false);
+  const items: [string, string][] = [
+    ['Planets', 'The bodies listed below and where they were at your birth.'],
+    ['Signs', 'Twelve 30\u00B0 slices of the zodiac. A position like 14\u00B0 Leo means 14 degrees into Leo.'],
+    ['Houses', timeKnown ? 'Twelve divisions based on your birth time and place, showing where each planet fell locally.' : 'Need an exact birth time, so they are not shown for your chart.'],
+    ['Aspects', 'Notable angles between two planets. Orb is how far from exact the angle is.'],
+  ];
+  return (
+    <Card c={c}>
+      <Pressable testID="natal-guide-toggle" accessibilityRole="button" onPress={() => setOpen((v) => !v)} style={styles.guideHead}>
+        <Label c={c} icon="book-open" text="HOW TO READ THIS" />
+        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={c.secondary} />
+      </Pressable>
+      {open ? (
+        <>
+          {items.map(([k, v]) => (
+            <Text key={k} style={[styles.body, { color: c.mutedForeground }]}>
+              <Text style={{ color: c.foreground, fontFamily: 'Inter_600SemiBold' }}>{k}. </Text>{v}
+            </Text>
+          ))}
+          <Text style={[styles.body, { color: c.mutedForeground }]}>
+            The positions are astronomical calculations. What they mean comes from astrological tradition and symbolism, not scientific evidence; use them as prompts for reflection.
+          </Text>
+        </>
+      ) : null}
+    </Card>
+  );
+}
 function Card({ c, children }: { c: Palette; children: React.ReactNode }) {
   return <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>{children}</View>;
 }
@@ -368,5 +398,6 @@ const styles = StyleSheet.create({
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   btn: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 14, paddingVertical: 9 },
   btnText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+  guideHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   detailsToggle: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', paddingVertical: 12 },
 });

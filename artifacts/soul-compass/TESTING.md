@@ -2,6 +2,8 @@
 
 ## Current local-first verification
 
+The product-readiness pass adds city-search race/data validation, local-clock/foreground refresh, minute-cache/midnight and intention/hidden-stone recommendation regressions. Current suite: 40 Vitest client cases, 10 Node daily-astrology cases and 25 API cases. Expo Doctor now passes 20/20 following normal SDK-compatible alignment after the package-release-age window elapsed. See LAUNCH_READINESS.html for current production-build/browser evidence and remaining device gates; the historical milestone counts below are not current totals.
+
 Run `pnpm --filter @workspace/soul-compass test` for local store/provider and consent tests. They exercise validated profile creation/updates, reloads, legacy migrations, corrupt/future-schema preservation, failed writes, serialized independent updates, collection changes, consent grant/revoke/versioning, in-flight cancellation, payload minimization, request deduplication and no automatic retries/sends. Storage and HTTP are explicit test doubles, not actual native-device persistence.
 
 Backend tests now include protected cloud-route contracts and security alongside the 14 astronomy regressions described below; those endpoints remain protected although the client no longer calls them.

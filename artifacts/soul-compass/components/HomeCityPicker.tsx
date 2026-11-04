@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { HomeLocation } from '@/profile/profile';
 import { searchHomeCities } from '@/services/geocoding';
@@ -16,24 +16,50 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
   const [results, setResults] = useState<HomeCitySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const generation = useRef(0);
+  const active = useRef<AbortController | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function cancel() {
+    generation.current += 1;
+    active.current?.abort();
+    active.current = null;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }
+  useEffect(() => () => cancel(), []);
+  function changeQuery(next: string) {
+    cancel();
+    setQuery(next); setResults([]); setError(''); setLoading(false);
+  }
 
   async function searchCities() {
+    cancel();
+    const request = generation.current;
     const search = query.trim();
     if (search.length < 2) {
+      setLoading(false);
       setError('Enter at least two letters to search.');
       return;
     }
     setLoading(true);
     setError('');
     setResults([]);
+    const controller = new AbortController();
+    active.current = controller;
+    timer.current = setTimeout(() => controller.abort(), 15_000);
     try {
-      const matches = await searchHomeCities(search);
+      const matches = await searchHomeCities(search, controller.signal);
+      if (request !== generation.current || controller.signal.aborted) return;
       setResults(matches);
       if (matches.length === 0) setError('No matching cities with time-zone data were found.');
     } catch {
-      setError('Could not search cities. Check your connection and try again.');
+      if (request === generation.current) setError('Could not search cities. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (request === generation.current) {
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = null; active.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -43,7 +69,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
         <TextInput
           accessibilityLabel={label}
           autoCapitalize="words"
-          onChangeText={setQuery}
+          onChangeText={changeQuery}
           onSubmitEditing={searchCities}
           placeholder={`Search ${label.toLowerCase()}`}
           placeholderTextColor="#8B877F"
@@ -51,7 +77,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
           style={styles.input}
           value={query}
         />
-        <Pressable accessibilityRole="button" onPress={searchCities} style={styles.searchButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Search cities" accessibilityState={{ busy: loading }} onPress={searchCities} style={styles.searchButton}>
           {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.searchText}>Search</Text>}
         </Pressable>
       </View>
@@ -74,9 +100,11 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
             accessibilityRole="button"
             key={`${result.city}-${result.country}-${result.latitude}-${result.longitude}`}
             onPress={() => {
+              cancel();
               onSelect(location);
               setQuery(result.city);
               setResults([]);
+              setLoading(false);
             }}
             style={styles.result}
           >

@@ -1,0 +1,177 @@
+import type { UserProfile } from './profile';
+import {
+  BirthTimeSchema, CONSENT_VERSION, DateSchema, DraftSchema, LEGACY_KEY, LOCAL_KEY,
+  LocalRecordSchema, LocationSchema, PreferencesSchema, ProfileSchema, emptyRecord,
+  type LocalPreferences, type LocalRecord,
+} from './local';
+
+export interface StorageAdapter {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+}
+type Snapshot = { record: LocalRecord; loaded: boolean; error: string | null };
+
+/** One serialized writer. Legacy records are never deleted or overwritten. */
+export class LocalProfileStore {
+  private snapshot: Snapshot = { record: emptyRecord(), loaded: false, error: null };
+  private listeners = new Set<() => void>();
+  private queue: Promise<unknown> = Promise.resolve();
+  private loading: Promise<void> | null = null;
+  private consentRevision = 0;
+  private denyRequests = false;
+  private controllers = new Set<AbortController>();
+  constructor(private storage: StorageAdapter) {}
+  getSnapshot = () => this.snapshot;
+  subscribe = (fn: () => void) => { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; };
+  private publish(next: Snapshot) {
+    this.snapshot = next;
+    this.listeners.forEach(fn => fn());
+  }
+  private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const next = this.queue.then(fn);
+    this.queue = next.catch(() => {});
+    return next;
+  }
+  private stopRequests() {
+    this.controllers.forEach(controller => controller.abort());
+    this.controllers.clear();
+  }
+  load = (): Promise<void> => {
+    if (this.loading) return this.loading;
+    const operation = this.enqueue(async () => {
+      try {
+        const current = await this.storage.getItem(LOCAL_KEY);
+        let record = emptyRecord();
+        if (current !== null) {
+          record = LocalRecordSchema.parse(JSON.parse(current));
+        } else {
+          const legacy = await this.storage.getItem(LEGACY_KEY);
+          if (legacy !== null) {
+            const value: unknown = JSON.parse(legacy);
+            const parsed = ProfileSchema.safeParse(value);
+            if (parsed.success) record.profile = parsed.data;
+            else {
+              if (!value || typeof value !== 'object') throw new Error('Invalid legacy data');
+              const old = value as Record<string, unknown>;
+              // This is the recognized older residence-only format, not a corrupt modern profile.
+              if (!('homeLocation' in old) || 'birthPlace' in old) throw new Error('Invalid legacy profile');
+              const draft = DraftSchema.parse({
+                ...(old.birthDate !== undefined ? { birthDate: DateSchema.parse(old.birthDate) } : {}),
+                ...(old.birthTime !== undefined ? { birthTime: BirthTimeSchema.parse(old.birthTime) } : {}),
+                currentResidence: old.homeLocation === null ? null : LocationSchema.parse(old.homeLocation),
+              });
+              record.onboardingDraft = draft;
+            }
+            await this.storage.setItem(LOCAL_KEY, JSON.stringify(record));
+          }
+        }
+        // An older consent explanation never authorizes the current policy.
+        if (record.privacy.consentVersion !== CONSENT_VERSION) record.privacy.astrologyApiConsent = false;
+        this.denyRequests = !record.privacy.astrologyApiConsent;
+        this.publish({ record, loaded: true, error: null });
+      } catch {
+        this.denyRequests = true;
+        this.stopRequests();
+        this.publish({ ...this.snapshot, loaded: true, error: 'Could not read or migrate local data. Your original data is preserved. Retry without clearing storage.' });
+      }
+    });
+    this.loading = operation.finally(() => { this.loading = null; });
+    return this.loading;
+  };
+  private update(change: (record: LocalRecord) => LocalRecord): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.snapshot.loaded || this.snapshot.error) throw new Error('Reload local data before saving.');
+      try {
+        const next = LocalRecordSchema.parse(change(this.snapshot.record));
+        await this.storage.setItem(LOCAL_KEY, JSON.stringify(next));
+        // A concurrent revocation takes effect before any queued disk write completes.
+        if (this.denyRequests) next.privacy = this.snapshot.record.privacy;
+        this.publish({ record: next, loaded: true, error: null });
+      } catch {
+        throw new Error('Could not save local data. Your previous saved data is preserved. Please retry.');
+      }
+    });
+  }
+  saveProfile = (profile: UserProfile) => this.update(record => ({
+    ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
+  }));
+  savePreferences = (preferences: LocalPreferences) => {
+    // Apply only fields changed by this action, preserving queued collection edits.
+    const baseline = this.snapshot.record.preferences;
+    const different = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
+    const languageChanged = different(baseline.language, preferences.language);
+    const collectionChanged = different(baseline.crystalCollection, preferences.crystalCollection);
+    const intentionsChanged = different(baseline.crystalPreferences.intentions, preferences.crystalPreferences.intentions);
+    const hiddenChanged = different(baseline.crystalPreferences.hiddenCrystals, preferences.crystalPreferences.hiddenCrystals);
+    return this.update(record => ({
+      ...record, preferences: PreferencesSchema.parse({
+        language: languageChanged ? preferences.language : record.preferences.language,
+        crystalCollection: collectionChanged ? preferences.crystalCollection : record.preferences.crystalCollection,
+        crystalPreferences: {
+          intentions: intentionsChanged ? preferences.crystalPreferences.intentions : record.preferences.crystalPreferences.intentions,
+          hiddenCrystals: hiddenChanged ? preferences.crystalPreferences.hiddenCrystals : record.preferences.crystalPreferences.hiddenCrystals,
+        },
+      }),
+    }));
+  };
+  toggleCrystal = (id: string) => this.update(record => ({
+    ...record, preferences: PreferencesSchema.parse({
+      ...record.preferences,
+      crystalCollection: record.preferences.crystalCollection.includes(id)
+        ? record.preferences.crystalCollection.filter(value => value !== id)
+        : [...record.preferences.crystalCollection, id],
+    }),
+  }));
+  setConsent = (allowed: boolean): Promise<void> => {
+    const revision = ++this.consentRevision;
+    const now = new Date().toISOString();
+    if (!allowed) {
+      this.denyRequests = true;
+      this.stopRequests();
+      this.publish({ ...this.snapshot, record: {
+        ...this.snapshot.record,
+        privacy: { ...this.snapshot.record.privacy, astrologyApiConsent: false, revokedAt: now },
+      } });
+    }
+    return this.enqueue(async () => {
+      if (!this.snapshot.loaded || this.snapshot.error) throw new Error('Reload local data before changing permission.');
+      if (allowed && revision !== this.consentRevision) return;
+      const privacy = allowed
+        ? { astrologyApiConsent: true, consentTimestamp: now, consentVersion: CONSENT_VERSION, revokedAt: null }
+        : { ...this.snapshot.record.privacy, astrologyApiConsent: false, revokedAt: now };
+      const record = LocalRecordSchema.parse({ ...this.snapshot.record, privacy });
+      try {
+        await this.storage.setItem(LOCAL_KEY, JSON.stringify(record));
+      } catch {
+        throw new Error(allowed
+          ? 'Permission was not saved. No birth details will be sent. Please retry.'
+          : 'Blocked for this session, but revocation could not be saved. Please retry before closing the app.');
+      }
+      if (revision !== this.consentRevision) return;
+      this.denyRequests = !allowed;
+      this.publish({ record, loaded: true, error: null });
+    });
+  };
+  canCalculate = () => !this.denyRequests && this.snapshot.loaded && !this.snapshot.error
+    && this.snapshot.record.privacy.astrologyApiConsent
+    && this.snapshot.record.privacy.consentVersion === CONSENT_VERSION;
+  /** Request-time permission check; no automatic retries or queued offline sends. */
+  async withCalculationConsent<T>(request: (signal: AbortSignal) => Promise<T>): Promise<T> {
+    if (!this.canCalculate()) throw new Error('Permission is required before sending birth details.');
+    const revision = this.consentRevision;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+    this.controllers.add(controller);
+    try {
+      const result = await request(controller.signal);
+      if (!this.canCalculate() || revision !== this.consentRevision || controller.signal.aborted) {
+        throw new Error('Calculation permission changed. Please try again.');
+      }
+      return result;
+    } finally {
+      clearTimeout(timeout);
+      this.controllers.delete(controller);
+    }
+  }
+  dispose = () => { this.stopRequests(); };
+}

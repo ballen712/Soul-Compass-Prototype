@@ -1,5 +1,7 @@
 # Astrology API
 
+The active local-first client uses the public calculation routes, not Supabase Auth or `/api/me/*`. Natal requests require locally saved, revocable consent AND an explicit calculation action. Only birth date, known/unknown time, birthplace coordinates/timezone and calculation options are sent. Current positions use only a UTC timestamp. Protected cloud routes below are dormant infrastructure and remain authenticated; do not remove their safeguards.
+
 Base path: `/api`.
 
 ## `GET /astrology/health`

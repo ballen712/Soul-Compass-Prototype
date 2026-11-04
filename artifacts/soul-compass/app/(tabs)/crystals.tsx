@@ -7,35 +7,30 @@ import { ProfileReadingNote } from '@/components/ProfileReadingNote';
 import { SettingsButton } from '@/components/SettingsButton';
 import { alternativeCrystals, primaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
-import { useAuth } from '@/auth/AuthContext';
 import { useProfile } from '@/profile/ProfileContext';
 
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
 
 function CollectionToggle({ name }: { name: string }) {
   const colors = useColors();
-  const { configured, session } = useAuth();
-  const { preferences, savePreferences, cloudVersion } = useProfile();
+  const { preferences, toggleCrystal } = useProfile();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const slug = slugOf(name);
   const inCollection = preferences.crystalCollection.includes(slug);
-  const available = configured && !!session && cloudVersion != null;
   async function toggle() {
-    if (!available || busy) return;
+    if (busy) return;
     setBusy(true); setError(null);
-    try {
-      const next = inCollection ? preferences.crystalCollection.filter(s => s !== slug) : [...preferences.crystalCollection, slug];
-      await savePreferences({ ...preferences, crystalCollection: next });
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update your collection.'); }
+    try { await toggleCrystal(slug); }
+    catch { setError('Could not update your collection on this device.'); }
     finally { setBusy(false); }
   }
-  const label = !configured ? 'Collection needs cloud sign-in (setup pending)' : !available ? 'Sign in to keep a collection' : inCollection ? 'In your collection' : 'Add to collection';
+  const label = inCollection ? 'In your collection' : 'Add to collection';
   return (
     <View style={styles.collectWrap}>
-      <Pressable accessibilityRole="switch" accessibilityLabel={`${name}: ${label}`} accessibilityState={{ checked: inCollection, disabled: !available || busy, busy }} disabled={!available || busy} onPress={toggle}
-        style={[styles.collectButton, { borderColor: colors.crystals.border }, inCollection && { backgroundColor: colors.crystals.secondary, borderColor: colors.crystals.secondary }, !available && { opacity: 0.55 }]}>
-        {busy ? <ActivityIndicator size="small" color={colors.crystals.secondary} /> : <Feather name={inCollection ? 'check' : available ? 'plus' : 'lock'} size={11} color={inCollection ? colors.crystals.card : colors.crystals.secondary} />}
+      <Pressable testID={`collect-${slug}`} accessibilityRole="switch" accessibilityLabel={`${name}: ${label}`} accessibilityState={{ checked: inCollection, disabled: busy, busy }} disabled={busy} onPress={toggle}
+        style={[styles.collectButton, { borderColor: colors.crystals.border }, inCollection && { backgroundColor: colors.crystals.secondary, borderColor: colors.crystals.secondary }]}>
+        {busy ? <ActivityIndicator size="small" color={colors.crystals.secondary} /> : <Feather name={inCollection ? 'check' : 'plus'} size={11} color={inCollection ? colors.crystals.card : colors.crystals.secondary} />}
         <Text style={[styles.collectText, { color: inCollection ? colors.crystals.card : colors.crystals.secondary }]}>{label}</Text>
       </Pressable>
       {error ? <Text style={[styles.collectError, { color: colors.destructive }]}>{error}</Text> : null}
@@ -43,9 +38,27 @@ function CollectionToggle({ name }: { name: string }) {
   );
 }
 
+function HiddenNote({ count }: { count: number }) {
+  const colors = useColors();
+  if (count === 0) return null;
+  return (
+    <View style={[styles.hiddenNote, { borderColor: colors.crystals.border, backgroundColor: colors.crystals.card }]}>
+      <Feather name="eye-off" size={13} color={colors.crystals.secondary} />
+      <Text style={[styles.hiddenText, { color: colors.crystals.mutedForeground }]}>
+        {count === 1 ? '1 stone is' : `${count} stones are`} hidden. You can restore hidden stones in Settings.
+      </Text>
+    </View>
+  );
+}
+
 export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { preferences } = useProfile();
+  const hidden = preferences.crystalPreferences.hiddenCrystals;
+  const showPrimary = !hidden.includes(slugOf(primaryCrystal.name));
+  const visibleAlternatives = alternativeCrystals.filter((c) => !hidden.includes(slugOf(c.name)));
+  const hiddenCount = [primaryCrystal, ...alternativeCrystals].filter((c) => hidden.includes(slugOf(c.name))).length;
 
   return (
     <SafeAreaView
@@ -138,6 +151,8 @@ export default function CrystalsScreen() {
             </Text>
           </View>
 
+          <HiddenNote count={hiddenCount} />
+          {showPrimary ? (
           <View
             style={[
               styles.featureCard,
@@ -219,7 +234,10 @@ export default function CrystalsScreen() {
               <CollectionToggle name={primaryCrystal.name} />
             </View>
           </View>
+          ) : null}
 
+          {visibleAlternatives.length > 0 ? (
+          <>
           <View style={styles.alternativesHeader}>
             <View>
               <Text
@@ -236,7 +254,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.foreground },
                 ]}
               >
-                Two other companions
+                {visibleAlternatives.length === 1 ? 'Another companion' : 'Two other companions'}
               </Text>
             </View>
             <Feather
@@ -247,7 +265,7 @@ export default function CrystalsScreen() {
           </View>
 
           <View style={styles.alternativesList}>
-            {alternativeCrystals.map((crystal) => (
+            {visibleAlternatives.map((crystal) => (
               <View
                 key={crystal.name}
                 style={[
@@ -295,6 +313,8 @@ export default function CrystalsScreen() {
               </View>
             ))}
           </View>
+          </>
+          ) : null}
 
           <View style={styles.footerMark}>
             <View
@@ -524,6 +544,8 @@ const styles = StyleSheet.create({
   collectButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6, minHeight: 28 },
   collectText: { fontFamily: 'Inter_500Medium', fontSize: 10 },
   collectError: { fontFamily: 'Inter_400Regular', fontSize: 10, marginTop: 4 },
+  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 14 },
+  hiddenText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 16 },
   footerMark: {
     alignItems: 'center',
     flexDirection: 'row',

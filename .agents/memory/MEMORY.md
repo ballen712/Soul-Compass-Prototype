@@ -1,3 +1,4 @@
 - [Expo Go tunnels](expo-go-tunnels.md) — Use a public Expo tunnel for iPhone testing; Replit development hostnames may not resolve on-device.
 - [Astrology profile rules](astrology-profile-rules.md) — Use the declared home location and preserve timed versus untimed birth-chart precision throughout readings.
 - [Security boundaries](security-boundaries.md) — No paid security products, unnecessary third-party birth-data disclosure, or weakened protections to clear scans.
+- [Local-first product](local-first-product.md) — Registration-free AsyncStorage app; birth-data requests require revocable consent; dormant Supabase infrastructure stays untouched.

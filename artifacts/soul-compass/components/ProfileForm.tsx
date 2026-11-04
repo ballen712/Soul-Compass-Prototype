@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { ProfileSchema } from '@/profile/local';
 import type { HomeLocation, ProfileFormDraft, UserProfile } from '@/profile/profile';
 
 type Props = {
@@ -23,7 +26,10 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
   const [currentResidence, setCurrentResidence] = useState<HomeLocation | null>(
     initialProfile?.currentResidence ?? initialDraft?.currentResidence ?? null,
   );
-  const [residenceEnabled, setResidenceEnabled] = useState(true);
+  const insets = useSafeAreaInsets();
+  const [residenceEnabled, setResidenceEnabled] = useState(
+    initialProfile ? initialProfile.currentResidence != null : true,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -51,17 +57,25 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       return;
     }
 
+    const candidate: UserProfile = {
+      birthDate,
+      birthTime: birthTimeKnown
+        ? { status: 'known', localTime: birthTime }
+        : { status: 'unknown' },
+      birthPlace,
+      currentResidence: residenceEnabled ? currentResidence : null,
+    };
+    const parsed = ProfileSchema.safeParse(candidate);
+    if (!parsed.success) {
+      const messages = parsed.error.issues.map((issue) => issue.message).filter(Boolean);
+      setError(messages.length ? messages.join(' ') : 'Some profile details are invalid. Please review them.');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
-      await onSubmit({
-        birthDate,
-        birthTime: birthTimeKnown
-          ? { status: 'known', localTime: birthTime }
-          : { status: 'unknown' },
-        birthPlace,
-        currentResidence: residenceEnabled ? currentResidence : null,
-      });
+      await onSubmit(parsed.data as UserProfile);
     } catch {
       setError('Your profile could not be saved. Please try again.');
     } finally {
@@ -70,7 +84,11 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScrollViewCompat
+      bottomOffset={24}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 34) + 48 }]}
+    >
       <Text style={styles.eyebrow}>YOUR PERSONAL COMPASS</Text>
       <Text style={styles.title}>A little about you.</Text>
       <Text style={styles.description}>
@@ -111,7 +129,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
         style={styles.unknownOption}
       >
         <View style={[styles.checkbox, !birthTimeKnown && styles.checkboxChecked]}>
-          {!birthTimeKnown && <Text style={styles.checkmark}>✓</Text>}
+          {!birthTimeKnown && <View style={styles.checkmark} />}
         </View>
         <Text style={styles.unknownText}>I don’t know my birth time</Text>
       </Pressable>
@@ -161,7 +179,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       >
         <Text style={styles.submitText}>{saving ? 'Saving…' : submitLabel}</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 
@@ -188,7 +206,7 @@ const styles = StyleSheet.create({
   unknownOption: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   checkbox: { width: 20, height: 20, borderWidth: 1, borderColor: '#7D806E', borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
   checkboxChecked: { backgroundColor: '#58664F', borderColor: '#58664F' },
-  checkmark: { color: '#FFFFFF', fontSize: 13, lineHeight: 16 },
+  checkmark: { width: 8, height: 8, borderRadius: 2, backgroundColor: '#FFFFFF' },
   unknownText: { color: '#45473F', fontSize: 14 },
   precisionNote: { color: '#77756F', fontSize: 13, lineHeight: 19, marginTop: -4 },
   skipResidence: { alignSelf: 'flex-start', paddingVertical: 6 },

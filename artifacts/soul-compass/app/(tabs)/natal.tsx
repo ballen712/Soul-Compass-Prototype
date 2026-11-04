@@ -1,9 +1,9 @@
 import { Feather } from '@expo/vector-icons';
-import { useCalculateNatalChart } from '@workspace/api-client-react';
-import type { NatalChartRequest, NatalChartResponse } from '@workspace/api-client-react';
+import { useNatalCalculation } from '@/hooks/useNatalCalculation';
+import type { NatalChartResponse } from '@workspace/api-client-react';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
@@ -46,43 +46,22 @@ export default function NatalScreen() {
   const c = colors.cosmos;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile, loaded } = useProfile();
-  const chart = useCalculateNatalChart();
-  const mutateRef = useRef(chart.mutate);
-  mutateRef.current = chart.mutate;
+  const { profile, loaded, privacy, setConsent, canCalculate } = useProfile();
+  const chart = useNatalCalculation();
   const [disambiguation, setDisambiguation] = useState<Disambiguation | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-
-  const profileKey = profile
-    ? JSON.stringify([profile.birthDate, profile.birthTime, profile.birthPlace.latitude, profile.birthPlace.longitude, profile.birthPlace.timeZone])
-    : null;
-
-  const submit = useCallback((choice: Disambiguation | null) => {
-    if (!profile) return;
-    const bt = profile.birthTime;
-    const birthTime: NatalChartRequest['birthTime'] = bt.status === 'known'
-      ? { status: 'known', localTime: bt.localTime, ...(choice ? { disambiguation: choice } : {}) }
-      : { status: 'unknown' };
-    mutateRef.current({
-      data: {
-        birthDate: profile.birthDate,
-        birthTime,
-        birthPlace: {
-          latitude: profile.birthPlace.latitude,
-          longitude: profile.birthPlace.longitude,
-          timeZone: profile.birthPlace.timeZone,
-        },
-        houseSystem: 'placidus',
-        zodiac: 'tropical',
-      },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileKey]);
-
-  useEffect(() => {
-    setDisambiguation(null);
-    submit(null);
-  }, [submit]);
+  const [declined, setDeclined] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  useEffect(() => { setDisambiguation(null); }, [profile]);
+  const submit = (choice: Disambiguation | null) => { void chart.calculate(choice); };
+  async function agree() {
+    if (consentBusy) return;
+    setConsentBusy(true); setConsentError(null);
+    try { await setConsent(true); setDeclined(false); }
+    catch (error) { setConsentError(error instanceof Error ? error.message : 'Permission could not be saved.'); }
+    finally { setConsentBusy(false); }
+  }
 
   const choose = (choice: Disambiguation) => {
     setDisambiguation(choice);
@@ -128,13 +107,38 @@ export default function NatalScreen() {
             ) : null}
           </View>
 
-          {!loaded || (profile && chart.isPending) ? (
+          {!loaded || (profile && chart.isPending && canCalculate()) ? (
             <Skeleton c={c} />
           ) : !profile ? (
             <Card c={c}>
               <Text style={[styles.cardTitle, { color: c.foreground }]}>No birth details yet</Text>
               <Text style={[styles.body, { color: c.mutedForeground }]}>Add your birth date, time and place to calculate a chart.</Text>
               <Btn c={c} label="Open settings" icon="settings" onPress={() => router.push('/settings')} />
+            </Card>
+          ) : !privacy.astrologyApiConsent || !canCalculate() ? (
+            <Card c={c}>
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>Your permission comes first</Text>
+              <Text style={[styles.body, { color: c.foreground }]}>
+                To calculate your natal chart, Soul Compass sends your birth date, birth time when known,
+                birthplace coordinates and timezone to the Soul Compass calculation server.
+                Your profile, residence, language, intentions and crystal collection stay stored on this device
+                and are not included in this request. Internet access is required.
+                You can withdraw permission at any time in Settings. This cannot undo a request already sent.
+              </Text>
+              {consentError ? <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{consentError}</Text> : null}
+              {declined ? (
+                <>
+                  <Text style={[styles.body, { color: c.foreground }]}>No birth details were sent. Your local profile and collection still work.</Text>
+                  <Btn c={c} label="Review permission" onPress={() => setDeclined(false)} />
+                </>
+              ) : consentBusy ? (
+                <Text style={[styles.body, { color: c.foreground }]}>Saving permission…</Text>
+              ) : (
+                <>
+                  <Btn c={c} label="I Agree" onPress={() => void agree()} />
+                  <Btn c={c} label="Not Now" onPress={() => setDeclined(true)} />
+                </>
+              )}
             </Card>
           ) : chart.isError ? (
             <Card c={c}>
@@ -159,7 +163,13 @@ export default function NatalScreen() {
             </Card>
           ) : data ? (
             <ChartView c={c} data={data} timeKnown={timeKnown} disambiguation={disambiguation} showDetails={showDetails} toggle={() => setShowDetails((v) => !v)} onClear={() => { setDisambiguation(null); submit(null); }} />
-          ) : null}
+          ) : (
+            <Card c={c}>
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>Ready when you are</Text>
+              <Text style={[styles.body, { color: c.foreground }]}>Permission is saved. Birth details are sent only when you request a chart, never automatically on opening this screen.</Text>
+              <Btn c={c} label="Calculate chart" onPress={() => submit(null)} />
+            </Card>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,5 +1,7 @@
 # Authentication and secure cloud profiles: implementation report
 
+> Historical report for the dormant account implementation. The active app now uses local persistence without authentication. See LOCAL_FIRST_IMPLEMENTATION.html for current behavior.
+
 ## Implemented without external credentials
 
 - Official Supabase SDK, Google browser PKCE flow and passwordless email-code flow. No custom password database or authentication algorithm.

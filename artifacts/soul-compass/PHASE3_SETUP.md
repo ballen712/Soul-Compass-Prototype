@@ -1,5 +1,7 @@
 # Phase 3: external setup checklist
 
+> Historical account/cloud setup reference. The active app is now local-first and does not require any of these Supabase or provider settings. Do not follow this checklist to enable accounts unless optional accounts are approved in a future task.
+
 **Status: code prepared; external services are not configured.** No Supabase migration or RLS policy has been applied to a live project. No private key has been requested, inspected or added, and no paid plan/service has been enabled.
 
 Do not paste credentials into chat. Keep this checklist open while configuring the dashboards.

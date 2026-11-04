@@ -1,5 +1,19 @@
 # Testing
 
+## Current local-first verification
+
+Run `pnpm --filter @workspace/soul-compass test` for local store/provider and consent tests. They exercise validated profile creation/updates, reloads, legacy migrations, corrupt/future-schema preservation, failed writes, serialized independent updates, collection changes, consent grant/revoke/versioning, in-flight cancellation, payload minimization, request deduplication and no automatic retries/sends. Storage and HTTP are explicit test doubles, not actual native-device persistence.
+
+Backend tests now include protected cloud-route contracts and security alongside the 14 astronomy regressions described below; those endpoints remain protected although the client no longer calls them.
+
+Run `CI=1 pnpm --filter @workspace/soul-compass exec expo install --check` and `pnpm dlx expo-doctor@latest` from the app directory. Do not bypass the workspace's minimum package release age if recommended versions are not yet installable.
+
+Use `EXPO_BUILD_METRO_PORT=20060 pnpm --filter @workspace/soul-compass run build` to test the native static bundle pipeline against the managed Metro server. This is a JS bundle/manifest build, not a signed iOS/Android binary or an App Store submission. Never claim physical iPhone verification from web tests.
+
+All routes are eagerly included (`asyncRoutes: false`) so opening local settings offline after loading the app does not fetch an unvisited route chunk. A fresh browser page load without internet still requires the app assets to be cached; no service-worker/PWA offline shell is implemented.
+
+The following sections document historical natal-milestone coverage, not the latest overall test totals.
+
 Run:
 
 - `pnpm --filter @workspace/api-server run typecheck`

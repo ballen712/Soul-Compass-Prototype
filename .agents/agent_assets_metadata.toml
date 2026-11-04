@@ -28,3 +28,17 @@ mtime_ms = 1793801410513
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/c4e55d32-5cc8-41c4-b1e5-bd935fadc140/4a6a2786-8165-4543-b1e9-7a56932a00ae"
 storage_version_token = "1793801411323267"
 content_type = "text/html"
+
+[[outputs]]
+id = "3MBy5Rp-iTzFgSoFj-cUv"
+uri = "file://artifacts/soul-compass/LOCAL_FIRST_IMPLEMENTATION.html"
+type = "html"
+title = "Soul Compass — implementation and verification report"
+description = "Detailed 20-part local-first report, file inventory, migration/consent behavior, test results, preserved infrastructure and remaining Expo/device checks."
+logical_id = "bd9c0f20-44d7-447e-80ca-05893d1fdcb7"
+content_hash = "sha256:9d374aa6eb6eccc103626a19a2645030da7e9f92917ac2c0f3b4fe154e749c37"
+size = 16506
+mtime_ms = 1793811096133
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/bd9c0f20-44d7-447e-80ca-05893d1fdcb7/a42c199f-c472-4331-9a78-73124d7d8e67"
+storage_version_token = "1793811125550696"
+content_type = "text/html"

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soul Compass — Local-first implementation report</title>
+<style>
+body{margin:0;background:#f5f1e8;color:#242b2a;font:16px/1.65 system-ui,sans-serif}
+main{max-width:940px;margin:40px auto;padding:32px;background:#fffcf6;border:1px solid #ddd7ca;border-radius:16px}
+h1{line-height:1.2;font-size:34px}h2{margin-top:32px;font-size:21px}h3{font-size:17px}
+code{font-size:.88em;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d8d2c7;padding:9px;text-align:left;vertical-align:top}
+.pass{color:#315b3d}.fail{color:#9b3f32}.note{background:#eee9de;padding:16px;border-radius:10px}li{margin:5px 0}
+@media(max-width:620px){main{margin:12px;padding:20px}h1{font-size:27px}td,th{padding:6px;font-size:13px}}
+</style></head><body><main>
+<p>SOUL COMPASS · 4 NOVEMBER 2026</p>
+<h1>Local-first implementation and verification</h1>
+<p class="note">The registration-free application is implemented and running. Local persistence, consent and calculation journeys passed browser checks. One environment check remains failing: Expo dependency-version alignment is blocked by the existing package-release-age safeguard. Physical iPhone testing is not claimed.</p>
+<h2>Acceptance results</h2>
+<table><tr><th>Criterion</th><th>Status</th><th>Evidence / limitation</th></tr>
+<tr><td>No mandatory authentication or cloud profile</td><td class="pass">PASS</td><td>Active routes have no login or account flow; browser recorded zero matching Supabase/Auth or /api/me calls.</td></tr>
+<tr><td>Onboarding, local profile, edits and preferences</td><td class="pass">PASS</td><td>Browser creation/reload/edit checks; validated serialized store; 34 client tests overall.</td></tr>
+<tr><td>Legacy preservation and failure handling</td><td class="pass">PASS</td><td>Storage-double tests cover legacy copy, residence-only draft, failed migration/write, corrupt records and unsupported versions without silent reset.</td></tr>
+<tr><td>Consent and minimal birth-data transmission</td><td class="pass">PASS</td><td>Browser: no natal request before permission and explicit Calculate; two HTTP 200 calculations; no request on revoke/reconnect. Unit tests cover abort/late results and deduplication.</td></tr>
+<tr><td>Local controls while offline after app load</td><td class="pass">PASS</td><td>Focused browser confirmation: first offline Settings entry, preferences and offline profile save work. No queued birth request on reconnect.</td></tr>
+<tr><td>Astronomy engine and backend security</td><td class="pass">PASS</td><td>25 API tests; backend security/astronomy source unchanged. Health 200; unauthenticated protected profile endpoint 401.</td></tr>
+<tr><td>TypeScript, builds, static/privacy/dependency scans</td><td class="pass">PASS</td><td>Workspace typecheck; API build; web export; iOS/Android static bundles/manifests; zero scanner findings.</td></tr>
+<tr><td>Expo dependency alignment</td><td class="fail">FAIL — BLOCKED</td><td>Doctor 19/20; install --check fails on ten version mismatches. Recommended packages were less than 24 hours old. No safeguard disabled and no dependency/lockfile changes made.</td></tr>
+<tr><td>Physical iPhone, Expo Go, signed native binaries</td><td>NOT VERIFIED</td><td>Mobile-sized web testing and native JavaScript builds are not device tests.</td></tr>
+<tr><td>Live Supabase data / RLS deployment state</td><td>NOT VERIFIED</td><td>No database access, migration execution or external configuration was performed.</td></tr>
+</table>
+<h2>1. Architectural changes</h2>
+<p>The root mounts a local profile provider, not an authentication provider. Initial startup reads one validated AsyncStorage record. A missing profile opens onboarding; a saved profile opens existing tabs. Storage failures show an explicit retryable error instead of overwriting data. Cosmos, Crystals, Natal, navigation and visual styling are preserved. Settings offers Profile, Preferences, Privacy and About.</p>
+<p>The server still owns Astronomy Engine, historical timezone/DST resolution, Placidus calculations, angles and aspects. No calculation library or paid calculation provider was added to Expo.</p>
+<h2>2. Files created</h2>
+<ul>
+<li><code>profile/local.ts</code> — schemas, versioned record and defaults.</li>
+<li><code>profile/storage.ts</code> — loading, safe migration, serialized writes and consent guard.</li>
+<li><code>profile/context.ts</code> — stable context identity outside refreshable component exports.</li>
+<li><code>services/natal.ts</code> — minimal payload and consent-protected request.</li>
+<li><code>hooks/useNatalCalculation.ts</code> — explicit calculation, error state and duplicate/late-result protection.</li>
+<li><code>tests/local-profile.test.tsx</code>, <code>tests/natal-consent.test.ts</code>, <code>tests/natal-hook.test.tsx</code>.</li>
+<li>This report and a project-memory note preserving the approved product decisions.</li>
+</ul>
+<p>Application paths above are relative to <code>artifacts/soul-compass/</code>.</p>
+<h2>3. Files modified</h2>
+<p><code>app/_layout.tsx</code>, <code>app/onboarding.tsx</code>, <code>app/settings.tsx</code>, <code>app/(tabs)/crystals.tsx</code>, <code>app/(tabs)/natal.tsx</code>, <code>components/ProfileForm.tsx</code>, <code>profile/ProfileContext.tsx</code> and <code>app.json</code>.</p>
+<p><code>scripts/build.js</code> gained an optional build-only Metro port override and exact Metro health detection. <code>.gitignore</code> and <code>.replitignore</code> exclude generated static bundles. README, architecture, API, testing and deployment documentation were updated; Phase 3 documentation is marked historical.</p>
+<h2>4. Retired active files</h2>
+<p>Removed the router entries <code>app/account.tsx</code>, <code>app/sign-in.tsx</code> and <code>app/auth/callback.tsx</code>. Their source history remains available. The old cloud-provider integration test <code>tests/profile-isolation.test.tsx</code> was replaced by local-store/provider tests because its expected active cloud behavior is intentionally retired; backend ownership/security tests remain.</p>
+<p><code>auth/AuthContext.tsx</code>, <code>auth/supabase.ts</code>, <code>auth/events.ts</code>, <code>auth/sessionStorage.ts</code> and <code>profile/cloud.ts</code> remain dormant source modules, outside the active import graph. Their dependencies and four legacy module tests remain, but they do not start sessions or fetch profiles in the active app.</p>
+<h2>5. Authentication removal</h2>
+<p>No Google, OTP, password, Magic Link, account management, protected-route gate, auth callback or session refresh is part of active navigation. Supabase credentials are not required by this local-first client. Existing credential settings and stored legacy sessions were deliberately left untouched, not read or refreshed.</p>
+<h2>6. Local record</h2>
+<p><code>soul-compass.local.v2</code> contains <code>schemaVersion: 2</code>, <code>profile</code>, <code>preferences</code>, <code>privacy</code> and optional <code>onboardingDraft</code>.</p>
+<ul>
+<li>Profile: date, known/unknown birth time, birthplace, optional separate current residence.</li>
+<li>Preferences: language, crystal collection, intention preferences and hidden crystals. Hidden stones are excluded from recommendations and can be restored.</li>
+<li>Privacy: calculation consent, policy version, consent timestamp and revocation timestamp.</li>
+<li>Validation rejects impossible dates/times, invalid coordinates/timezones and malformed records.</li>
+</ul>
+<p>Queued writes publish state only after successful persistence. Independent preference/profile/collection updates preserve unrelated fields. Existing language choices remain preferences only; a full translation system was not invented.</p>
+<h2>7. Migration and existing data</h2>
+<p>A valid existing v2 record wins. A valid legacy <code>soul-compass.profile.v1</code> record is copied into v2, retaining the original key and bytes. Older residence-only records become an onboarding draft; residence is never invented as birthplace. Corrupt or future-schema data raises a recoverable error; there is no automatic erase or fallback to a fresh profile. Failed writes leave the previous stored data intact.</p>
+<p>No cloud recovery or merge occurs. A cloud-only user without a local birth profile enters a new local profile. All cloud records remain untouched. Local storage is not encrypted; clearing browser/app data or losing a device can lose the profile. OS-level device backups may include application data. No export/import or app cloud sync was implemented.</p>
+<h2>8. Consent implementation</h2>
+<p>The versioned explanation appears in Natal and Settings Privacy. I Agree persists permission; it does not calculate automatically. Not Now leaves calculations off. Calculate chart explicitly initiates the request. Consent is checked again immediately at dispatch. The payload includes only date, birth-time status/value and optional DST occurrence choice, birthplace coordinates/timezone, zodiac and house system.</p>
+<p>Revocation immediately blocks future requests, aborts active controllers and invalidates late responses. Stale policy versions deny access. Failed consent writes fail closed in the running app. If saving revocation itself fails, the app explicitly warns to retry before closing; it cannot promise the older disk record has changed. There are no offline queues, automatic natal retries or calculation-on-navigation effects. Requests time out after 20 seconds; repeated taps are deduplicated.</p>
+<p>Revocation cannot undo data already transmitted before withdrawal. Calculations travel to the existing server, not a new third-party horoscope service.</p>
+<h2>9. Server privacy</h2>
+<p>No backend rewrite was needed. Personal profile synchronization has been removed from the active client path. The natal payload excludes residence, names, city/country labels, collection, preferences and account identifiers. The existing calculation engine runs without forwarding birth inputs to an external provider. Existing body-free request logging and no-store/security safeguards remain. Browser city lookup sends only the deliberately typed city string to the existing geocoder; current-sky snapshots send only a UTC instant.</p>
+<p>Inspected final web plus iOS/Android bundles: zero matching bundles for secret/admin-key markers, public Supabase configuration references, Supabase domain references, OAuth/OTP methods or <code>/api/me</code>. This is a targeted bundle audit, not a guarantee that arbitrary unknown secret formats could be detected. No credential values were read or printed.</p>
+<h2>10. Supabase preservation</h2>
+<p>No migrations, SQL tests, schemas, RLS, tables, records, grants, provider settings or secrets were changed or executed. Existing protected backend profile endpoints remain. Git confirms no changes to the Supabase files. No claim is made about the externally applied migration state or live records.</p>
+<h2>11. Backend security preservation</h2>
+<p>Validation, ownership authentication on protected endpoints, rate limits, trusted-proxy/IP handling, CORS restrictions, payload/compression limits, safe errors, no-store headers and static-file restrictions were preserved. Unauthenticated <code>/api/me/profile</code> returned 401. No endpoint was made public merely to remove client registration.</p>
+<h2>12. TypeScript</h2>
+<p class="pass">PASS: <code>pnpm run typecheck</code> across shared libraries and artifacts. No type errors.</p>
+<h2>13. Unit tests</h2>
+<p class="pass">PASS: 34 client tests across five files (30 local/consent/hook cases including parameterized validations; four retained dormant-auth-module cases). API suite: 25 passing tests across four files, including 14 astronomy regressions, six protected-profile contract tests and five security tests.</p>
+<p>Unit tests use explicit storage/HTTP/auth doubles; these are not claims of live Supabase RLS or physical native storage tests. No astronomical production values were replaced by mocks.</p>
+<h2>14. Browser integration</h2>
+<p class="pass">PASS after fixes: fresh onboarding with geocoder, saved-profile startup/reload, unknown-time chart, collection persistence, language/intention/hidden-crystal settings, profile edits preserving other fields, decline/grant/revoke/regrant and offline local controls.</p>
+<p>Observed natal sequence: zero requests before consent; granting alone stayed at zero; explicit calculation returned 200; withdrawal/reload did not request; granting again still did not request; explicit second calculation returned 200. Reconnect left the count at two. Both payloads excluded residence/preferences/IDs. Unknown time omitted Ascendant, Midheaven and houses. No Supabase/Auth or /api/me traffic was observed in the monitored filters.</p>
+<p>Initial tests caught a context crash and offline lazy-route failure; context identity was separated and route loading made eager, then the affected flows were rechecked. Profile Save now remains in Settings with a visible success message instead of an invalid GO_BACK action. Final focused check passed. A transient development Metro disconnect recovered on reload, and one generic offline resource error did not prevent settings usage; its URL could not be classified.</p>
+<h2>15. Security results</h2>
+<p class="pass">PASS: dependency audit zero vulnerabilities; complete static scan zero findings; privacy/data-flow scan zero findings. Existing API security tests passed. Zero findings are not a security certification. No paid security service was introduced or protections weakened.</p>
+<h2>16. Expo validation</h2>
+<p class="fail">FAIL / externally blocked: Expo Doctor passed 19 of 20 checks. Version alignment reported ten mismatches: Expo, Metro runtime, auth-session, constants, linking, router, splash screen, React Native, safe-area-context and React DOM typings. The normal Expo fix command was attempted but blocked by the existing 24-hour package-release-age policy, including a recommended auth-session release still inside that window. No bypass, exclusion, suppression, downgrade or dependency/lockfile mutation was applied. This remains a pre-release task.</p>
+<h2>17. Builds</h2>
+<ul><li class="pass">API build: PASS.</li><li class="pass">Final web production export: PASS, ten static routes, no account/sign-in/callback routes.</li><li class="pass">Configured native static build: PASS, iOS and Android bundles/manifests and 55 assets; generated files excluded from Git.</li><li>Signed native binary, App Store submission, production publication and physical installation: NOT VERIFIED / not performed.</li></ul>
+<h2>18. Limitations</h2>
+<p>Internet remains necessary for city lookup and server charts. Local settings work offline after the app is loaded; a cold browser reload without cached assets is not guaranteed because no PWA/service-worker shell exists. Native Expo Go startup and background/foreground behavior require real-device verification. Storage is unencrypted and not synchronized; export/import is deferred. Existing daily horoscope/crystal text remains visibly sample content, not claimed personalized astrology. Natal accuracy retains the existing fixture coverage and explicit historical-time/unknown-time/polar limitations; it is not an independent certification of every house cusp or epoch.</p>
+<h2>19. Manual steps</h2>
+<ol><li>After recommended versions pass the package-release-age window, run the standard Expo version alignment command, then typecheck/tests, Expo checks, scans and builds again. Do not weaken the release-age policy.</li><li>Use the existing public Expo Go tunnel workflow on a physical iPhone. Verify local onboarding/relaunch, known and unknown times, consent/revocation, offline editing, keyboard/safe areas and navigation. The native dev/tunnel scripts were preserved.</li><li>No Supabase SQL, Auth provider, Google OAuth, SMTP or additional credential setup is needed for the current local-first app.</li></ol>
+<h2>20. Next priorities</h2>
+<p>First resolve the Expo compatibility check after the safety window and verify real iPhone behavior. Optional validated local export/import is a later product decision, not implemented here. Existing daily-reading and astrology follow-up work remains separate; do not remove sample labels until real personalized behavior is complete.</p>
+</main></body></html>

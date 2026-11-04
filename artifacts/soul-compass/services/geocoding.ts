@@ -1,20 +1,6 @@
-export type HomeCitySearchResult = {
-  city: string;
-  country: string;
-  admin1?: string;
-  latitude: number;
-  longitude: number;
-  timeZone: string;
-};
+import { searchCities, type CityLocation } from '@workspace/api-client-react';
 
-type OpenMeteoLocation = {
-  name?: unknown;
-  country?: unknown;
-  admin1?: unknown;
-  latitude?: unknown;
-  longitude?: unknown;
-  timezone?: unknown;
-};
+export type HomeCitySearchResult = CityLocation;
 
 function isIanaTimeZone(value: unknown): value is string {
   if (typeof value !== 'string' || !value) return false;
@@ -29,23 +15,28 @@ function isIanaTimeZone(value: unknown): value is string {
 /**
  * City lookup provider boundary. Only the city string supplied by the user is
  * sent as search data; this service never reads device location or profile data.
- * Open-Meteo supplies coordinates and a time-zone-database (IANA) identifier.
+ * Geoapify supplies coordinates and an IANA identifier through our API.
+ * Provider credentials and provider URLs are never included in client requests.
  */
 export async function searchHomeCities(cityName: string, signal?: AbortSignal): Promise<HomeCitySearchResult[]> {
   const name = cityName.trim();
   if (name.length < 2) return [];
+  if (name.length > 100) throw new Error('Use a city name of 100 characters or fewer.');
 
-  const params = new URLSearchParams({ name, count: '8', language: 'en', format: 'json' });
-  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, { signal });
-  if (!response.ok) throw new Error('City search is temporarily unavailable.');
-
-  const data = (await response.json()) as { results?: OpenMeteoLocation[] };
-  if (data.results !== undefined && !Array.isArray(data.results)) throw new Error('Unexpected city search response.');
-  return (data.results ?? []).slice(0, 8).flatMap((entry) => {
+  let data;
+  try { data = await searchCities({ q: name }, { signal }); }
+  catch (error) {
+    if (signal?.aborted) throw error;
+    const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
+    throw new Error(status === 429 ? 'City search limit reached. Please wait and try again.'
+      : 'City search is temporarily unavailable. Please try again.');
+  }
+  if (!Array.isArray(data.results)) throw new Error('Unexpected city search response.');
+  return data.results.slice(0, 8).flatMap((entry) => {
     if (
       !entry ||
-      typeof entry.name !== 'string' ||
-      !entry.name.trim() ||
+      typeof entry.city !== 'string' ||
+      !entry.city.trim() ||
       typeof entry.country !== 'string' ||
       !entry.country.trim() ||
       typeof entry.latitude !== 'number' ||
@@ -54,18 +45,18 @@ export async function searchHomeCities(cityName: string, signal?: AbortSignal): 
       typeof entry.longitude !== 'number' ||
       !Number.isFinite(entry.longitude) ||
       Math.abs(entry.longitude) > 180 ||
-      !isIanaTimeZone(entry.timezone)
+      !isIanaTimeZone(entry.timeZone)
     ) {
       return [];
     }
 
     return [{
-      city: entry.name,
+      city: entry.city,
       country: entry.country,
       ...(typeof entry.admin1 === 'string' && entry.admin1 ? { admin1: entry.admin1 } : {}),
       latitude: entry.latitude,
       longitude: entry.longitude,
-      timeZone: entry.timezone,
+      timeZone: entry.timeZone,
     }];
   });
 }

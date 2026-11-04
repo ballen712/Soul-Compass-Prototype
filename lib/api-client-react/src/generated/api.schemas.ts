@@ -5,6 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface CityLocation {
+  city: string;
+  country: string;
+  admin1?: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  timeZone: string;
+}
+
+export interface CitySearchResults {
+  /** @maxItems 8 */
+  results: CityLocation[];
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -194,4 +216,12 @@ export interface NatalChartResponse {
   moonSignRange: string[];
   warnings: string[];
 }
+
+export type SearchCitiesParams = {
+  /**
+   * @minLength 2
+   * @maxLength 100
+   */
+  q: string;
+};
 

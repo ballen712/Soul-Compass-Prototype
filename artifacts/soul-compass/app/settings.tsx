@@ -156,7 +156,7 @@ export default function SettingsScreen() {
           {tab === 'privacy' ? (
             <>
               <Section title="What runs on this device" description="Daily reflections and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
-              <Section title="What uses the network" description="City search sends the text you type to a city lookup service. The current-sky snapshot sends only the current time to the Soul Compass server. Neither includes your birth details." />
+              <Section title="What uses the network" description="City search sends only your typed query through the Soul Compass server to Geoapify, not your saved birth profile. Geoapify receives normal server connection metadata; we do not forward your device IP or headers. The current-sky snapshot sends only the current time to the Soul Compass server. Search runs only when you tap Search." />
               <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
                   The full natal chart is calculated on the Soul Compass server. It is only requested after you allow it here or on the Natal tab and then tap Calculate; opening a screen never sends it. The request contains your birth date, birth time if known, and your birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included.
@@ -211,7 +211,7 @@ export default function SettingsScreen() {
               </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
               <Section title="Privacy" description="No account. Profile and collection are stored on this device. Daily reflections are calculated on-device. Birth details go to the server only for a natal chart you request after giving permission, which you can withdraw in Privacy." />
-              <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup uses Open-Meteo and GeoNames data (CC BY 4.0 attribution); their free endpoint has non-commercial restrictions. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes draw on traditional symbolism for reflection; they are not medical or scientific advice. The app is in English only." />
+              <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup is powered by Geoapify with © OpenStreetMap contributors; attribution and provider privacy links appear beside each city search. The Free plan permits commercial use within its credits, request-rate and feature limits. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes draw on traditional symbolism for reflection; they are not medical or scientific advice. The app is in English only." />
             </>
           ) : null}
         </ScrollView>

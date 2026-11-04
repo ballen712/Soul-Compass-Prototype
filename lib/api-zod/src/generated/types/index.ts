@@ -7,6 +7,8 @@
  */
 
 export * from './astrologyHealth';
+export * from './cityLocation';
+export * from './citySearchResults';
 export * from './healthStatus';
 export * from './natalAngle';
 export * from './natalAspect';
@@ -28,3 +30,4 @@ export * from './planetaryPositionsResponse';
 export * from './planetaryPositionsResponseInput';
 export * from './planetaryPositionsResponseMetadata';
 export * from './positionRequest';
+export * from './searchCitiesParams';

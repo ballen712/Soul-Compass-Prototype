@@ -117,19 +117,19 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
         );
       })}
       <Text style={styles.attribution}>
-        Location data based on{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geonames.org/')} style={styles.attributionLink}>
-          GeoNames
+        Powered by{' '}
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geoapify.com/')} style={styles.attributionLink}>
+          Geoapify
         </Text>
-        {' '}via{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://open-meteo.com/en/terms')} style={styles.attributionLink}>
-          Open-Meteo
+        {' '}· ©{' '}
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.openstreetmap.org/copyright')} style={styles.attributionLink}>
+          OpenStreetMap contributors
         </Text>
         {' '}·{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://creativecommons.org/licenses/by/4.0/')} style={styles.attributionLink}>
-          CC BY 4.0
+        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geoapify.com/privacy-policy/')} style={styles.attributionLink}>
+          Provider privacy
         </Text>
-        . Free lookup is for non-commercial use. Only the typed city name is searched; no GPS is used.
+        . Search sends only your typed city query through our server to Geoapify, not your birth profile. No GPS is used. Search only runs when you tap Search.
       </Text>
     </View>
   );

@@ -21,11 +21,13 @@ import type {
 
 import type {
   AstrologyHealth,
+  CitySearchResults,
   HealthStatus,
   NatalChartRequest,
   NatalChartResponse,
   PlanetaryPositionsResponse,
-  PositionRequest
+  PositionRequest,
+  SearchCitiesParams
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -54,6 +56,90 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getSearchCitiesUrl = (params: SearchCitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/geocoding/cities?${stringifiedParams}` : `/api/geocoding/cities`
+}
+
+/**
+ * @summary Search cities without sending a birth profile
+ */
+export const searchCities = async (params: SearchCitiesParams, options?: Parameters<typeof customFetch>[1]): Promise<CitySearchResults> => {
+
+  return customFetch<CitySearchResults>(getSearchCitiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchCitiesQueryKey = (params?: SearchCitiesParams,) => {
+    return [
+    `/api/geocoding/cities`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchCitiesQueryOptions = <TData = Awaited<ReturnType<typeof searchCities>>, TError = ErrorType<void>>(params: SearchCitiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchCities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchCitiesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchCities>>> = ({ signal }) => searchCities(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchCities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchCitiesQueryResult = NonNullable<Awaited<ReturnType<typeof searchCities>>>
+export type SearchCitiesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search cities without sending a birth profile
+ */
+
+export function useSearchCities<TData = Awaited<ReturnType<typeof searchCities>>, TError = ErrorType<void>>(
+ params: SearchCitiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchCities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchCitiesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

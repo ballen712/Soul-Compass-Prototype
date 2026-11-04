@@ -56,3 +56,17 @@ mtime_ms = 1793813150518
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/ae101c00-757f-49b1-a4c1-6afb3141289c/915ff754-070a-4e28-8e5d-cba992c93811"
 storage_version_token = "1793813186102563"
 content_type = "text/html"
+
+[[outputs]]
+id = "PAx6mAOeF2cxZkxicgqet"
+uri = "file://artifacts/soul-compass/GEOAPIFY_INTEGRATION.html"
+type = "html"
+title = "Geoapify migration — verification report"
+description = "Exact changed-file list, successful live results, credential protections, tests/builds, Free-plan terms and remaining manual checks."
+logical_id = "6074398e-5b14-4d11-b483-3827076b9510"
+content_hash = "sha256:394e421cfec7176e81023c4984482e9ff3670a1e41c094984c708f4d09edd137"
+size = 11924
+mtime_ms = 1793814477936
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/6074398e-5b14-4d11-b483-3827076b9510/b73b60ed-8d4d-47df-a020-465cb4264ba6"
+storage_version_token = "1793814506425628"
+content_type = "text/html"

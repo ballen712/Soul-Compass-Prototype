@@ -21,6 +21,36 @@ async function query(text: string) {
   await act(async () => renderer.root.findByProps({ accessibilityLabel: 'Place of Birth' }).props.onChangeText(text));
 }
 function search() { return renderer.root.findByProps({ accessibilityLabel: 'Search cities' }).props.onPress(); }
+test('explicit searches select exact coordinates into independent birthplace and residence controls', async () => {
+  const residence = vi.fn();
+  const budapest = { city: 'Budapest', country: 'Hungary', admin1: 'Central Hungary',
+    latitude: 47.4978789, longitude: 19.0402383, timeZone: 'Europe/Budapest' };
+  const tokyo = { city: 'Tokyo', country: 'Japan', latitude: 35.6768601,
+    longitude: 139.7638947, timeZone: 'Asia/Tokyo' };
+  await act(async () => renderer.update(<>
+    <HomeCityPicker label="Place of Birth" value={null} onSelect={select} />
+    <HomeCityPicker label="Current residence" value={null} onSelect={residence} />
+  </>));
+  expect(lookup).not.toHaveBeenCalled();
+  lookup.mockResolvedValueOnce([budapest]).mockResolvedValueOnce([tokyo]);
+  await query('Budapest');
+  expect(lookup).not.toHaveBeenCalled();
+  await act(async () => renderer.root.findAllByProps({ accessibilityLabel: 'Search cities' })[0].props.onPress());
+  const selectResult = (name: string) => renderer.root.findAllByType('Pressable' as any).find(
+    p => p.findAllByType('Text' as any).some(t => t.children.includes(name)))!.props.onPress();
+  await act(async () => selectResult('Budapest'));
+  expect(select).toHaveBeenCalledExactlyOnceWith({ city: 'Budapest', country: 'Hungary',
+    latitude: 47.4978789, longitude: 19.0402383, timeZone: 'Europe/Budapest' });
+  expect(residence).not.toHaveBeenCalled();
+  await act(async () => renderer.root.findByProps({ accessibilityLabel: 'Current residence' }).props.onChangeText('Tokyo'));
+  await act(async () => renderer.root.findAllByProps({ accessibilityLabel: 'Search cities' })[1].props.onPress());
+  await act(async () => selectResult('Tokyo'));
+  expect(residence).toHaveBeenCalledExactlyOnceWith(tokyo);
+  expect(select).toHaveBeenCalledTimes(1);
+  const output = JSON.stringify(renderer.toJSON());
+  expect(output).toContain('Geoapify'); expect(output).toContain('OpenStreetMap');
+  expect(output).not.toContain('Open-Meteo');
+});
 test('late older search is ignored even if its fetch double ignores cancellation', async () => {
   let resolveOld!: (value: unknown) => void;
   lookup.mockImplementationOnce(() => new Promise(r => { resolveOld = r; })).mockResolvedValueOnce([city('New result')]);

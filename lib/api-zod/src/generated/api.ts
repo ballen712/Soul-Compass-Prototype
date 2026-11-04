@@ -9,6 +9,40 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Search cities without sending a birth profile
+ */
+export const searchCitiesQueryQMin = 2;
+export const searchCitiesQueryQMax = 100;
+
+
+
+export const SearchCitiesQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchCitiesQueryQMin).max(searchCitiesQueryQMax)
+})
+
+export const searchCitiesResponseResultsItemLatitudeMin = -90;
+export const searchCitiesResponseResultsItemLatitudeMax = 90;
+
+export const searchCitiesResponseResultsItemLongitudeMin = -180;
+export const searchCitiesResponseResultsItemLongitudeMax = 180;
+
+export const searchCitiesResponseResultsMax = 8;
+
+
+
+export const SearchCitiesResponse = zod.object({
+  "results": zod.array(zod.object({
+  "city": zod.string(),
+  "country": zod.string(),
+  "admin1": zod.string().optional(),
+  "latitude": zod.number().min(searchCitiesResponseResultsItemLatitudeMin).max(searchCitiesResponseResultsItemLatitudeMax),
+  "longitude": zod.number().min(searchCitiesResponseResultsItemLongitudeMin).max(searchCitiesResponseResultsItemLongitudeMax),
+  "timeZone": zod.string()
+})).max(searchCitiesResponseResultsMax)
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

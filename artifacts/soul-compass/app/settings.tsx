@@ -5,11 +5,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ProfileForm } from '@/components/ProfileForm';
 import { useProfile } from '@/profile/ProfileContext';
 import type { UserProfile } from '@/profile/profile';
-import { alternativeCrystals, primaryCrystal } from '@/constants/content';
+import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
-const CATALOG = [primaryCrystal, ...alternativeCrystals].map((c) => ({ id: slugOf(c.name), name: c.name }));
+const CATALOG = [samplePrimaryCrystal, ...alternativeCrystals].map((c) => ({ id: slugOf(c.name), name: c.name }));
 const INTENTIONS = ['Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change'];
 const LANGUAGES = [{ code: 'en', label: 'English' }, { code: 'es', label: 'Spanish' }, { code: 'fr', label: 'French' }, { code: 'de', label: 'German' }, { code: 'pt', label: 'Portuguese' }];
 

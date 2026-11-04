@@ -1,13 +1,20 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
+import { useMemo } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
 import { SettingsButton } from '@/components/SettingsButton';
-import { alternativeCrystals, primaryCrystal } from '@/constants/content';
+import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
+import {
+  calculateDailyAstrology,
+  EPHEMERIS_SOURCE,
+  getCrystalRecommendation,
+  getSampleCrystal,
+} from '@/profile/astrology';
 
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -54,11 +61,27 @@ function HiddenNote({ count }: { count: number }) {
 export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { preferences } = useProfile();
+  const { preferences, profile } = useProfile();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
-  const showPrimary = !hidden.includes(slugOf(primaryCrystal.name));
-  const visibleAlternatives = alternativeCrystals.filter((c) => !hidden.includes(slugOf(c.name)));
-  const hiddenCount = [primaryCrystal, ...alternativeCrystals].filter((c) => hidden.includes(slugOf(c.name))).length;
+  const astrology = useMemo(
+    () => (profile ? calculateDailyAstrology(profile) : null),
+    [profile],
+  );
+  const recommendation =
+    astrology?.status === 'calculated'
+      ? getCrystalRecommendation(astrology)
+      : null;
+  const featuredCrystal = recommendation?.crystal ?? getSampleCrystal();
+  const catalog = [samplePrimaryCrystal, ...alternativeCrystals];
+  const showPrimary = !hidden.includes(slugOf(featuredCrystal.name));
+  const visibleAlternatives = catalog.filter(
+    (crystal) =>
+      crystal.name !== featuredCrystal.name &&
+      !hidden.includes(slugOf(crystal.name)),
+  );
+  const hiddenCount = catalog.filter((crystal) =>
+    hidden.includes(slugOf(crystal.name)),
+  ).length;
 
   return (
     <SafeAreaView
@@ -149,6 +172,18 @@ export default function CrystalsScreen() {
             >
               Natural forms, chosen for the feeling they evoke.
             </Text>
+            <Text
+              style={[
+                styles.calculationNote,
+                { color: colors.crystals.mutedForeground },
+              ]}
+            >
+              {recommendation
+                ? `Calculated from eligible chart factors using ${EPHEMERIS_SOURCE.name}. Crystal symbolism is reflective, not a scientific or medical claim.`
+                : astrology?.status === 'unavailable'
+                  ? astrology.message
+                  : 'Sample crystal suggestions — not calculated from your chart.'}
+            </Text>
           </View>
 
           <HiddenNote count={hiddenCount} />
@@ -169,10 +204,10 @@ export default function CrystalsScreen() {
               ]}
             >
               <Image
-                source={primaryCrystal.image}
+                source={featuredCrystal.image}
                 style={styles.featureImage}
                 resizeMode="cover"
-                accessibilityLabel={primaryCrystal.imageDescription}
+                accessibilityLabel={featuredCrystal.imageDescription}
               />
               <View
                 style={[
@@ -186,7 +221,7 @@ export default function CrystalsScreen() {
                     { color: colors.crystals.badgeForeground },
                   ]}
                 >
-                  SAMPLE STONE
+                  {recommendation ? 'CALCULATED PICK' : 'SAMPLE ONLY'}
                 </Text>
               </View>
             </View>
@@ -199,7 +234,7 @@ export default function CrystalsScreen() {
                       { color: colors.crystals.foreground },
                     ]}
                   >
-                    {primaryCrystal.name}
+                    {featuredCrystal.name}
                   </Text>
                   <Text
                     style={[
@@ -207,7 +242,7 @@ export default function CrystalsScreen() {
                       { color: colors.crystals.secondary },
                     ]}
                   >
-                    {primaryCrystal.note}
+                    {featuredCrystal.note}
                   </Text>
                 </View>
                 <View
@@ -229,9 +264,19 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                {primaryCrystal.description}
+                {recommendation?.reason ?? featuredCrystal.description}
               </Text>
-              <CollectionToggle name={primaryCrystal.name} />
+              <CollectionToggle name={featuredCrystal.name} />
+              {recommendation ? (
+                <Text
+                  style={[
+                    styles.crystalDescription,
+                    { color: colors.crystals.mutedForeground },
+                  ]}
+                >
+                  {featuredCrystal.description}
+                </Text>
+              ) : null}
             </View>
           </View>
           ) : null}
@@ -246,7 +291,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                IF YOU FEEL CALLED ELSEWHERE
+                OTHER STONES · SAMPLE IDEAS
               </Text>
               <Text
                 style={[
@@ -414,6 +459,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 21,
     marginTop: 12,
+  },
+  calculationNote: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 10,
   },
   featureCard: {
     borderRadius: 25,

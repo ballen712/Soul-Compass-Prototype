@@ -8,6 +8,7 @@ type Props = {
   label: string;
   value: HomeLocation | null;
   onSelect: (location: HomeLocation) => void;
+  purpose?: 'home' | 'birth';
 };
 
 export function HomeCityPicker({ label, value, onSelect }: Props) {

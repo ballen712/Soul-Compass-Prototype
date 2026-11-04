@@ -36,13 +36,13 @@ export function getChartPrecision(profile: UserProfile): ChartPrecision {
   const birthTimeKnown = profile.birthTime.status === 'known';
   return {
     birthTimeKnown,
-    mayUseAscendant: birthTimeKnown,
-    mayUseMidheaven: birthTimeKnown,
-    mayUseHouses: birthTimeKnown,
+    mayUseAscendant: false,
+    mayUseMidheaven: false,
+    mayUseHouses: false,
     mayUseTimeSensitiveInterpretations: birthTimeKnown,
     precisionNote: birthTimeKnown
-      ? 'Prototype sample only: this horoscope and crystal suggestion are not personalized or calculated.'
-      : 'Prototype sample only: this horoscope and crystal suggestion are not personalized or calculated. Birth time is unknown, so future chart readings would have reduced precision and omit the Ascendant, Midheaven, houses, and other time-sensitive details.',
+      ? 'Planet positions use your birth date, time, and birth city. Ascendant, Midheaven, and houses are not included.'
+      : 'Birth time is unknown, so only planet signs stable throughout the possible birth day are used. Ascendant, Midheaven, houses, and other time-sensitive chart details are excluded.',
   };
 }
 

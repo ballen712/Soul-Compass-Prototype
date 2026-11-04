@@ -1,10 +1,11 @@
 export const dailyReading = {
-  label: 'SAMPLE HOROSCOPE · PROTOTYPE',
+  label: 'SAMPLE DAILY READING · PROTOTYPE',
   title: 'A quieter kind of clarity.',
   body:
     'You do not need to answer every open question at once. Choose the one conversation, task, or feeling that deserves your full attention, and let the rest wait.',
   reflection: 'What deserves my attention without being rushed?',
   focus: 'Steady focus',
+  status: 'Sample copy — not calculated from your chart.',
 };
 
 export type Crystal = {
@@ -15,7 +16,7 @@ export type Crystal = {
   imageDescription: string;
 };
 
-export const primaryCrystal: Crystal = {
+export const samplePrimaryCrystal: Crystal = {
   name: 'Moonstone',
   note: 'Intuition · inner steadiness',
   description:
@@ -42,3 +43,9 @@ export const alternativeCrystals: Crystal[] = [
     imageDescription: 'Labradorite stone with blue-green iridescence',
   },
 ];
+
+export const calculatedCrystalCatalog: Record<string, Crystal> = {
+  Moonstone: samplePrimaryCrystal,
+  Amethyst: alternativeCrystals[0],
+  Labradorite: alternativeCrystals[1],
+};

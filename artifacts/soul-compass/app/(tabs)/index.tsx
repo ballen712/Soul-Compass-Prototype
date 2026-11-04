@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileReadingNote } from '@/components/ProfileReadingNote';
@@ -7,10 +8,20 @@ import { PlanetarySnapshot } from '@/components/PlanetarySnapshot';
 import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
+import { useProfile } from '@/profile/ProfileContext';
+import { calculateDailyAstrology, EPHEMERIS_SOURCE } from '@/profile/astrology';
 
 export default function CosmosScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { profile } = useProfile();
+  const astrology = useMemo(
+    () => (profile ? calculateDailyAstrology(profile) : null),
+    [profile],
+  );
+  const calculatedReading =
+    astrology?.status === 'calculated' ? astrology.reading : null;
+  const reading = calculatedReading ?? dailyReading;
 
   return (
     <SafeAreaView
@@ -82,7 +93,7 @@ export default function CosmosScreen() {
                   { color: colors.cosmos.secondary },
                 ]}
               >
-                {dailyReading.label}
+                {reading.label}
               </Text>
             </View>
             <Text
@@ -144,7 +155,7 @@ export default function CosmosScreen() {
                 { color: colors.cosmos.foreground },
               ]}
             >
-              {dailyReading.title}
+              {reading.title}
             </Text>
             <Text
               style={[
@@ -152,8 +163,30 @@ export default function CosmosScreen() {
                 { color: colors.cosmos.mutedForeground },
               ]}
             >
-              {dailyReading.body}
+              {reading.body}
             </Text>
+            <Text
+              style={[
+                styles.calculationNote,
+                { color: colors.cosmos.mutedForeground },
+              ]}
+            >
+              {astrology?.status === 'calculated'
+                ? `${astrology.calculationDate} · ${astrology.sourceLabel}. Planet positions are calculated; astrological meanings are reflective, not scientific predictions.`
+                : astrology?.status === 'unavailable'
+                  ? astrology.message
+                  : dailyReading.status}
+            </Text>
+            {calculatedReading ? (
+              <Text
+                style={[
+                  styles.factorSummary,
+                  { color: colors.cosmos.secondary },
+                ]}
+              >
+                {calculatedReading.factorSummary}
+              </Text>
+            ) : null}
 
             <View
               style={[
@@ -190,7 +223,7 @@ export default function CosmosScreen() {
                     { color: colors.cosmos.foreground },
                   ]}
                 >
-                  “{dailyReading.reflection}”
+                  “{reading.reflection}”
                 </Text>
               </View>
             </View>
@@ -218,7 +251,7 @@ export default function CosmosScreen() {
                   { color: colors.cosmos.foreground },
                 ]}
               >
-                {dailyReading.focus}
+                {reading.focus}
               </Text>
             </View>
           </View>
@@ -365,6 +398,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 23,
     marginTop: 12,
+  },
+  calculationNote: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 13,
+  },
+  factorSummary: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 5,
   },
   cardRule: {
     height: 1,

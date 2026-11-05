@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateDailyAstrology, EPHEMERIS_SOURCE } from './astrology';
+import { calculateDailyAstrology, calculateNatalElementBalance, EPHEMERIS_SOURCE, makeCalculatedReading } from './astrology';
+import type { NatalElementBalance } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { FEELING_OPTIONS, getCompanionReason, getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
+import { FEELING_OPTIONS, getCompanionReason, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
-import { alternativeCrystals, samplePrimaryCrystal } from '../constants/content';
+import { alternativeCrystals, crystalCatalog, dailyReading, samplePrimaryCrystal } from '../constants/content';
 
 const currentResidence = {
   city: 'New York',
@@ -123,9 +124,10 @@ test('intentions change crystal ranking without requiring a collection', () => {
   if (chart.status !== 'calculated') return;
   const focus = getCrystalRecommendation(chart, { intentions: ['Focus'] });
   const change = getCrystalRecommendation(chart, { intentions: ['Change'] });
-  assert.equal(focus?.crystal.name, 'Amethyst');
+  assert.ok(focus?.crystal.themes.some((theme) => ['focus', 'clarity', 'attention', 'structure'].includes(theme)));
   assert.deepEqual(focus?.matchedIntentions, ['focus']);
-  assert.equal(change?.crystal.name, 'Labradorite');
+  assert.ok(change?.crystal.themes.some((theme) => ['change', 'adaptability', 'renewal', 'curiosity'].includes(theme)));
+  assert.notEqual(focus?.crystal.name, change?.crystal.name);
   assert.match(focus!.reason, /today|theme/i);
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
   const moonstoneReason = getCompanionReason(samplePrimaryCrystal, focus);
@@ -140,24 +142,59 @@ test('hidden recommendations are replaced from the remaining visible catalog', (
   assert.equal(chart.status, 'calculated'); if (chart.status !== 'calculated') return;
   const result = getCrystalRecommendation(chart, { intentions: ['Focus'], hiddenCrystals: ['amethyst'] });
   assert.notEqual(result?.crystal.name, 'Amethyst');
-  assert.equal(getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] }), null);
+  const allHidden = crystalCatalog.map((crystal) => crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+  assert.equal(getCrystalRecommendation(chart, { hiddenCrystals: allHidden }), null);
+  assert.ok(getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] }));
+});
+test('weak or missing chart matches do not force a daily stone', () => {
+  const chart = calculateDailyAstrology(makeProfile());
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+  const noRelevantThemes = { ...chart, aspects: [], natalPlacements: [] };
+  assert.deepEqual(getCrystalSuggestions(noRelevantThemes), []);
+
+  const singleSunPlacement = {
+    ...chart,
+    aspects: [],
+    natalPlacements: chart.natalPlacements.filter((placement) => placement.body === 'Sun'),
+  };
+  const sunThemes = ['confidence', 'direction', 'courage'];
+  const weakChartCandidate = crystalCatalog.find((crystal) =>
+    crystal.themes.filter((theme) => sunThemes.includes(theme)).length === 1,
+  );
+  assert.ok(weakChartCandidate);
+  const chartResults = getCrystalSuggestions(singleSunPlacement, {}, crystalCatalog.length);
+  assert.ok(!chartResults.some((item) => item.crystal.name === weakChartCandidate.name));
+
+  const steady = FEELING_OPTIONS.find((option) => option.id === 'steady')!;
+  const weakCandidate = crystalCatalog.find((crystal) =>
+    crystal.themes.filter((theme) => (steady.themes as readonly string[]).includes(theme)).length === 1,
+  );
+  assert.ok(weakCandidate, 'the catalog should contain a weak one-theme match for this check');
+  const fullResults = getCrystalSuggestions(undefined, { feeling: steady.id }, crystalCatalog.length);
+  assert.ok(fullResults.length > 0);
+  assert.ok(!fullResults.some((item) => item.crystal.name === weakCandidate.name));
 });
 test('intention-only suggestions are labeled and arbitrary custom words are not invented as matches', () => {
   const result = getIntentionRecommendation({ intentions: [' focus ', 'FOCUS'] });
-  assert.equal(result?.basis, 'intention'); assert.equal(result?.crystal.name, 'Amethyst');
+  assert.equal(result?.basis, 'intention');
+  assert.ok(result?.crystal.themes.some((theme) => ['focus', 'clarity', 'attention', 'structure'].includes(theme)));
   assert.deepEqual(result?.matchedIntentions, ['focus']);
   assert.match(result!.reason, /intention to focus/i);
   assert.equal(getIntentionRecommendation({ intentions: ['unmapped custom word'] }), null);
-  assert.equal(getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] }), null);
+  const replacement = getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] });
+  assert.ok(replacement);
+  assert.notEqual(replacement.crystal.name, 'Amethyst');
 });
 test('twelve daily feelings produce personal stone suggestions and still respond to transit themes', () => {
   assert.equal(FEELING_OPTIONS.length, 12);
   assert.equal(new Set(FEELING_OPTIONS.map(option => option.id)).size, 12);
-  const catalog = new Set(['Moonstone', 'Amethyst', 'Labradorite']);
+  const catalog = new Set(crystalCatalog.map((crystal) => crystal.name));
   for (const feeling of FEELING_OPTIONS) {
-    assert.ok(getIntentionRecommendation({ feeling: feeling.id }), `${feeling.label} should guide a stone suggestion`);
-    assert.ok(catalog.has(feeling.primary), `${feeling.label} primary stone should exist in the guide`);
-    assert.ok(catalog.has(feeling.secondary), `${feeling.label} alternate stone should exist in the guide`);
+    const suggestion = getIntentionRecommendation({ feeling: feeling.id });
+    assert.ok(suggestion, `${feeling.label} should guide a stone suggestion`);
+    assert.ok(catalog.has(suggestion.crystal.name));
+    assert.ok(suggestion.crystal.themes.some((theme) => (feeling.themes as readonly string[]).includes(theme)));
   }
 
   const chart = calculateDailyAstrology(makeProfile(), new Date('2026-06-01T01:00:00Z'));
@@ -171,13 +208,104 @@ test('twelve daily feelings produce personal stone suggestions and still respond
   const steadyDay = getCrystalRecommendation(withTransit('trine', 'supportive'), { feeling: 'tired' });
   const demandingDay = getCrystalRecommendation(withTransit('square', 'challenging'), { feeling: 'tired' });
 
-  assert.equal(getIntentionRecommendation({ feeling: 'energized' })?.crystal.name, 'Labradorite');
-  assert.equal(steadyDay?.crystal.name, 'Amethyst');
-  assert.equal(demandingDay?.crystal.name, 'Labradorite');
+  assert.notDeepEqual(
+    getCrystalSuggestions(withTransit('trine', 'supportive'), { feeling: 'tired' }).map((suggestion) => suggestion.crystal.name),
+    getCrystalSuggestions(withTransit('square', 'challenging'), { feeling: 'tired' }).map((suggestion) => suggestion.crystal.name),
+  );
   assert.equal(steadyDay?.basis, 'chart');
   assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
-  assert.equal(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Moonstone');
+  assert.notEqual(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Amethyst');
   assert.match(getCompanionReason(samplePrimaryCrystal, steadyDay), /how you feel/i);
+});
+test('expanded catalog and daily suggestions use more than the original three stones', () => {
+  assert.ok(crystalCatalog.length >= 80);
+  assert.equal(crystalCatalog.filter((crystal) => crystal.image !== undefined).length, 3);
+  assert.equal(new Set(crystalCatalog.map((crystal) => crystal.name.toLowerCase())).size, crystalCatalog.length);
+  assert.ok(crystalCatalog.every((crystal) => crystal.themes.length >= 2 && crystal.description.length > 40));
+  const seen = new Set<string>();
+  for (const feeling of FEELING_OPTIONS) {
+    const suggestions = getCrystalSuggestions(undefined, { feeling: feeling.id, dateKey: '2026-11-05' });
+    assert.ok(suggestions.length >= 1 && suggestions.length <= 3);
+    assert.equal(new Set(suggestions.map((suggestion) => suggestion.crystal.name)).size, 3);
+    for (const suggestion of suggestions) seen.add(suggestion.crystal.name);
+  }
+  assert.ok(seen.size > 12, `Expected a varied catalog, got ${seen.size} distinct suggestions`);
+});
+test('different birth profiles can change the recommended stones', () => {
+  const seen = new Set<string>();
+  for (const birthDate of ['1951-02-03', '1964-07-17', '1977-11-25', '1988-04-09', '1992-09-12', '2000-01-01', '2005-06-30', '1997-12-21']) {
+    const chart = calculateDailyAstrology(makeProfile({ birthDate }), new Date('2026-11-05T12:00:00Z'));
+    assert.equal(chart.status, 'calculated');
+    if (chart.status !== 'calculated') continue;
+    const suggestions = getCrystalSuggestions(chart);
+    for (const suggestion of suggestions) seen.add(suggestion.crystal.name);
+  }
+  assert.ok(seen.size > 3, `Birth profiles should not be limited to the original three stones; got ${seen.size}`);
+});
+test('natal element summary works locally without a current residence and omits uncertain unknown-time signs', () => {
+  const timed = calculateNatalElementBalance(makeProfile({ currentResidence: null }));
+  assert.equal(timed.status, 'calculated');
+  if (timed.status !== 'calculated') return;
+  assert.equal(timed.preciseBirthMoment, true);
+  assert.equal(timed.total, 10);
+  assert.equal(Object.values(timed.counts).reduce((sum, count) => sum + count, 0), timed.total);
+
+  const untimed = calculateNatalElementBalance(makeProfile({
+    birthTime: { status: 'unknown' },
+    currentResidence: null,
+  }));
+  assert.equal(untimed.status, 'calculated');
+  if (untimed.status !== 'calculated') return;
+  assert.equal(untimed.preciseBirthMoment, false);
+  assert.ok(untimed.total > 0 && untimed.total <= 10);
+  assert.equal(Object.values(untimed.counts).reduce((sum, count) => sum + count, 0), untimed.total);
+});
+test('natal crystal set has eight unique, chart-weighted stones and respects hidden choices', () => {
+  const fireChart: NatalElementBalance = {
+    status: 'calculated',
+    counts: { Fire: 5, Air: 1, Water: 2, Earth: 2 },
+    total: 10,
+    dominant: ['Fire'],
+    leastRepresented: ['Air'],
+    preciseBirthMoment: true,
+  };
+  const waterChart: NatalElementBalance = {
+    ...fireChart,
+    counts: { Fire: 1, Air: 2, Water: 5, Earth: 2 },
+    dominant: ['Water'],
+    leastRepresented: ['Fire'],
+  };
+  const fireStones = getNatalCrystalSuggestions(fireChart);
+  const waterStones = getNatalCrystalSuggestions(waterChart);
+  assert.equal(fireStones.length, 8);
+  assert.equal(new Set(fireStones.map((item) => item.crystal.name)).size, 8);
+  assert.notDeepEqual(
+    fireStones.map((item) => item.crystal.name),
+    waterStones.map((item) => item.crystal.name),
+  );
+  assert.ok(fireStones.every((item) => item.reason.length > 40));
+  const hidden = fireStones.slice(0, 3).map((item) =>
+    item.crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+  );
+  const remaining = getNatalCrystalSuggestions(fireChart, hidden);
+  assert.equal(remaining.length, 8);
+  assert.ok(remaining.every((item) => !hidden.includes(
+    item.crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+  )));
+});
+test('Cosmos sections have distinct roles and text across all major aspect patterns', () => {
+  const chart = calculateDailyAstrology(makeProfile(), new Date('2026-11-05T12:00:00Z'));
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+  for (const aspect of ['conjunction', 'sextile', 'square', 'trine', 'opposition'] as const) {
+    const reading = makeCalculatedReading(chart.natalPlacements, [{ ...chart.aspects[0], aspect }]);
+    const copy = [reading.title, reading.body, reading.favorableFocus, reading.gentleCaution, reading.reflection];
+    assert.equal(new Set(copy.map((text) => text.toLowerCase().replace(/[^a-z]/g, ''))).size, 5);
+    assert.ok(reading.body.length > reading.favorableFocus.length);
+    assert.ok(reading.reflection.endsWith('?'));
+    assert.doesNotMatch(reading.reflection, /today today/);
+  }
+  assert.equal(new Set([dailyReading.body, dailyReading.favorableFocus, dailyReading.gentleCaution, dailyReading.reflection]).size, 4);
 });
 test('minute cache is shared only for the same profile and refreshes after local midnight', () => {
   const profile = makeProfile();

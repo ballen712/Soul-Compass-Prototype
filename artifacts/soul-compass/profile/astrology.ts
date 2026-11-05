@@ -52,6 +52,35 @@ const MAJOR_ASPECTS = [
 
 type Planet = (typeof PLANETS)[number];
 type AspectName = (typeof MAJOR_ASPECTS)[number]['name'];
+export type ZodiacElement = 'Fire' | 'Air' | 'Water' | 'Earth';
+
+export type NatalElementBalance = {
+  status: 'calculated';
+  counts: Record<ZodiacElement, number>;
+  total: number;
+  dominant: ZodiacElement[];
+  leastRepresented: ZodiacElement[];
+  preciseBirthMoment: boolean;
+};
+
+export type NatalElementResult =
+  | NatalElementBalance
+  | { status: 'unavailable'; message: string };
+
+const SIGN_ELEMENTS: Record<(typeof ZODIAC_SIGNS)[number], ZodiacElement> = {
+  Aries: 'Fire',
+  Taurus: 'Earth',
+  Gemini: 'Air',
+  Cancer: 'Water',
+  Leo: 'Fire',
+  Virgo: 'Earth',
+  Libra: 'Air',
+  Scorpio: 'Water',
+  Sagittarius: 'Fire',
+  Capricorn: 'Earth',
+  Aquarius: 'Air',
+  Pisces: 'Water',
+};
 
 export type NatalPlacement = {
   body: Planet;
@@ -237,6 +266,58 @@ function getNatalPlacements(
   });
 }
 
+/**
+ * Uses only reliable natal sign placements and never requires a current
+ * residence, API consent, or a network request.
+ */
+export function calculateNatalElementBalance(profile: UserProfile): NatalElementResult {
+  const precision = getChartPrecision(profile);
+  const preciseBirthMoment = precision.mayUseTimeSensitiveInterpretations;
+  const birthInstant = preciseBirthMoment
+    ? localBirthTimeToUtc(
+        profile.birthDate,
+        profile.birthTime.status === 'known' ? profile.birthTime.localTime : '',
+        profile.birthPlace.timeZone,
+      )
+    : null;
+
+  if (preciseBirthMoment && !birthInstant) {
+    return {
+      status: 'unavailable',
+      message: 'The saved birth time is ambiguous in this time zone. Check the time before using this chart summary.',
+    };
+  }
+
+  const placements = getNatalPlacements(profile, preciseBirthMoment, birthInstant);
+  if (placements.length === 0) {
+    return {
+      status: 'unavailable',
+      message: 'There are not enough reliable sign placements to summarize this birth chart.',
+    };
+  }
+
+  const counts: Record<ZodiacElement, number> = {
+    Fire: 0,
+    Air: 0,
+    Water: 0,
+    Earth: 0,
+  };
+  for (const placement of placements) counts[SIGN_ELEMENTS[placement.sign]] += 1;
+  const values = Object.values(counts);
+  const highest = Math.max(...values);
+  const lowest = Math.min(...values);
+  const orderedElements: ZodiacElement[] = ['Fire', 'Air', 'Water', 'Earth'];
+
+  return {
+    status: 'calculated',
+    counts,
+    total: placements.length,
+    dominant: orderedElements.filter((element) => counts[element] === highest),
+    leastRepresented: orderedElements.filter((element) => counts[element] === lowest),
+    preciseBirthMoment,
+  };
+}
+
 function angularSeparation(first: number, second: number): number {
   const difference = Math.abs(normalizeLongitude(first - second));
   return Math.min(difference, 360 - difference);
@@ -275,7 +356,7 @@ function getTransitAspects(
   return candidates.sort((first, second) => first.maxOrb - second.maxOrb).slice(0, 4);
 }
 
-function makeCalculatedReading(
+export function makeCalculatedReading(
   natalPlacements: NatalPlacement[],
   aspects: TransitAspect[],
 ): CalculatedReading {
@@ -295,45 +376,45 @@ function makeCalculatedReading(
     };
     const aspectAdvice = {
       conjunction: {
-        title: 'Give one thing your attention.',
-        action: 'Take one small step instead of trying to do everything at once',
-        favorableFocus: 'Choose one important thing and give it your full attention.',
-        gentleCaution: 'Try not to answer every demand at once. They can wait their turn.',
-        question: 'What would I like to focus on',
+        title: 'Notice what is taking center stage.',
+        explanation: 'One topic may feel louder than the rest; notice why before you act.',
+        favorableFocus: 'Detailed work with a clear starting point may feel satisfying.',
+        gentleCaution: 'Do not let every notification choose your next task.',
+        question: 'What can I protect by saying a gentle no',
       },
       sextile: {
-        title: 'Start where you are.',
-        action: 'Try one manageable step toward something you care about',
-        favorableFocus: 'A small conversation or practical first step could open the way.',
-        gentleCaution: 'You do not need perfect conditions to begin.',
-        question: 'What small step feels possible',
+        title: 'Leave room for a useful opening.',
+        explanation: 'Stay curious about a helpful conversation or an unexpected option.',
+        favorableFocus: 'A first conversation or a small test of an idea may show you a useful path.',
+        gentleCaution: 'Check the practical details before promising more than you can give.',
+        question: 'What would I try if I did not have to get it right the first time',
       },
       square: {
-        title: 'Pause before you react.',
-        action: 'Notice what feels difficult, take a breath, and change one thing you can control',
-        favorableFocus: 'Take one challenge at a time; give yourself room to think.',
-        gentleCaution: 'A strong feeling deserves attention, not necessarily the send button.',
-        question: 'What could I do differently',
+        title: 'Treat tension as information.',
+        explanation: 'A mismatch between your needs and the day’s demands may ask for a closer look.',
+        favorableFocus: 'Thoughtful problem-solving may work better than rushing to an answer.',
+        gentleCaution: 'Give yourself a beat before replying in the heat of the moment.',
+        question: 'Where would asking for help be wiser than pushing through',
       },
       trine: {
-        title: 'Use what you already know.',
-        action: 'Use a familiar strength to move one practical task forward',
-        favorableFocus: 'Lean on a skill or routine that has helped you before.',
-        gentleCaution: 'Even a good routine needs your attention; it will not do the day for you.',
-        question: 'Which strength can I use today',
+        title: 'Notice what is already working.',
+        explanation: 'Something familiar may come more easily; notice what is helping.',
+        favorableFocus: 'A practiced skill or routine can help you make steady progress.',
+        gentleCaution: 'Do not fill every free hour just because things feel manageable.',
+        question: 'What kind of support could I offer or accept',
       },
       opposition: {
-        title: 'Make room for both sides.',
-        action: 'Listen to another point of view before making a commitment',
-        favorableFocus: 'A choice or conversation may become clearer when you hear both sides.',
-        gentleCaution: 'A disagreement does not have to become a verdict.',
-        question: 'What might the other person be seeing',
+        title: 'Let two points of view sit side by side.',
+        explanation: 'Two needs may pull in different directions, and both deserve a hearing.',
+        favorableFocus: 'A conversation with room for listening and compromise may be more useful than a quick answer.',
+        gentleCaution: 'Do not make a disagreement carry more meaning than it needs to.',
+        question: 'Which boundary would help me stay kind without agreeing to everything',
       },
     }[leadingAspect.aspect];
     return {
       label: 'TODAY’S REFLECTION',
       title: aspectAdvice.title,
-      body: `Today’s theme touches ${transitTheme[leadingAspect.transitBody]}. ${aspectAdvice.action}.`,
+      body: `Today highlights ${transitTheme[leadingAspect.transitBody]}. ${aspectAdvice.explanation}`,
       favorableFocus: aspectAdvice.favorableFocus,
       gentleCaution: aspectAdvice.gentleCaution,
       reflection: `${aspectAdvice.question} today?`,
@@ -346,10 +427,10 @@ function makeCalculatedReading(
   return {
     label: 'TODAY’S REFLECTION',
     title: 'Begin with what you know.',
-    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} themes can offer a useful starting point. Take one step at your own pace.`,
-    favorableFocus: 'Use a skill or routine you already trust to move one practical task forward.',
-    gentleCaution: 'Clarity does not have to arrive before you begin.',
-    reflection: `Where could your ${anchor.sign} ${anchor.body.toLowerCase()} strengths help today?`,
+    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} themes offer a starting point for noticing what feels familiar. You still choose the direction.`,
+    favorableFocus: 'A familiar skill may help you finish one practical task.',
+    gentleCaution: 'You do not need a complete plan before taking a first look.',
+    reflection: 'Which part of my routine would I like to change a little?',
     factorSummary: `${anchor.sign} ${anchor.body} · no close major transit`,
   };
 }
@@ -421,7 +502,12 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
   }
 }
 
-export { getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
+export {
+  getCrystalRecommendation,
+  getCrystalSuggestions,
+  getIntentionRecommendation,
+  getNatalCrystalSuggestions,
+} from './crystal-guidance';
 
 export function getSampleCrystal(): Crystal {
   return samplePrimaryCrystal;

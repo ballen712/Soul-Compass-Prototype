@@ -158,4 +158,5 @@ test('ritual ideas use the shared info button and no optional label', async () =
   const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
   expect(modalCopy).toContain('Other ideas for today');
   expect(modalCopy).not.toContain('OPTIONAL');
+  expect(modal.findAllByProps({ testID: 'daily-ritual-option' })).toHaveLength(3);
 });

@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
+import { getDailyRituals } from '@/constants/daily-rituals';
+import { screenTypography } from '@/constants/typography';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
@@ -28,14 +30,21 @@ const reflectionExplanations: Record<string, string> = {
     'When two needs or points of view are in tension, give each a fair hearing before you decide. Listening does not mean agreeing with everyone; it can help you see what matters and choose what feels right for you.',
   'Start with what you know.':
     'When you are unsure what to do next, begin with something familiar. A skill or routine you trust may help you take one practical step without needing to know the whole way forward.',
+  'Let one thing be enough today.':
+    'An overflowing list can make everything seem equally urgent. This reflection asks you to separate what matters from what is simply making noise. You might finish less and still give the important part of your day better attention.',
+  'Notice what is taking center stage.':
+    'Sometimes one topic keeps returning—a choice, a conversation, or something you have been putting off. You do not need to obey the loudest demand, but it can help to ask why it is holding your attention. Choose a next step only after you have made that distinction.',
+  'Leave room for a useful opening.':
+    'A useful opportunity is not always a dramatic invitation. It may be an ordinary question, a new contact, or a chance to test an idea. Stay curious enough to notice it, then check whether it actually fits what you need.',
+  'Treat tension as information.':
+    'When something rubs you the wrong way, the first feeling is only part of the story. There may be an unmet need, a limit, or a practical problem underneath it. Give yourself a little space to find that part before deciding how to respond.',
+  'Notice what is already working.':
+    'When things feel easier, it is tempting to move past them without noticing why. A skill, a habit, or support from someone else may be helping. Recognizing that support gives you something practical to return to when another part of the day feels less straightforward.',
+  'Let two points of view sit side by side.':
+    'Understanding another view does not mean giving up your own. Try separating what each person needs from the solution each person is arguing for. There may be more room to work with than the first disagreement suggests.',
+  'Begin with what you know.':
+    'You can begin without having the whole answer. Choose a familiar tool, a small routine, or a person you trust, and see what becomes clearer from there. Familiarity is a starting point, not a rule that prevents you from changing course.',
 };
-
-const dailyRituals = [
-  'Take three comfortable breaths before beginning a task.',
-  'Write down one thing you want to give attention today.',
-  'Step outside briefly and notice the light, sounds, or air.',
-  'Pause to stretch your shoulders before your next task.',
-];
 
 const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
   x: ((index * 41 + 19) % 97) / 97,
@@ -65,13 +74,12 @@ export default function CosmosScreen() {
   const calculatedReading =
     astrology?.status === 'calculated' ? astrology.reading : null;
   const reading = calculatedReading ?? dailyReading;
-  const localDateKey =
-    now.getFullYear() * 10_000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const ritualChoices = getDailyRituals(now, 4);
+  const dailyRitual = ritualChoices[0] ?? 'Take three easy breaths before beginning a task.';
   const pageWidth = Math.min(windowWidth - 46, 480);
   const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
   const heroHeight = Math.round(windowHeight * 0.46);
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
-  const dailyRitual = dailyRituals[localDateKey % dailyRituals.length];
   const detail: Detail | null = activeDetail === 'reflection'
     ? {
         body: reflectionExplanations[reading.title] ??
@@ -86,8 +94,8 @@ export default function CosmosScreen() {
       : activeDetail === 'ritual'
         ? {
             title: 'Other ideas for today',
-            body: 'Choose one if it feels useful, or skip them. These are simple ways to pause, not rules you need to follow.',
-            examples: dailyRituals.filter((ritual) => ritual !== dailyRitual),
+            body: 'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.',
+            examples: ritualChoices.slice(1),
           }
         : null;
 
@@ -413,7 +421,7 @@ export default function CosmosScreen() {
                   {detail.body}
                 </Text>
                 {detail.examples.map((example) => (
-                  <View key={example} style={styles.exampleRow}>
+                  <View key={example} testID="daily-ritual-option" style={styles.exampleRow}>
                     <View style={[styles.exampleMark, { backgroundColor: colors.cosmos.secondary }]} />
                     <Text style={[styles.exampleText, { color: colors.cosmos.foreground }]}>
                       {example}
@@ -445,11 +453,10 @@ const styles = StyleSheet.create({
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   brandName: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 10,
-    letterSpacing: 1.7,
+    ...screenTypography.wordmark,
   },
   intro: {
     marginTop: 45,
@@ -484,11 +491,7 @@ const styles = StyleSheet.create({
   },
   heroCopy: { paddingHorizontal: 23, paddingBottom: 13 },
   title: {
-    fontFamily: 'Georgia',
-    fontSize: 40,
-    fontWeight: '400',
-    letterSpacing: -1.1,
-    lineHeight: 48,
+    ...screenTypography.pageTitle,
   },
   orbit: {
     alignItems: 'center',

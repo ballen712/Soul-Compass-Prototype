@@ -7,13 +7,17 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { useProfile } from '@/profile/ProfileContext';
 import { CONSENT_VERSION } from '@/profile/local';
 import type { UserProfile } from '@/profile/profile';
-import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
+import { crystalCatalog } from '@/constants/content';
 import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { PRODUCT } from '@/constants/product';
 
 const APP_VERSION = '1.0.0';
-const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
-const CATALOG = [samplePrimaryCrystal, ...alternativeCrystals].map((c) => ({ id: slugOf(c.name), name: c.name }));
+const slugOf = (name: string) =>
+  name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const CATALOG = crystalCatalog
+  .map((c) => ({ id: slugOf(c.name), name: c.name }))
+  .sort((first, second) => first.name.localeCompare(second.name));
 const INTENTIONS = ['Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change'];
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -79,6 +83,10 @@ export default function SettingsScreen() {
   const busyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [customIntentions, setCustomIntentions] = useState(() => preferences.crystalPreferences.intentions.join(', '));
+  const [collectionSearch, setCollectionSearch] = useState('');
+  const [hiddenSearch, setHiddenSearch] = useState('');
+  const collectionMatches = CATALOG.filter((c) => c.name.toLowerCase().includes(collectionSearch.trim().toLowerCase()));
+  const hiddenMatches = CATALOG.filter((c) => c.name.toLowerCase().includes(hiddenSearch.trim().toLowerCase()));
 
   if (!profile) return null;
 
@@ -222,7 +230,16 @@ export default function SettingsScreen() {
                  title="Your collection"
                  description={`This guide currently has ${CATALOG.length} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today's suggestion. Your collection does not limit recommendations.`}
                >
-                {CATALOG.map((c) => {
+                 <TextInput
+                   accessibilityLabel="Search stones in the collection catalog"
+                   placeholder="Search stones"
+                   value={collectionSearch}
+                   onChangeText={setCollectionSearch}
+                   autoCorrect={false}
+                   style={styles.catalogSearch}
+                 />
+                 {collectionMatches.length === 0 ? <Text style={styles.body}>No stones match your search.</Text> : null}
+                 {collectionMatches.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
                   return (
                     <View key={c.id} style={styles.row}>
@@ -237,7 +254,16 @@ export default function SettingsScreen() {
                 })}
               </Section>
                <Section title="Hidden stones" description="If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time.">
-                {CATALOG.map((c) => {
+                <TextInput
+                  accessibilityLabel="Search stones to hide or restore"
+                  placeholder="Search stones"
+                  value={hiddenSearch}
+                  onChangeText={setHiddenSearch}
+                  autoCorrect={false}
+                  style={styles.catalogSearch}
+                />
+                {hiddenMatches.length === 0 ? <Text style={styles.body}>No stones match your search.</Text> : null}
+                {hiddenMatches.map((c) => {
                   const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
                   return (
                     <View key={c.id} style={styles.row}>
@@ -325,6 +351,7 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   sectionTitle: { color: '#30352D', fontSize: 18, fontWeight: '600' },
   body: { color: '#77756F', fontSize: 13, lineHeight: 19 },
+  catalogSearch: { minHeight: 46, borderWidth: 1, borderColor: '#D9D3C7', borderRadius: 12, paddingHorizontal: 14, backgroundColor: '#FFFEFB', color: '#45473F', fontSize: 14 },
   status: { color: '#45473F', fontSize: 13, fontWeight: '600' },
   message: { color: '#58664F', fontSize: 13 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

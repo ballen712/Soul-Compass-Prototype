@@ -41,6 +41,11 @@ vi.mock('expo-router', () => ({
   useRouter: () => ({ canGoBack: () => false, back: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock('@/constants/content', () => ({
+  crystalCatalog: [
+    { name: 'Amethyst', themes: ['focus', 'calm'] },
+    { name: 'Rose Quartz', themes: ['connection', 'empathy'] },
+    { name: 'Clear Quartz', themes: ['clarity', 'perspective'] },
+  ],
   alternativeCrystals: [],
   samplePrimaryCrystal: { name: 'Amethyst' },
 }));
@@ -344,6 +349,29 @@ test('Back leaves profile edits unsaved and returns to the Settings menu', async
 
   expect(profileState.profile).toEqual(existingProfile);
   expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
+});
+
+test('catalog search keeps collection and hidden-stone changes saved locally', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+  await act(async () => { await pressText(root, 'Preferences'); });
+  await act(async () => {
+    root.findByProps({ accessibilityLabel: 'Search stones in the collection catalog' }).props.onChangeText('ROSE');
+  });
+  expect(root.findAllByProps({ testID: 'settings-collect-amethyst' })).toHaveLength(0);
+  await act(async () => { root.findByProps({ testID: 'settings-collect-rose-quartz' }).props.onPress(); });
+  expect(profileState.preferences.crystalCollection).toContain('rose-quartz');
+  await act(async () => {
+    root.findByProps({ accessibilityLabel: 'Search stones to hide or restore' }).props.onChangeText('rose');
+  });
+  await act(async () => { root.findByProps({ testID: 'settings-hide-rose-quartz' }).props.onPress(); });
+  expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
+  expect(profileState.profile).toEqual(existingProfile);
+  await act(async () => renderer?.unmount());
+  await render(<ProfileProvider><ProfileProbe /></ProfileProvider>);
+  expect(profileState.preferences.crystalCollection).toContain('rose-quartz');
+  expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
 });
 
 test('onboarding rejects impossible dates and a missing birthplace', async () => {

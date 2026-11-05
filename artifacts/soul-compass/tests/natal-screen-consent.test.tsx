@@ -24,6 +24,7 @@ vi.mock('@workspace/api-client-react', () => ({
   calculateNatalChart: (...args: unknown[]) => state.calculate(...args),
 }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
+vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
@@ -35,18 +36,24 @@ vi.mock('react-native', () => ({
     select: (options: Record<string, unknown>) => options.web ?? options.default,
   },
   ActivityIndicator: 'ActivityIndicator',
+  Image: 'Image',
   Modal: 'Modal',
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
-  StyleSheet: { create: (styles: unknown) => styles },
+  StyleSheet: {
+    absoluteFill: { top: 0, right: 0, bottom: 0, left: 0 },
+    create: (styles: unknown) => styles,
+  },
   Text: 'Text',
   View: 'View',
+  useWindowDimensions: () => ({ height: 874, width: 402 }),
 }));
 vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/hooks/useColors', () => ({
   useColors: () => ({
     cosmos: {
       background: '#111B2B',
+      homeBackground: '#070B13',
       surface: '#172438',
       card: '#1D2B40',
       foreground: '#F1EEE6',

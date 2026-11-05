@@ -4,16 +4,25 @@ import type { NatalChartResponse } from '@workspace/api-client-react';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SettingsButton } from '@/components/SettingsButton';
+import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
+import { screenTypography } from '@/constants/typography';
 import { useProfile } from '@/profile/ProfileContext';
 
 type Disambiguation = 'earlier' | 'later';
 type Palette = ReturnType<typeof useColors>['cosmos'];
 
 const MAJOR = new Set(['conjunction', 'opposition', 'trine', 'square', 'sextile']);
+const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
+  x: ((index * 41 + 19) % 97) / 97,
+  y: ((index * 53 + 13) % 101) / 101,
+  size: index % 9 === 0 ? 2 : 1.25,
+  opacity: 0.25 + (index % 4) * 0.05,
+}));
 const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 type ChartExplanation = { title: string; body: string; question?: string };
 
@@ -124,6 +133,7 @@ export default function NatalScreen() {
   const colors = useColors();
   const c = colors.cosmos;
   const insets = useSafeAreaInsets();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const { profile, loaded, privacy, setConsent, canCalculate } = useProfile();
   const chart = useNatalCalculation();
@@ -161,30 +171,75 @@ export default function NatalScreen() {
   const data = chart.data;
   const savedChoice = chart.disambiguation ?? disambiguation;
   const timeKnown = profile?.birthTime.status === 'known';
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
+  const pageWidth = Math.min(windowWidth - 48, 480);
+  const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
+  const heroHeight = Math.round(windowHeight * 0.42);
 
   return (
     <SafeAreaView
-      edges={['top']}
-      style={[styles.safeArea, { backgroundColor: c.background }, Platform.OS === 'web' && { paddingTop: Math.max(insets.top, 67) }]}
+      edges={[]}
+      style={[styles.safeArea, { backgroundColor: c.homeBackground }]}
     >
       <StatusBar style="light" />
+      <View pointerEvents="none" accessible={false} style={styles.starLayer}>
+        {backgroundStars.map((star, index) => (
+          <View
+            key={index}
+            style={[
+              styles.starDot,
+              {
+                backgroundColor: c.foreground,
+                height: star.size,
+                left: `${star.x * 100}%`,
+                opacity: star.opacity,
+                top: `${star.y * 100}%`,
+                width: star.size,
+              },
+            ]}
+          />
+        ))}
+      </View>
       <ScrollView
         accessibilityLabel="Natal chart"
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: Platform.OS === 'ios' ? 0 : 14,
+            paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18,
             paddingBottom: Platform.OS === 'ios' ? 32 : 34,
           },
         ]}
+        alwaysBounceVertical={false}
+        bounces={false}
         contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.page}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.heroArt,
+              {
+                top: -(topInset + 18),
+                left: -heroBleed,
+                right: -heroBleed,
+                height: heroHeight,
+              },
+            ]}
+          >
+            <Image
+              source={cosmosArt}
+              accessibilityLabel="A quiet field of stars in a deep navy sky"
+              resizeMode="cover"
+              style={styles.heroImage}
+            />
+            <LinearGradient
+              colors={['transparent', 'transparent', c.homeBackground]}
+              locations={[0, 0.46, 1]}
+              style={styles.heroFade}
+            />
+          </View>
           <View style={styles.brandRow}>
-            <View style={[styles.brandMark, { borderColor: c.secondary }]}>
-              <Feather name="target" size={16} color={c.secondary} />
-            </View>
             <Text style={[styles.brandName, { color: c.foreground }]}>SOUL COMPASS</Text>
             <SettingsButton />
           </View>
@@ -566,19 +621,23 @@ function ChartLoading({ c }: { c: Palette }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
+  starLayer: { ...StyleSheet.absoluteFill },
+  starDot: { borderRadius: 2, position: 'absolute' },
+  heroArt: { overflow: 'hidden', position: 'absolute' },
+  heroImage: { height: '100%', position: 'absolute', top: 0, width: '100%' },
+  heroFade: { ...StyleSheet.absoluteFill },
   scrollContent: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 34 },
   page: { width: '100%', maxWidth: 480 },
-  brandRow: { alignItems: 'center', flexDirection: 'row' },
-  brandMark: { alignItems: 'center', borderRadius: 16, borderWidth: 1, height: 32, justifyContent: 'center', marginRight: 10, width: 32 },
-  brandName: { fontFamily: 'Inter_600SemiBold', fontSize: 10, letterSpacing: 1.7 },
+  brandRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  brandName: { ...screenTypography.wordmark },
   intro: { marginTop: 22, marginBottom: 24 },
-  title: { fontFamily: 'Georgia', fontSize: 38, fontWeight: '400', letterSpacing: -1.1, lineHeight: 45 },
+  title: { ...screenTypography.pageTitle },
   subtitle: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 21, marginTop: 14 },
-  card: { borderRadius: 26, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },
+  card: { borderRadius: 28, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },
   cardTitle: { fontFamily: 'Georgia', fontSize: 22, marginBottom: 8 },
   labelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 12 },
   label: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.5 },
-  body: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 22, marginBottom: 8 },
+  body: { ...screenTypography.body, marginBottom: 8 },
   loadingRow: { alignItems: 'center', flexDirection: 'row', gap: 14, minHeight: 42 },
   link: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
   row: { alignItems: 'center', flexDirection: 'row', paddingVertical: 11, gap: 12 },

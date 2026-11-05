@@ -33,6 +33,36 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 
 **How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
+Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app.
+
+**Why:** the user asked for the three tabs to feel consistent while explicitly keeping Crystals beige.
+
+**How to apply:** align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals.
+
+Cosmos overview, focus, caution, and reflection should offer complementary perspectives, not repeat one instruction in different words. Small ritual ideas should change daily; repetition after some time is acceptable.
+
+**Why:** the user asked for different angles on the day's theme and fresh, simple daily rituals.
+
+**How to apply:** separate the overview, practical opportunity, boundary, and reflective question. Keep a day's ritual choices stable across repeated openings rather than reshuffling on every tap.
+
+Crystal suggestions must draw from a broad catalog while remaining relevant to the chart theme, chosen feeling, and intentions. Daily rotation can distinguish similarly relevant choices; it should not replace relevance.
+
+**Why:** the user found that changing birth details still produced only the same small set of stones.
+
+**How to apply:** preserve meaningful contextual ranking and hidden-stone exclusions when expanding or rotating recommendations.
+
+Birth-chart stone pairings should use reliable natal planet-sign elements, remain a local calculation, and explain why each stone appears. The guide's stone-to-element links are Soul Compass's symbolic editorial system, not proven balancing effects or medical advice. Unknown birth times must omit sign placements the existing chart engine considers uncertain.
+
+**Why:** the user requested a 5–10-stone natal-chart shortlist with a readable reason for each choice and a way to add meaningful stones to a personal collection.
+
+**How to apply:** keep the shortlist separate from daily-transit picks, honor hidden-stone settings, preserve the engine's timed/untimed precision, and never send profile data to a new service for these explanations.
+
+Never show one stone's photograph under another stone's name. Use clearly identified symbolic artwork until a correctly identified, appropriately licensed image is available.
+
+**Why:** the guide supports collecting and shopping, so misleading identification and unverified image rights would undermine its purpose.
+
+**How to apply:** distinguish symbolic illustration from a specimen photograph and verify both identity and usage rights before adding photos.
+
 Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions. The header should show only “SOUL COMPASS” and “Today’s reflection,” without the compass mark, “DAILY PRACTICE,” or “A DAILY PAUSE.” End the page at the Natal Chart card and prevent overscrolling into empty space.
 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.

@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProfileForm } from '@/components/ProfileForm';
+import { ProfileForm, type ProfileFormHandle } from '@/components/ProfileForm';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useProfile } from '@/profile/ProfileContext';
 import { CONSENT_VERSION } from '@/profile/local';
@@ -80,6 +80,7 @@ export default function SettingsScreen() {
   const [tab, setTab] = useState<Tab | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const profileFormRef = useRef<ProfileFormHandle | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState('');
   const [hiddenSearch, setHiddenSearch] = useState('');
@@ -128,6 +129,10 @@ export default function SettingsScreen() {
     <SafeAreaView edges={['top']} style={[styles.safeArea, Platform.OS === 'web' && { paddingTop: 67 }]}>
       <View style={styles.header}>
         <Pressable accessibilityRole="button" onPress={() => {
+          if (tab === 'profile') {
+            void profileFormRef.current?.save();
+            return;
+          }
           if (tab) {
             setTab(null);
             setMessage(null);
@@ -167,7 +172,7 @@ export default function SettingsScreen() {
         </ScrollView>
       ) : tab === 'profile' ? (
         <>
-          <ProfileForm initialProfile={profile} submitLabel="Save Changes" onSubmit={submit} />
+          <ProfileForm ref={profileFormRef} initialProfile={profile} submitLabel="Save Changes" onSubmit={submit} />
         </>
       ) : (
         <KeyboardAwareScrollViewCompat

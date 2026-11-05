@@ -1,8 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
@@ -53,7 +53,7 @@ function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' |
       <Image
         source={crystal.image}
         style={imageStyle}
-        resizeMode="cover"
+        resizeMode={size === 'detail' ? 'contain' : 'cover'}
         accessibilityLabel={crystal.imageDescription ?? `${crystal.name} stone`}
       />
     );
@@ -62,7 +62,13 @@ function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' |
     <View
       accessibilityLabel={`${crystal.name} stone illustration`}
       style={[
-        size === 'feature' ? styles.featureImage : styles.alternativeImage,
+        size === 'feature'
+          ? styles.featureImage
+          : size === 'detail'
+            ? styles.detailImage
+            : size === 'catalog'
+              ? styles.catalogImage
+              : styles.alternativeImage,
         styles.genericStoneArt,
         { backgroundColor: tone.background },
       ]}
@@ -141,6 +147,9 @@ export default function CrystalsScreen() {
   const [collectionSearch, setCollectionSearch] = useState('');
   const [selectedCollectionStone, setSelectedCollectionStone] = useState<Crystal | null>(null);
   const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
+  const guideScrollRef = useRef<ScrollViewInstance | null>(null);
+  const guideScrollOffsetRef = useRef(0);
+  const restoreGuideScrollRef = useRef(false);
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
@@ -173,7 +182,7 @@ export default function CrystalsScreen() {
   const recommendation = crystalSuggestions[0] ?? null;
   const catalog = crystalCatalog;
   const alternativeCandidates = crystalSuggestions.length > 0
-    ? crystalSuggestions.slice(1).map((suggestion) => suggestion.crystal)
+    ? crystalSuggestions.slice(1)
     : [];
   const visibleAlternatives = alternativeCandidates
     .filter((suggestion) =>
@@ -376,9 +385,9 @@ export default function CrystalsScreen() {
           </View>
 
           <View style={styles.alternativesList}>
-            {visibleAlternatives.map((crystal) => (
+            {visibleAlternatives.map((suggestion) => (
               <View
-                key={crystal.name}
+                key={suggestion.crystal.name}
                 style={[
                   styles.alternativeCard,
                   {
@@ -387,7 +396,7 @@ export default function CrystalsScreen() {
                   },
                 ]}
               >
-                <CrystalArtwork crystal={crystal} size="alternative" />
+                <CrystalArtwork crystal={suggestion.crystal} size="alternative" />
                 <View style={styles.alternativeCopy}>
                   <Text
                     style={[
@@ -395,7 +404,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.foreground },
                     ]}
                   >
-                    {crystal.name}
+                    {suggestion.crystal.name}
                   </Text>
                   <Text
                     style={[
@@ -403,18 +412,49 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.secondary },
                     ]}
                   >
-                    {crystal.note}
+                    {suggestion.crystal.note}
                   </Text>
                   <Text style={[styles.alternativeDescription, { color: colors.cosmos.mutedForeground }]}>
-                    {getCompanionReason(crystal, recommendation)}
+                    {suggestion.reason}
                   </Text>
-                  <CollectionToggle name={crystal.name} />
+                  <CollectionToggle name={suggestion.crystal.name} />
                 </View>
               </View>
             ))}
           </View>
           </>
           ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Explore the full crystal collection, ${catalog.length} stones`}
+            testID="open-crystal-collection"
+            onPress={() => {
+              setCollectionSearch('');
+              setSelectedCollectionStone(null);
+              setCollectionOpen(true);
+            }}
+            style={[
+              styles.catalogButton,
+              {
+                backgroundColor: colors.cosmos.card,
+                borderColor: colors.cosmos.border,
+              },
+            ]}
+          >
+            <View style={styles.catalogButtonIcon}>
+              <Feather name="grid" size={17} color={colors.cosmos.secondary} />
+            </View>
+            <View style={styles.catalogButtonCopy}>
+              <Text style={[styles.catalogButtonTitle, { color: colors.cosmos.foreground }]}>
+                Explore the full collection
+              </Text>
+              <Text style={[styles.catalogButtonSubtitle, { color: colors.cosmos.mutedForeground }]}>
+                {catalog.length} stones · Browse images and notes
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={19} color={colors.cosmos.secondary} />
+          </Pressable>
 
         </View>
       </ScrollView>
@@ -453,7 +493,10 @@ export default function CrystalsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Back to the Stone Guide"
                   testID="back-to-stone-guide"
-                  onPress={() => setSelectedNatalStone(null)}
+                  onPress={() => {
+                    restoreGuideScrollRef.current = true;
+                    setSelectedNatalStone(null);
+                  }}
                   style={styles.guideBackButton}
                 >
                   <Feather name="arrow-left" size={17} color={colors.cosmos.secondary} />
@@ -479,6 +522,22 @@ export default function CrystalsScreen() {
               </Pressable>
             </View>
             <ScrollView
+              ref={guideScrollRef}
+              testID="stone-guide-scroll"
+              onScroll={(event) => {
+                if (!selectedNatalStone && !restoreGuideScrollRef.current) {
+                  guideScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+                }
+              }}
+              scrollEventThrottle={16}
+              onContentSizeChange={() => {
+                if (!restoreGuideScrollRef.current) return;
+                restoreGuideScrollRef.current = false;
+                guideScrollRef.current?.scrollTo({
+                  y: guideScrollOffsetRef.current,
+                  animated: false,
+                });
+              }}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.guideModalCopy}
             >
@@ -534,7 +593,10 @@ export default function CrystalsScreen() {
                                 accessibilityRole="button"
                                 accessibilityLabel={`Read why ${suggestion.crystal.name} fits your birth chart`}
                                 testID={`natal-stone-${slugOf(suggestion.crystal.name)}`}
-                                onPress={() => setSelectedNatalStone(suggestion)}
+                                onPress={() => {
+                                  restoreGuideScrollRef.current = false;
+                                  setSelectedNatalStone(suggestion);
+                                }}
                                 style={[
                                   styles.natalStoneRow,
                                   { borderColor: colors.cosmos.border, backgroundColor: colors.cosmos.surface },
@@ -577,6 +639,170 @@ export default function CrystalsScreen() {
             </ScrollView>
           </View>
         </SafeAreaView>
+      </Modal>
+      <Modal
+        visible={collectionOpen}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => {
+          if (selectedCollectionStone) setSelectedCollectionStone(null);
+          else setCollectionOpen(false);
+        }}
+      >
+        <View
+          testID="crystal-collection-stage"
+          style={[
+            styles.collectionStage,
+            {
+              backgroundColor: colors.crystals.background,
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          <View style={styles.collectionHeader}>
+            {selectedCollectionStone ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back to all stones"
+                testID="back-to-crystal-catalog"
+                onPress={() => setSelectedCollectionStone(null)}
+                style={styles.collectionBackButton}
+              >
+                  <Feather name="arrow-left" size={15} color={colors.crystals.secondary} />
+                <Text style={[styles.collectionBackText, { color: colors.crystals.secondary }]}>All stones</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.collectionHeading}>
+                <Text style={[styles.collectionTitle, { color: colors.crystals.foreground }]}>
+                  The full collection
+                </Text>
+                <Text style={[styles.collectionCount, { color: colors.crystals.mutedForeground }]}>
+                  {catalog.length} stones to explore
+                </Text>
+              </View>
+            )}
+            {selectedCollectionStone ? (
+              <Text
+                numberOfLines={1}
+                style={[styles.collectionDetailHeaderTitle, { color: colors.crystals.foreground }]}
+              >
+                {selectedCollectionStone.name}
+              </Text>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close the full collection"
+              testID="close-crystal-catalog"
+              onPress={() => {
+                setSelectedCollectionStone(null);
+                setCollectionOpen(false);
+              }}
+              style={styles.collectionCloseButton}
+            >
+                <Feather name="x" size={18} color={colors.crystals.foreground} />
+            </Pressable>
+          </View>
+
+          {selectedCollectionStone ? (
+            <ScrollView
+              contentContainerStyle={styles.collectionDetailContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <CrystalArtwork crystal={selectedCollectionStone} size="detail" />
+              <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
+                WHAT TO NOTICE
+              </Text>
+              <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
+                {selectedCollectionStone.specimenDescription}
+              </Text>
+              <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
+                GUIDE THEMES
+              </Text>
+              <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
+                {selectedCollectionStone.note}
+              </Text>
+              <Text style={[styles.collectionDisclaimer, { color: colors.crystals.mutedForeground }]}>
+                These pictures are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern. The guide’s crystal meanings are symbolic reflection prompts, not proven effects.
+              </Text>
+              <CollectionToggle name={selectedCollectionStone.name} />
+            </ScrollView>
+          ) : collectionOpen ? (
+            <KeyboardAvoidingView
+              style={styles.collectionListPane}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+              <View
+                style={[
+                  styles.collectionSearchWrap,
+                  {
+                    backgroundColor: colors.crystals.card,
+                    borderColor: colors.crystals.border,
+                  },
+                ]}
+              >
+                <Feather name="search" size={17} color={colors.crystals.mutedForeground} />
+                <TextInput
+                  accessibilityLabel="Search stones"
+                  testID="crystal-catalog-search"
+                  value={collectionSearch}
+                  onChangeText={setCollectionSearch}
+                  placeholder="Search stones or themes"
+                  placeholderTextColor={colors.crystals.mutedForeground}
+                  returnKeyType="search"
+                  style={[styles.collectionSearchInput, { color: colors.crystals.foreground }]}
+                />
+              </View>
+              <Text style={[styles.collectionResults, { color: colors.crystals.mutedForeground }]}>
+                {catalogMatches.length} {catalogMatches.length === 1 ? 'stone' : 'stones'}
+              </Text>
+              <FlatList
+                data={catalogMatches}
+                keyExtractor={(stone) => stone.name}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.collectionList}
+                renderItem={({ item: stone }) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Read about ${stone.name}`}
+                    testID={`catalog-stone-${slugOf(stone.name)}`}
+                    onPress={() => setSelectedCollectionStone(stone)}
+                    style={[
+                      styles.catalogStoneRow,
+                      {
+                        backgroundColor: colors.crystals.card,
+                        borderColor: colors.crystals.border,
+                      },
+                    ]}
+                  >
+                    <CrystalArtwork crystal={stone} size="catalog" />
+                    <View style={styles.catalogStoneCopy}>
+                      <Text style={[styles.catalogStoneName, { color: colors.crystals.foreground }]}>
+                        {stone.name}
+                      </Text>
+                      <Text style={[styles.catalogStoneNote, { color: colors.crystals.secondary }]}>
+                        {stone.note}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[styles.catalogStoneDescription, { color: colors.crystals.mutedForeground }]}
+                      >
+                        {stone.specimenDescription}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={colors.crystals.secondary} />
+                  </Pressable>
+                )}
+                ItemSeparatorComponent={() => <View style={styles.catalogSeparator} />}
+                ListEmptyComponent={(
+                  <Text style={[styles.collectionEmpty, { color: colors.crystals.mutedForeground }]}>
+                    No stones match that search. Try a different name or theme.
+                  </Text>
+                )}
+              />
+            </KeyboardAvoidingView>
+          ) : null}
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -706,6 +932,172 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 34,
   },
+  catalogButton: {
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 13,
+    marginTop: 24,
+    minHeight: 82,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+  },
+  catalogButtonIcon: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  catalogButtonCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  catalogButtonTitle: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+  },
+  catalogButtonSubtitle: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  collectionStage: {
+    flex: 1,
+  },
+  collectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  collectionHeading: {
+    flex: 1,
+    gap: 4,
+  },
+  collectionTitle: {
+    fontFamily: 'Georgia',
+    fontSize: 24,
+    lineHeight: 29,
+  },
+  collectionCount: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+  },
+  collectionBackButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 7,
+    minHeight: 44,
+  },
+  collectionBackText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+  },
+  collectionDetailHeaderTitle: {
+    flex: 1,
+    fontFamily: 'Georgia',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  collectionCloseButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  collectionListPane: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  collectionSearchWrap: {
+    alignItems: 'center',
+    borderRadius: 15,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  collectionSearchInput: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    minHeight: 46,
+  },
+  collectionResults: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  collectionList: {
+    paddingBottom: 30,
+  },
+  catalogStoneRow: {
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 102,
+    padding: 10,
+  },
+  catalogStoneCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  catalogStoneName: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+  },
+  catalogStoneNote: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+  },
+  catalogStoneDescription: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  catalogSeparator: {
+    height: 10,
+  },
+  collectionEmpty: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 21,
+    paddingVertical: 24,
+  },
+  collectionDetailContent: {
+    alignSelf: 'center',
+    gap: 12,
+    maxWidth: 480,
+    paddingBottom: 42,
+    paddingHorizontal: 22,
+    paddingTop: 8,
+    width: '100%',
+  },
+  collectionSectionLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    letterSpacing: 1.1,
+    marginTop: 6,
+  },
+  collectionDetailBody: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    lineHeight: 23,
+  },
+  collectionDisclaimer: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    lineHeight: 19,
+    marginTop: 6,
+  },
   brandName: {
     ...screenTypography.wordmark,
   },
@@ -749,6 +1141,16 @@ const styles = StyleSheet.create({
   },
   featureImage: {
     height: '100%',
+    width: '100%',
+  },
+  catalogImage: {
+    borderRadius: 13,
+    height: 72,
+    width: 72,
+  },
+  detailImage: {
+    aspectRatio: 1,
+    borderRadius: 20,
     width: '100%',
   },
   genericStoneArt: {

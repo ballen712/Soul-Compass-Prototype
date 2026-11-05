@@ -92,6 +92,37 @@ test('first consent calculates once and later app openings restore the local cha
   expect(state.calculate).toHaveBeenCalledTimes(1);
   expect(chart.data?.planets).toEqual([]);
 });
+test('changing saved birth details clears the old chart and calculates for the new profile', async () => {
+  await mount(true);
+  await act(async () => {
+    await profile.setConsent(true);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+  expect(chart.data).toBeDefined();
+
+  const updatedProfile = {
+    ...profile.profile!,
+    birthDate: '1991-06-20',
+    birthTime: { status: 'known' as const, localTime: '08:45' },
+    birthPlace: {
+      city: 'Prague', country: 'Czechia', latitude: 50.0755, longitude: 14.4378, timeZone: 'Europe/Prague',
+    },
+  };
+  await act(async () => {
+    await profile.saveProfile(updatedProfile);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+
+  expect(profile.profile).toEqual(updatedProfile);
+  expect(state.calculate).toHaveBeenCalledTimes(2);
+  expect(state.calculate.mock.calls[1][0]).toMatchObject({
+    birthDate: '1991-06-20',
+    birthTime: { status: 'known', localTime: '08:45' },
+    birthPlace: { latitude: 50.0755, longitude: 14.4378, timeZone: 'Europe/Prague' },
+  });
+  expect(chart.data).toBeDefined();
+});
 test('a saved chart remains local after permission is withdrawn', async () => {
   await mount(true);
   await act(async () => profile.setConsent(true));

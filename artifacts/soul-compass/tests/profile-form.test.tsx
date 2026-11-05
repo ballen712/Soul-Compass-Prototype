@@ -134,7 +134,12 @@ function selectionOf(root: ReactTestInstance, label: string) {
   return textInput(root, label).props.selection;
 }
 function replaceRange(root: ReactTestInstance, label: string, start: number, end: number, replacement: string) {
-  const field = textInput(root, label);
+  let field = textInput(root, label);
+  if (field.props.selection) {
+    const pending = field.props.selection;
+    setSelection(root, label, pending.start, pending.end);
+    field = textInput(root, label);
+  }
   setSelection(root, label, start, end);
   input(root, label, `${field.props.value.slice(0, start)}${replacement}${field.props.value.slice(end)}`);
 }
@@ -199,13 +204,13 @@ test('birth date and time add separators while typing digits and keep the caret 
   const root = renderer!.root;
   typeDigits(root, 'Date of birth', '20000229');
   expect(textInput(root, 'Date of birth').props.value).toBe('2000-02-29');
-  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 10, end: 10 });
+  expect(selectionOf(root, 'Date of birth')).toBeUndefined();
   expect(textInput(root, 'Date of birth').props.keyboardType).toBe('number-pad');
 
   setBirthTimeKnown(root);
   typeDigits(root, 'Birth time', '1951');
   expect(textInput(root, 'Birth time').props.value).toBe('19:51');
-  expect(selectionOf(root, 'Birth time')).toEqual({ start: 5, end: 5 });
+  expect(selectionOf(root, 'Birth time')).toBeUndefined();
   expect(textInput(root, 'Birth time').props.keyboardType).toBe('number-pad');
 });
 
@@ -235,14 +240,42 @@ test('pasting digits or separated dates formats them, and replacing middle digit
 
   replaceRange(root, 'Date of birth', 5, 7, '12');
   expect(textInput(root, 'Date of birth').props.value).toBe('1991-12-20');
-  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 8, end: 8 });
+  expect(selectionOf(root, 'Date of birth')).toBeUndefined();
 
   setBirthTimeKnown(root);
   input(root, 'Birth time', '1951');
   expect(textInput(root, 'Birth time').props.value).toBe('19:51');
   replaceRange(root, 'Birth time', 3, 4, '4');
   expect(textInput(root, 'Birth time').props.value).toBe('19:41');
-  expect(selectionOf(root, 'Birth time')).toEqual({ start: 4, end: 4 });
+  expect(selectionOf(root, 'Birth time')).toBeUndefined();
+});
+
+test('date and time separators do not let a stale native cursor event reorder fast-entered digits', async () => {
+  await render(<ProfileForm submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
+  const root = renderer!.root;
+
+  for (const partial of ['1', '19', '199', '1991']) input(root, 'Date of birth', partial);
+  expect(textInput(root, 'Date of birth').props.value).toBe('1991-');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 5, end: 5 });
+
+  setSelection(root, 'Date of birth', 4);
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 5, end: 5 });
+  input(root, 'Date of birth', '1991-0');
+  setSelection(root, 'Date of birth', 6);
+  input(root, 'Date of birth', '1991-06');
+  expect(textInput(root, 'Date of birth').props.value).toBe('1991-06-');
+  expect(selectionOf(root, 'Date of birth')).toEqual({ start: 8, end: 8 });
+
+  for (const partial of ['1', '19']) input(root, 'Birth time', partial);
+  expect(textInput(root, 'Birth time').props.value).toBe('19:');
+  expect(selectionOf(root, 'Birth time')).toEqual({ start: 3, end: 3 });
+
+  setSelection(root, 'Birth time', 2);
+  expect(selectionOf(root, 'Birth time')).toEqual({ start: 3, end: 3 });
+  input(root, 'Birth time', '19:5');
+  setSelection(root, 'Birth time', 4);
+  input(root, 'Birth time', '19:51');
+  expect(textInput(root, 'Birth time').props.value).toBe('19:51');
 });
 
 test('unknown birth time is opt-in and selected location survives provider reload', async () => {
@@ -339,17 +372,41 @@ test('saving an unchanged profile succeeds locally and leaves the user on Settin
   expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
 });
 
-test('Back leaves profile edits unsaved and returns to the Settings menu', async () => {
+test('Back saves valid profile edits before returning to the Settings menu', async () => {
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
 
   await act(async () => { await pressText(root, 'Profile'); });
   input(root, 'Date of birth', '1990-01-15');
+  setBirthTimeKnown(root);
+  input(root, 'Birth time', '08:45');
+  await chooseCity(root, 'Place of birth', selectedBirthPlace);
+  await act(async () => { await pressText(root, 'Back'); });
+
+  const updatedProfile = {
+    ...existingProfile,
+    birthDate: '1990-01-15',
+    birthTime: { status: 'known', localTime: '08:45' },
+    birthPlace: selectedBirthPlace,
+  };
+  expect(profileState.profile).toEqual(updatedProfile);
+  expect(JSON.parse(state.storage.get(LOCAL_KEY)!).profile).toEqual(updatedProfile);
+  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
+});
+
+test('Back keeps profile editing open when the draft is invalid', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => { await pressText(root, 'Profile'); });
+  input(root, 'Date of birth', '199001');
   await act(async () => { await pressText(root, 'Back'); });
 
   expect(profileState.profile).toEqual(existingProfile);
-  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
+  expect(alertText(root)).toContain('Enter your birth date as YYYY-MM-DD.');
+  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(0);
 });
 
 test('catalog search keeps collection and hidden-stone changes saved locally', async () => {

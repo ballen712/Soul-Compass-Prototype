@@ -1,10 +1,11 @@
 import React from 'react';
-import { Modal, Pressable, Text } from 'react-native';
+import { Image, Modal, Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, expect, test, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   push: vi.fn(),
+  guideScrollTo: vi.fn(),
   suggestions: [] as Array<{ crystal: Record<string, unknown>; reason: string; basis: string; matchedIntentions: string[] }>,
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
@@ -21,6 +22,7 @@ const state = vi.hoisted(() => ({
     name: 'Moonstone',
     note: 'Reflection · steadiness',
     description: 'A gentle reminder to pause.',
+    specimenDescription: 'A pearly white stone with a soft blue flash.',
     image: 0,
     imageDescription: 'Moonstone on linen',
   },
@@ -29,6 +31,7 @@ const state = vi.hoisted(() => ({
     name: 'Amethyst',
     note: 'Stillness · perspective',
     description: 'A reminder to slow down.',
+    specimenDescription: 'A violet cluster of pointed quartz crystals.',
     image: 2,
     imageDescription: 'Amethyst cluster',
   },
@@ -37,6 +40,7 @@ const state = vi.hoisted(() => ({
     name: 'Labradorite',
     note: 'Curiosity · change',
     description: 'A reminder to stay curious.',
+    specimenDescription: 'A grey stone with blue-green flashes across its surface.',
     image: 3,
     imageDescription: 'Labradorite stone',
   },
@@ -44,6 +48,7 @@ const state = vi.hoisted(() => ({
     name: 'Rose Quartz',
     note: 'Connection · care',
     description: 'A small prompt for care.',
+    specimenDescription: 'A pale pink quartz with a cloudy, translucent finish.',
     themes: ['connection', 'empathy'],
     tone: 'pink',
   },
@@ -54,21 +59,43 @@ vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push }) }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
-  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  useSafeAreaInsets: () => ({ top: 59, right: 0, bottom: 34, left: 0 }),
 }));
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
+  FlatList: ({ data, renderItem, ListEmptyComponent }: any) => React.createElement(
+    'FlatList',
+    null,
+    data.length
+      ? data.map((item: any, index: number) => React.createElement(
+        React.Fragment,
+        { key: item.name },
+        renderItem({ item, index }),
+      ))
+      : ListEmptyComponent
+        ? React.createElement(ListEmptyComponent)
+        : null,
+  ),
   Image: 'Image',
   Modal: 'Modal',
   Platform: { OS: 'ios' },
   Pressable: 'Pressable',
-  ScrollView: 'ScrollView',
+  ScrollView: React.forwardRef(({ children, ...props }: any, ref: any) => {
+    React.useImperativeHandle(ref, () => ({
+      scrollTo: (options: unknown) => state.guideScrollTo(options),
+    }), []);
+    return React.createElement('ScrollView', props, children);
+  }),
   StyleSheet: {
     absoluteFill: { top: 0, right: 0, bottom: 0, left: 0 },
     create: (styles: unknown) => styles,
   },
   Text: 'Text',
+  TextInput: 'TextInput',
   View: 'View',
+}));
+vi.mock('react-native-keyboard-controller', () => ({
+  KeyboardAvoidingView: 'KeyboardAvoidingView',
 }));
 vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/constants/content', () => ({
@@ -112,7 +139,6 @@ vi.mock('@/profile/astrology', () => ({
   getSampleCrystal: () => state.moonstone,
 }));
 vi.mock('@/profile/crystal-guidance', () => ({
-  getCompanionReason: (crystal: { name: string }) => `${crystal.name} is another symbolic prompt.`,
 }));
 vi.mock('@/profile/daily-cache', () => ({ getDailyAstrology: () => null }));
 vi.mock('@/hooks/useLocalClock', () => ({
@@ -127,6 +153,7 @@ afterEach(async () => {
   await act(async () => renderer?.unmount());
   renderer = undefined;
   state.push.mockReset();
+  state.guideScrollTo.mockReset();
   state.profileContext.toggleCrystal.mockReset();
   state.profileContext.profile = null;
   state.suggestions = [];
@@ -146,10 +173,10 @@ test('the Stone Guide explains daily companions and opens from its info button',
   expect(root.findByProps({ testID: 'no-daily-stone' })).toBeDefined();
   expect(root.findAllByProps({ name: 'info' })).toHaveLength(1);
   expect(root.findAllByProps({ name: 'sun' })).toHaveLength(0);
-  expect(root.findByType(Modal).props.visible).toBe(false);
+  expect(root.findAllByType(Modal)[0].props.visible).toBe(false);
 
   await act(async () => { info.props.onPress(); });
-  expect(root.findByType(Modal).props.visible).toBe(true);
+  expect(root.findAllByType(Modal)[0].props.visible).toBe(true);
   const modal = root.findByProps({ testID: 'stone-guide-modal' });
   const copy = modal.findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(copy).toContain('With your saved birth chart and current city');
@@ -161,7 +188,73 @@ test('the Stone Guide explains daily companions and opens from its info button',
   const close = root.findByProps({ testID: 'close-stone-guide' });
   expect(close.type).toBe(Pressable);
   await act(async () => { close.props.onPress(); });
-  expect(root.findByType(Modal).props.visible).toBe(false);
+  expect(root.findAllByType(Modal)[0].props.visible).toBe(false);
+});
+
+test('the full collection can be searched, opened, and added to a local collection', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.profileContext.toggleCrystal.mockResolvedValue(undefined);
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'open-crystal-collection' }).props.onPress();
+  });
+
+  expect(root.findByProps({ testID: 'catalog-stone-moonstone' })).toBeDefined();
+  expect(root.findAll((node) =>
+    node.type === Pressable && String(node.props.testID ?? '').startsWith('catalog-stone-'),
+  )).toHaveLength(4);
+
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-catalog-search' }).props.onChangeText('pale pink');
+  });
+  expect(root.findAll((node) =>
+    node.type === Pressable && String(node.props.testID ?? '').startsWith('catalog-stone-'),
+  )).toHaveLength(1);
+  const roseQuartzRow = root.findByProps({ testID: 'catalog-stone-rose-quartz' });
+  await act(async () => { roseQuartzRow.props.onPress(); });
+
+  const detailText = root.findAllByType(Text).map((node) => node.props.children).join(' ');
+  expect(detailText).toContain('pale pink quartz');
+  expect(detailText).toContain('AI-generated illustrations');
+  const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
+  await act(async () => { addStone.props.onPress(); });
+  expect(state.profileContext.toggleCrystal).toHaveBeenCalledWith('rose-quartz');
+
+  await act(async () => {
+    root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'crystal-catalog-search' })).toBeDefined();
+  await act(async () => {
+    root.findByProps({ testID: 'close-crystal-catalog' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'open-crystal-collection' })).toBeDefined();
+});
+
+test('catalog detail artwork stays uncropped and controls respect iPhone safe areas', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'open-crystal-collection' }).props.onPress();
+  });
+
+  const stage = root.findByProps({ testID: 'crystal-collection-stage' });
+  expect(stage.props.style[1]).toMatchObject({ paddingTop: 59, paddingBottom: 34 });
+
+  await act(async () => {
+    root.findByProps({ testID: 'catalog-stone-moonstone' }).props.onPress();
+  });
+  const detailImage = root.find(
+    (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone on linen',
+  );
+  expect(detailImage.props.resizeMode).toBe('contain');
+  expect(detailImage.props.style).toMatchObject({ aspectRatio: 1 });
+
+  const backButton = root.findByProps({ testID: 'back-to-crystal-catalog' });
+  const closeButton = root.findByProps({ testID: 'close-crystal-catalog' });
+  expect(backButton.props.style.minHeight).toBe(44);
+  expect(closeButton.props.style).toMatchObject({ height: 44, width: 44 });
 });
 
 test('a new catalog stone without a photo renders and daily cards stay limited to three', async () => {
@@ -238,6 +331,28 @@ test('birth-chart stones open individual explanations and can be added to the co
   expect(state.profileContext.toggleCrystal).toHaveBeenCalledWith('rose-quartz');
 
   await act(async () => { root.findByProps({ testID: 'back-to-stone-guide' }).props.onPress(); });
+  await act(async () => {
+    root.findByProps({ testID: 'stone-guide-scroll' }).props.onContentSizeChange(320, 900);
+  });
+
+  state.guideScrollTo.mockClear();
+  const guideScroll = root.findByProps({ testID: 'stone-guide-scroll' });
+  await act(async () => {
+    guideScroll.props.onScroll({ nativeEvent: { contentOffset: { y: 720 } } });
+  });
+  await act(async () => {
+    root.findByProps({ testID: 'natal-stone-chart-stone-6' }).props.onPress();
+  });
+  await act(async () => {
+    root.findByProps({ testID: 'stone-guide-scroll' }).props.onScroll({
+      nativeEvent: { contentOffset: { y: 40 } },
+    });
+  });
+  await act(async () => { root.findByProps({ testID: 'back-to-stone-guide' }).props.onPress(); });
+  await act(async () => {
+    root.findByProps({ testID: 'stone-guide-scroll' }).props.onContentSizeChange(320, 900);
+  });
+  expect(state.guideScrollTo).toHaveBeenCalledWith({ y: 720, animated: false });
   expect(root.findAll((node) =>
     node.type === Pressable && String(node.props.testID ?? '').startsWith('natal-stone-'),
   )).toHaveLength(8);

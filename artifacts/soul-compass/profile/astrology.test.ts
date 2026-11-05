@@ -4,9 +4,9 @@ import { calculateDailyAstrology, calculateNatalElementBalance, EPHEMERIS_SOURCE
 import type { NatalElementBalance } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { FEELING_OPTIONS, getCompanionReason, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
+import { FEELING_OPTIONS, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
-import { alternativeCrystals, crystalCatalog, dailyReading, samplePrimaryCrystal } from '../constants/content';
+import { crystalCatalog, dailyReading } from '../constants/content';
 
 const currentResidence = {
   city: 'New York',
@@ -130,12 +130,9 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.notEqual(focus?.crystal.name, change?.crystal.name);
   assert.match(focus!.reason, /today|theme/i);
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
-  const moonstoneReason = getCompanionReason(samplePrimaryCrystal, focus);
-  const labradoriteReason = getCompanionReason(alternativeCrystals[1], focus);
-  assert.match(moonstoneReason, /another angle/);
-  assert.match(moonstoneReason, /not a promise/);
-  assert.notEqual(moonstoneReason, labradoriteReason);
-  assert.doesNotMatch(moonstoneReason, /calculated|natal|aspect|ephemeris/i);
+  assert.match(focus!.reason, /birth-chart|Today’s sky links/i);
+  assert.match(focus!.reason, /symbolic prompt, not a guaranteed effect/i);
+  assert.notEqual(focus!.reason, change!.reason);
 });
 test('hidden recommendations are replaced from the remaining visible catalog', () => {
   const chart = calculateDailyAstrology(makeProfile());
@@ -230,11 +227,14 @@ test('twelve daily feelings produce personal stone suggestions and still respond
   assert.equal(steadyDay?.basis, 'feeling');
   assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
   assert.notEqual(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Amethyst');
-  assert.match(getCompanionReason(samplePrimaryCrystal, steadyDay), /how you feel/i);
+  assert.match(steadyDay!.reason, /You chose “feeling tired,/i);
+  assert.match(steadyDay!.reason, /Use .* as a reminder to/i);
+  assert.doesNotMatch(steadyDay!.reason, /ease.*ease/i);
 });
 test('expanded catalog and daily suggestions use more than the original three stones', () => {
-  assert.ok(crystalCatalog.length >= 80);
-  assert.equal(crystalCatalog.filter((crystal) => crystal.image !== undefined).length, 3);
+  assert.equal(crystalCatalog.length, 93);
+  assert.equal(crystalCatalog.filter((crystal) => crystal.image !== undefined).length, crystalCatalog.length);
+  assert.ok(crystalCatalog.every((crystal) => crystal.specimenDescription.trim().length > 0));
   assert.equal(new Set(crystalCatalog.map((crystal) => crystal.name.toLowerCase())).size, crystalCatalog.length);
   assert.ok(crystalCatalog.every((crystal) => crystal.themes.length >= 2 && crystal.description.length > 40));
   const seen = new Set<string>();

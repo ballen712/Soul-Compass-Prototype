@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
@@ -18,32 +18,71 @@ type Props = {
   onSubmit: (profile: UserProfile) => Promise<void>;
 };
 
+export type ProfileFormHandle = {
+  save: () => Promise<boolean>;
+};
+
 function useFormattedBirthInput(initialValue: string, kind: BirthInputKind) {
   const [value, setValue] = useState(initialValue);
-  const [selection, setSelection] = useState<InputSelection>({
+  const [selection, setSelection] = useState<InputSelection | undefined>(undefined);
+  const valueRef = useRef(initialValue);
+  const selectionRef = useRef<InputSelection>({
     start: initialValue.length,
     end: initialValue.length,
   });
-  const valueRef = useRef(initialValue);
-  const selectionRef = useRef(selection);
+  const pendingSelectionRef = useRef<InputSelection | null>(null);
+  const pendingSelectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (pendingSelectionTimerRef.current) clearTimeout(pendingSelectionTimerRef.current);
+  }, []);
 
   function onChangeText(nextText: string) {
     const next = formatBirthInputChange(valueRef.current, nextText, selectionRef.current, kind);
+    const formattedText = next.value !== nextText;
+    const selectionWasPending = pendingSelectionRef.current !== null;
     valueRef.current = next.value;
     selectionRef.current = next.selection;
     setValue(next.value);
-    setSelection(next.selection);
+    if (formattedText || selectionWasPending) {
+      pendingSelectionRef.current = next.selection;
+      setSelection(formattedText ? next.selection : undefined);
+      if (pendingSelectionTimerRef.current) clearTimeout(pendingSelectionTimerRef.current);
+      pendingSelectionTimerRef.current = setTimeout(() => {
+        pendingSelectionRef.current = null;
+        pendingSelectionTimerRef.current = null;
+        setSelection(undefined);
+      }, 160);
+    } else {
+      pendingSelectionRef.current = null;
+      setSelection(undefined);
+    }
   }
 
   function onSelectionChange(nextSelection: InputSelection) {
+    const pendingSelection = pendingSelectionRef.current;
+    if (pendingSelection) {
+      if (
+        nextSelection.start !== pendingSelection.start
+        || nextSelection.end !== pendingSelection.end
+      ) {
+        return;
+      }
+      pendingSelectionRef.current = null;
+      if (pendingSelectionTimerRef.current) clearTimeout(pendingSelectionTimerRef.current);
+      pendingSelectionTimerRef.current = null;
+      setSelection(undefined);
+    }
     selectionRef.current = nextSelection;
-    setSelection(nextSelection);
   }
 
   return { value, selection, onChangeText, onSelectionChange };
 }
 
-export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmit }: Props) {
+export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function ProfileForm(
+  { initialProfile, initialDraft, submitLabel, onSubmit },
+  ref,
+) {
   const initialBirthTime = initialProfile?.birthTime ?? initialDraft?.birthTime;
   const birthDateInput = useFormattedBirthInput(
     initialProfile?.birthDate ?? initialDraft?.birthDate ?? '',
@@ -72,8 +111,8 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
   const [error, setError] = useState('');
   const savingRef = useRef(false);
 
-  async function save() {
-    if (savingRef.current) return;
+  async function save(): Promise<boolean> {
+    if (savingRef.current) return false;
     const dateParts = birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     const validDate = dateParts
       ? new Date(Date.UTC(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3])))
@@ -86,15 +125,15 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       validDate.getUTCDate() !== Number(dateParts[3])
     ) {
       setError('Enter your birth date as YYYY-MM-DD.');
-      return;
+      return false;
     }
     if (birthTimeKnown && !/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) {
       setError('Enter your birth time as HH:MM or choose that you do not know it.');
-      return;
+      return false;
     }
     if (!birthPlace) {
       setError('Search for and select your place of birth.');
-      return;
+      return false;
     }
 
     const candidate: UserProfile = {
@@ -109,7 +148,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
     if (!parsed.success) {
       const messages = parsed.error.issues.map((issue) => issue.message).filter(Boolean);
       setError(messages.length ? messages.join(' ') : 'Some profile details are invalid. Please review them.');
-      return;
+      return false;
     }
 
     savingRef.current = true;
@@ -117,13 +156,25 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
     setError('');
     try {
       await onSubmit(parsed.data as UserProfile);
+      return true;
     } catch {
       setError('Your profile could not be saved. Please try again.');
+      return false;
     } finally {
       savingRef.current = false;
       setSaving(false);
     }
   }
+
+  useImperativeHandle(ref, () => ({ save }), [
+    birthDate,
+    birthPlace,
+    birthTime,
+    birthTimeKnown,
+    currentResidence,
+    onSubmit,
+    residenceEnabled,
+  ]);
 
   return (
     <KeyboardAwareScrollViewCompat
@@ -227,7 +278,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       </Pressable>
     </KeyboardAwareScrollViewCompat>
   );
-}
+});
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },

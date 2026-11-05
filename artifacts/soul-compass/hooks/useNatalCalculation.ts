@@ -31,11 +31,11 @@ function useNatalCalculationState(): NatalCalculationState {
   const context = useProfile();
   const current = useRef(context);
   current.current = context;
-  const inFlight = useRef(false);
+  const inFlight = useRef(new Set<string>());
   const revision = useRef(0);
   const alive = useRef(true);
   const automaticRefreshAttempted = useRef(false);
-  const profileKey = JSON.stringify(context.profile);
+  const profileKey = context.profile ? natalChartCacheKey(context.profile) : 'null';
   const scope = {
     profileKey,
     consent: context.privacy.astrologyApiConsent,
@@ -84,10 +84,12 @@ function useNatalCalculationState(): NatalCalculationState {
   }, [profileKey, context.privacy.astrologyApiConsent, context.privacy.consentVersion]);
   const calculate = useCallback(async (choice: Disambiguation | null) => {
     const ctx = current.current;
-    if (!ctx.profile || !ctx.canCalculate() || inFlight.current) return;
-    inFlight.current = true;
+    if (!ctx.profile || !ctx.canCalculate()) return;
     const requestRevision = revision.current;
     const cacheKey = natalChartCacheKey(ctx.profile);
+    const inFlightKey = `${requestRevision}:${cacheKey}`;
+    if (inFlight.current.has(inFlightKey)) return;
+    inFlight.current.add(inFlightKey);
     setState(previous => ({
       ...previous,
       error: undefined,
@@ -117,8 +119,10 @@ function useNatalCalculationState(): NatalCalculationState {
         setState({ error: readable, disambiguation: choice, isPending: false, isError: true });
       }
     } finally {
-      inFlight.current = false;
-      if (alive.current) setState(previous => previous.isPending ? { ...previous, isPending: false } : previous);
+      inFlight.current.delete(inFlightKey);
+      if (alive.current && revision.current === requestRevision) {
+        setState(previous => previous.isPending ? { ...previous, isPending: false } : previous);
+      }
     }
   }, []);
   const refreshOncePerSession = useCallback(async () => {

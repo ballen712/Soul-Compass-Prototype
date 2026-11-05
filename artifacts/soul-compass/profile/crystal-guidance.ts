@@ -111,7 +111,14 @@ export function getNatalCrystalSuggestions(
   return selected;
 }
 
-export const FEELING_OPTIONS = [
+type FeelingOption = {
+  id: string;
+  label: string;
+  description: string;
+  themes: readonly string[];
+};
+
+export const FEELING_OPTIONS: readonly FeelingOption[] = [
   { id: 'steady', label: 'Feeling okay', description: 'Nothing especially good or hard—just an ordinary day.', themes: ['balance', 'grounding', 'ease'] },
   { id: 'energized', label: 'Full of energy', description: 'You woke up ready to take on the day.', themes: ['energy', 'confidence', 'initiative'] },
   { id: 'tired', label: 'Feeling tired', description: 'You feel mentally or physically worn out and want to save your energy.', themes: ['rest', 'ease', 'grounding'] },
@@ -124,7 +131,7 @@ export const FEELING_OPTIONS = [
   { id: 'connection', label: 'Seeking connection', description: 'You would like closeness or a good conversation.', themes: ['connection', 'communication', 'empathy'] },
   { id: 'brave', label: 'Ready for a challenge', description: 'You feel ready to do something that takes nerve.', themes: ['courage', 'confidence', 'resilience'] },
   { id: 'reflective', label: 'Reflective', description: 'You want some quiet to understand what you are feeling.', themes: ['reflection', 'intuition', 'clarity'] },
-] as const;
+];
 
 const intentionThemes: Record<string, readonly string[]> = {
   rest: ['rest', 'calm', 'ease', 'grounding'],
@@ -203,20 +210,25 @@ function stableScore(value: string): number {
   return (hash >>> 0) / 0xffffffff;
 }
 
-function dayContext(astrology: Calculated | undefined): string {
-  const aspect = astrology?.aspects[0];
-  if (aspect?.quality === 'challenging') return 'Today’s theme points to a place where patience may help.';
-  if (aspect?.aspect === 'conjunction') return 'One theme may feel especially present today.';
-  if (aspect) return 'Today’s theme suggests room to try a small, useful step.';
-  return 'Your chart offers a broad theme for the day.';
-}
-
 const aspectWording: Record<string, string> = {
-  conjunction: 'meet around one shared focus',
-  sextile: 'offer a small opening to work with',
-  square: 'create a point of tension that may need patience',
-  trine: 'work together with relative ease',
-  opposition: 'highlight two different priorities to balance',
+  conjunction: 'come together around a shared area',
+  sextile: 'open a small possibility',
+  square: 'create a point that calls for care',
+  trine: 'flow well together',
+  opposition: 'put two priorities in conversation',
+};
+
+const planetPlain: Record<string, string> = {
+  Sun: 'self-expression and vitality',
+  Moon: 'feelings and everyday needs',
+  Mercury: 'thoughts and conversation',
+  Venus: 'relationships and personal values',
+  Mars: 'drive and taking action',
+  Jupiter: 'growth and new possibilities',
+  Saturn: 'responsibility and boundaries',
+  Uranus: 'change and independence',
+  Neptune: 'imagination and sensitivity',
+  Pluto: 'deep change and renewal',
 };
 
 const plainTheme: Record<string, string> = {
@@ -355,18 +367,26 @@ function rank(
       const feelingThemes = selectedFeeling
         ? crystal.themes.filter((theme) => selectedFeeling.themes.includes(theme))
         : [];
+      const additionalFeelingThemes = feelingThemes.filter((theme) => !chartThemes.includes(theme));
       const relevantThemes = chartThemes.length ? chartThemes : feelingThemes;
-      const action = relevantThemes.map((theme) => themeAction[theme]).find(Boolean);
+      const action = selectedFeeling
+        ? selectedFeeling.themes
+          .filter((theme) => crystal.themes.includes(theme))
+          .map((theme) => themeAction[theme])
+          .find(Boolean)
+        : relevantThemes.map((theme) => themeAction[theme]).find(Boolean);
       const intentionCopy = matched.length
         ? `Your chosen intention to ${matched.join(' and ')} also guided this match.`
         : null;
       const feelingCopy = selectedFeeling && feelingMatchCount > 0
-        ? `You chose “${selectedFeeling.label.toLowerCase()},” which connects with ${labelThemes(feelingThemes)}.`
+        ? chartThemes.some((theme) => feelingThemes.includes(theme))
+          ? `You chose “${selectedFeeling.label.toLowerCase()},” which also influenced this pick.`
+          : `You chose “${selectedFeeling.label.toLowerCase()},” which connects with ${labelThemes(feelingThemes)}.`
         : null;
       const chartCopy = natalLink
         ? astrology?.preciseBirthMoment
-          ? `Today, transiting ${natalLink.aspect.transitBody} and your natal ${natalLink.aspect.natalBody} ${aspectWording[natalLink.aspect.aspect] ?? 'form a link'} in your chart, bringing ${labelThemes(chartThemes)} into focus.`
-          : `Today’s chart links ${natalLink.aspect.transitBody} with ${labelThemes(chartThemes)}.`
+          ? `Today, the moving sky’s ${natalLink.aspect.transitBody} (${planetPlain[natalLink.aspect.transitBody] ?? 'a personal theme'}) and your birth-chart ${natalLink.aspect.natalBody} (${planetPlain[natalLink.aspect.natalBody] ?? 'another personal theme'}) ${aspectWording[natalLink.aspect.aspect] ?? 'connect'}, bringing ${labelThemes(chartThemes)} into focus.`
+          : `Today’s sky links ${natalLink.aspect.transitBody} (${planetPlain[natalLink.aspect.transitBody] ?? 'a personal theme'}) with the ${natalLink.aspect.natalBody} in your birth chart, bringing ${labelThemes(chartThemes)} into view.`
         : null;
       const intentionReason = intentionCopy
         ? `${crystal.name} shares themes of ${selectedMeaning}. ${intentionCopy}`
@@ -375,7 +395,9 @@ function rank(
         chartCopy,
         !chartCopy && !feelingCopy ? intentionReason : null,
         feelingCopy,
-        chartCopy && feelingCopy ? `This stone also connects with ${labelThemes(feelingThemes)}.` : null,
+        chartCopy && feelingCopy && additionalFeelingThemes.length
+          ? `This stone also connects with ${labelThemes(additionalFeelingThemes)}.`
+          : null,
         action ? `Use ${crystal.name} as a reminder to ${action}.` : `${crystal.name} connects with ${selectedMeaning}; you could use it as a prompt to choose one useful next step.`,
         'This is a symbolic prompt, not a guaranteed effect.',
       ].filter(Boolean).join(' ');
@@ -403,22 +425,4 @@ export function getCrystalRecommendation(astrology: Calculated, options: Options
 
 export function getIntentionRecommendation(options: Options) {
   return rank(undefined, options, 1)[0] ?? null;
-}
-
-export function getCompanionReason(
-  crystal: Crystal,
-  recommendation: CrystalRecommendation | null,
-): string {
-  const companionMeaning = crystal.note.toLowerCase().replace(' · ', ' and ');
-  if (!recommendation) {
-    return `This is a sample. ${crystal.name} is traditionally linked with ${companionMeaning}.`;
-  }
-  const context = recommendation.basis === 'chart'
-    ? recommendation.feelingLabel ? 'today’s chart theme and how you feel' : 'today’s chart theme'
-    : recommendation.basis === 'feeling'
-      ? `how you feel today (${recommendation.feelingLabel?.toLowerCase()})`
-      : recommendation.matchedIntentions.length > 0
-        ? `your intention to ${recommendation.matchedIntentions.join(' and ')}`
-        : 'your chosen stone';
-  return `If you want another angle, ${crystal.name} is traditionally linked with ${companionMeaning}—a small prompt for ${context}, not a promise.`;
 }

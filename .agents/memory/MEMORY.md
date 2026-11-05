@@ -7,3 +7,4 @@
 - [City-provider scope](city-provider-scope.md) — Geoapify Free is owner-approved; keep keys server-only and distinguish public terms from unverified account-wide usage.
 - [Quota storage scope](quota-storage-scope.md) — Usage-based PostgreSQL approved for operational counters only; test distinct real processes and keep production verification separate.
 - [Workspace dependency links](workspace-dependency-links.md) — Check pnpm links and catalog compatibility before interpreting missing test/type packages as source errors.
+- [Birth input cursor behavior](birth-input-cursor.md) — Keep date and time digit-first formatting automatic without cursor jumps during typing, editing, deletion, or paste.

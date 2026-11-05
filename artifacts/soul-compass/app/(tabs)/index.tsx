@@ -105,8 +105,11 @@ export default function CosmosScreen() {
           styles.scrollContent,
           { paddingTop: topInset + 18 },
         ]}
+        alwaysBounceVertical={false}
+        bounces={false}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
+        overScrollMode="never"
         accessibilityLabel="Daily reflection"
       >
         <View style={styles.page}>
@@ -166,18 +169,6 @@ export default function CosmosScreen() {
             ))}
           </View>
           <View style={styles.brandRow}>
-            <View
-              style={[
-                styles.brandMark,
-                { borderColor: colors.cosmos.secondary },
-              ]}
-            >
-              <Feather
-                name="compass"
-                size={16}
-                color={colors.cosmos.secondary}
-              />
-            </View>
             <Text
               style={[
                 styles.brandName,
@@ -186,31 +177,11 @@ export default function CosmosScreen() {
             >
               SOUL COMPASS
             </Text>
-            <View
-              style={[
-                styles.brandDivider,
-                { backgroundColor: colors.cosmos.divider },
-              ]}
-            />
-            <Text
-              style={[
-                styles.brandCaption,
-                { color: colors.cosmos.mutedForeground },
-              ]}
-            >
-              DAILY PRACTICE
-            </Text>
             <SettingsButton />
           </View>
 
           <View style={styles.hero} accessibilityRole="header">
             <View style={styles.heroCopy}>
-              <View style={styles.eyebrowRow}>
-                <View style={[styles.eyebrowLine, { backgroundColor: colors.cosmos.secondary }]} />
-                <Text style={[styles.eyebrow, { color: colors.cosmos.secondary }]}>
-                  {calculatedReading ? 'A DAILY PAUSE' : dailyReading.label}
-                </Text>
-              </View>
               <Text style={[styles.title, { color: colors.cosmos.foreground }]}>Today’s reflection</Text>
             </View>
           </View>
@@ -473,7 +444,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 23,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   page: {
     width: '100%',
@@ -483,36 +454,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  brandMark: {
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    height: 32,
-    justifyContent: 'center',
-    marginRight: 10,
-    width: 32,
-  },
   brandName: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 10,
     letterSpacing: 1.7,
-  },
-  brandDivider: {
-    height: 13,
-    marginHorizontal: 10,
-    width: 1,
-  },
-  brandCaption: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 8,
-    letterSpacing: 1.3,
   },
   intro: {
     marginTop: 45,
     marginBottom: 23,
   },
   hero: {
-    height: 140,
+    height: 105,
     justifyContent: 'flex-end',
     marginBottom: 10,
     marginHorizontal: -23,
@@ -539,21 +491,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   heroCopy: { paddingHorizontal: 23, paddingBottom: 13 },
-  eyebrowRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  eyebrowLine: {
-    height: 1,
-    marginRight: 9,
-    width: 22,
-  },
-  eyebrow: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 10,
-    letterSpacing: 1.9,
-  },
   title: {
     fontFamily: 'Georgia',
     fontSize: 40,

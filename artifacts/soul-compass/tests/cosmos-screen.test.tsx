@@ -80,15 +80,24 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   });
   const root = renderer!.root;
   const screenCopy = root.findAllByType(Text).map((node) => node.props.children);
+  expect(screenCopy).toContain('SOUL COMPASS');
+  expect(screenCopy).not.toContain('DAILY PRACTICE');
+  expect(screenCopy).not.toContain('A DAILY PAUSE');
   expect(screenCopy).toContain('FOCUS FOR TODAY');
   expect(screenCopy).toContain('WHAT TO LEAVE FOR LATER');
   expect(screenCopy).not.toContain('OPTIONAL');
   expect(root.findAllByProps({ name: 'info' })).toHaveLength(3);
+  expect(root.findAllByProps({ name: 'compass' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'moon-outline' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'wind' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'arrow-up-right' })).toHaveLength(0);
   const starLayer = root.findByProps({ testID: 'cosmos-background-stars' });
   expect(starLayer.props.children).toHaveLength(64);
+  const scrollView = root.findByProps({ accessibilityLabel: 'Daily reflection' });
+  expect(scrollView.props.bounces).toBe(false);
+  expect(scrollView.props.alwaysBounceVertical).toBe(false);
+  expect(scrollView.props.overScrollMode).toBe('never');
+  expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(8);
   const moment = root.findAllByType(Pressable).find(
     (button: ReactTestInstance) => button.props.accessibilityLabel === 'Read more about A moment to keep',
   );

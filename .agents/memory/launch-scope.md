@@ -33,8 +33,8 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 
 **How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
-Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions.
+Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions. The header should show only “SOUL COMPASS” and “Today’s reflection,” without the compass mark, “DAILY PRACTICE,” or “A DAILY PAUSE.” End the page at the Natal Chart card and prevent overscrolling into empty space.
 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.
 
-**How to apply:** preserve the blue cards, keep the stars low-contrast, and end the content without a large blank area or decorative footer.
+**How to apply:** preserve the blue cards, keep the stars low-contrast, and make the Natal Chart card the clear end of the content.

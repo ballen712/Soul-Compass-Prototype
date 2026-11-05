@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollV
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
+import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import {
   crystalCatalog,
   type Crystal,
@@ -165,6 +166,10 @@ export default function CrystalsScreen() {
   const collectionListRef = useRef<FlatList<Crystal> | null>(null);
   const collectionScrollOffsetRef = useRef(0);
   const restoreCollectionScrollRef = useRef(false);
+  const restoreCollectionStoneNameRef = useRef<string | null>(null);
+  const restoreCollectionIndexRef = useRef<number | null>(null);
+  const restoreCollectionRetriedRef = useRef(false);
+  const collectionListViewportHeightRef = useRef(0);
   const guideScrollRef = useRef<ScrollViewInstance | null>(null);
   const guideScrollOffsetRef = useRef(0);
   const restoreGuideScrollRef = useRef(false);
@@ -229,10 +234,14 @@ export default function CrystalsScreen() {
 
   const returnToCollection = () => {
     restoreCollectionScrollRef.current = true;
+    restoreCollectionStoneNameRef.current = selectedCollectionStone?.name ?? null;
     setSelectedCollectionStone(null);
   };
   const closeCollection = () => {
     restoreCollectionScrollRef.current = false;
+    restoreCollectionStoneNameRef.current = null;
+    restoreCollectionIndexRef.current = null;
+    restoreCollectionRetriedRef.current = false;
     collectionScrollOffsetRef.current = 0;
     setSelectedCollectionStone(null);
     setCollectionOpen(false);
@@ -248,6 +257,7 @@ export default function CrystalsScreen() {
   };
 
   return (
+    <TabEdgeSwipe tabIndex={1} testID="tab-edge-swipe-crystals">
     <SafeAreaView
       edges={[]}
       style={[
@@ -469,6 +479,9 @@ export default function CrystalsScreen() {
               setSelectedCollectionStone(null);
               collectionScrollOffsetRef.current = 0;
               restoreCollectionScrollRef.current = false;
+              restoreCollectionStoneNameRef.current = null;
+              restoreCollectionIndexRef.current = null;
+              restoreCollectionRetriedRef.current = false;
               setCollectionOpen(true);
             }}
             style={[
@@ -764,6 +777,8 @@ export default function CrystalsScreen() {
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
                 {selectedCollectionStone.description}
+                {'\n\n'}
+                {selectedCollectionStone.guideDescription}
               </Text>
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
                 GUIDE THEMES
@@ -802,70 +817,120 @@ export default function CrystalsScreen() {
               <Text style={[styles.collectionResults, { color: colors.crystals.mutedForeground }]}>
                 {catalogMatches.length} {catalogMatches.length === 1 ? 'stone' : 'stones'}
               </Text>
-              <FlatList
-                ref={collectionListRef}
-                testID="full-crystal-catalog-list"
-                data={catalogMatches}
-                keyExtractor={(stone) => stone.name}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.collectionList}
-                onScroll={(event) => {
-                  collectionScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+              <View
+                testID="collection-list-viewport"
+                style={styles.collectionListViewport}
+                onLayout={(event) => {
+                  collectionListViewportHeightRef.current = event.nativeEvent.layout.height;
                 }}
-                scrollEventThrottle={16}
-                onContentSizeChange={() => {
-                  if (!restoreCollectionScrollRef.current) return;
-                  restoreCollectionScrollRef.current = false;
-                  collectionListRef.current?.scrollToOffset({
-                    offset: collectionScrollOffsetRef.current,
-                    animated: false,
-                  });
-                }}
-                renderItem={({ item: stone }) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Read about ${stone.name}`}
-                    testID={`catalog-stone-${slugOf(stone.name)}`}
-                    onPress={() => setSelectedCollectionStone(stone)}
-                    style={[
-                      styles.catalogStoneRow,
-                      {
-                        backgroundColor: colors.crystals.card,
-                        borderColor: colors.crystals.border,
-                      },
-                    ]}
-                  >
-                    <CrystalArtwork crystal={stone} size="catalog" />
-                    <View style={styles.catalogStoneCopy}>
-                      <Text style={[styles.catalogStoneName, { color: colors.crystals.foreground }]}>
-                        {stone.name}
-                      </Text>
-                      <Text style={[styles.catalogStoneNote, { color: colors.crystals.secondary }]}>
-                        {stone.note}
-                      </Text>
-                      <Text
-                        numberOfLines={2}
-                        style={[styles.catalogStoneDescription, { color: colors.crystals.mutedForeground }]}
-                      >
-                        {stone.specimenDescription}
-                      </Text>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={colors.crystals.secondary} />
-                  </Pressable>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.catalogSeparator} />}
-                ListEmptyComponent={(
-                  <Text style={[styles.collectionEmpty, { color: colors.crystals.mutedForeground }]}>
-                    No stones match that search. Try a different name or theme.
-                  </Text>
-                )}
-              />
+              >
+                <FlatList
+                  ref={collectionListRef}
+                  testID="full-crystal-catalog-list"
+                  data={catalogMatches}
+                  keyExtractor={(stone) => stone.name}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.collectionList}
+                  onScroll={(event) => {
+                    collectionScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+                  }}
+                  scrollEventThrottle={16}
+                  onContentSizeChange={() => {
+                    if (!restoreCollectionScrollRef.current) return;
+                    restoreCollectionScrollRef.current = false;
+                    const stoneName = restoreCollectionStoneNameRef.current;
+                    restoreCollectionStoneNameRef.current = null;
+                    const targetIndex = stoneName
+                      ? catalogMatches.findIndex((stone) => stone.name === stoneName)
+                      : -1;
+                    if (targetIndex >= 0) {
+                      restoreCollectionIndexRef.current = targetIndex;
+                      restoreCollectionRetriedRef.current = false;
+                      collectionListRef.current?.scrollToIndex({
+                        index: targetIndex,
+                        viewPosition: 0.5,
+                        animated: false,
+                      });
+                      return;
+                    }
+                    restoreCollectionIndexRef.current = null;
+                    collectionListRef.current?.scrollToOffset({
+                      offset: collectionScrollOffsetRef.current,
+                      animated: false,
+                    });
+                  }}
+                  onScrollToIndexFailed={(info) => {
+                    const targetIndex = restoreCollectionIndexRef.current;
+                    if (targetIndex === null || info.index !== targetIndex) return;
+                    const averageLength = Math.max(info.averageItemLength, 1);
+                    const estimatedOffset = Math.max(
+                      0,
+                      averageLength * targetIndex
+                        - collectionListViewportHeightRef.current / 2
+                        + averageLength / 2,
+                    );
+                    collectionListRef.current?.scrollToOffset({
+                      offset: estimatedOffset,
+                      animated: false,
+                    });
+                    if (restoreCollectionRetriedRef.current) return;
+                    restoreCollectionRetriedRef.current = true;
+                    requestAnimationFrame(() => {
+                      if (restoreCollectionIndexRef.current !== targetIndex) return;
+                      collectionListRef.current?.scrollToIndex({
+                        index: targetIndex,
+                        viewPosition: 0.5,
+                        animated: false,
+                      });
+                    });
+                  }}
+                  renderItem={({ item: stone }) => (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Read about ${stone.name}`}
+                      testID={`catalog-stone-${slugOf(stone.name)}`}
+                      onPress={() => setSelectedCollectionStone(stone)}
+                      style={[
+                        styles.catalogStoneRow,
+                        {
+                          backgroundColor: colors.crystals.card,
+                          borderColor: colors.crystals.border,
+                        },
+                      ]}
+                    >
+                      <CrystalArtwork crystal={stone} size="catalog" />
+                      <View style={styles.catalogStoneCopy}>
+                        <Text style={[styles.catalogStoneName, { color: colors.crystals.foreground }]}>
+                          {stone.name}
+                        </Text>
+                        <Text style={[styles.catalogStoneNote, { color: colors.crystals.secondary }]}>
+                          {stone.note}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[styles.catalogStoneDescription, { color: colors.crystals.mutedForeground }]}
+                        >
+                          {stone.specimenDescription}
+                        </Text>
+                      </View>
+                      <Feather name="chevron-right" size={18} color={colors.crystals.secondary} />
+                    </Pressable>
+                  )}
+                  ItemSeparatorComponent={() => <View style={styles.catalogSeparator} />}
+                  ListEmptyComponent={(
+                    <Text style={[styles.collectionEmpty, { color: colors.crystals.mutedForeground }]}>
+                      No stones match that search. Try a different name or theme.
+                    </Text>
+                  )}
+                />
+              </View>
             </KeyboardAvoidingView>
           ) : null}
         </View>
         </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
+    </TabEdgeSwipe>
   );
 }
 
@@ -1067,6 +1132,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
+  collectionListViewport: { flex: 1 },
   collectionSearchWrap: {
     alignItems: 'center',
     borderRadius: 15,

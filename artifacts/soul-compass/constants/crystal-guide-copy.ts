@@ -1,4 +1,6 @@
-export const crystalGuideCopy: Record<string, string> = {
+import type { CrystalName } from './crystal-catalog';
+
+export const crystalGuideCopy = {
   Amethyst: "Use its violet cluster as a quiet focal point during meditation. It suits evening journaling, slowing your pace, and making room for honest self-reflection.",
   Moonstone: "Bring it into a transition ritual or a journal session about new beginnings. Its pale sheen fits practices centered on intuition, cycles, and listening inward.",
   Labradorite: "Turn it in the light before setting an intention for change. It suits practices about curiosity, fresh possibilities, and deciding what you want to carry forward.",
@@ -92,4 +94,4 @@ export const crystalGuideCopy: Record<string, string> = {
   Heliodor: "Bring its golden color into a morning practice about confidence and direction. It suits reflection on optimism, clear goals, and sharing your natural warmth with others.",
   "Boulder Opal": "Notice the contrast between its dark host rock and bright color before a creative practice. It suits reflection on imagination, resilience, and finding beauty in complexity.",
   "Black Agate": "Keep it nearby during a grounding ritual or focused work session. Its dark, even bands suit practices about boundaries, steadiness, and staying close to your own priorities.",
-};
+} satisfies Record<CrystalName, string>;

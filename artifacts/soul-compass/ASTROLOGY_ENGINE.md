@@ -4,7 +4,7 @@
 
 The merged daily feature also uses Astronomy Engine locally in Expo. It calculates eligible geocentric tropical natal/current planet factors and a conservative set of major transit aspects. Daily reflections require the separately saved current residence for the displayed local date; birthplace is never substituted. Full houses/angles and the authoritative detailed natal response remain server-based, behind saved consent and an explicit Calculate action. On-device daily use is not a claim that every calculation runs locally.
 
-The visible reading uses the leading eligible aspect with one of five reviewed reflective templates, or an eligible natal factor if no close aspect exists. The crystal rule set is a three-stone symbolic pairing plus recognized intentions, not a scientific prediction. Read LAUNCH_READINESS.html for the complete current product inventory and limits.
+The visible reading uses the leading eligible aspect with one of five reviewed reflective templates, or an eligible natal factor if no close aspect exists. Crystal selection ranks eligible matches across the 93-stone catalog; the screen shows one main suggestion and up to two alternatives when available. Saved daily feeling and chart themes guide the matches. Read LAUNCH_READINESS.html for the complete current product inventory and limits.
 
 ## Implemented foundation
 

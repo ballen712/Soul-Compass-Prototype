@@ -13,6 +13,7 @@ export type Crystal = {
   name: string;
   note: string;
   description: string;
+  guideDescription: string;
   themes: readonly string[];
   tone: StoneTone;
   image?: number;
@@ -20,6 +21,7 @@ export type Crystal = {
   specimenDescription: string;
 };
 import specimenBriefs from '../scripts/crystal-image-briefs.json';
+import { crystalGuideCopy } from './crystal-guide-copy';
 
 const meanings = {
   calm: {
@@ -159,7 +161,7 @@ type StoneEntry = readonly [name: string, meaning: MeaningKey];
 // https://www.ganoksin.com/article/gemstone-name-reference-list/
 // https://gem-a.com/gem-hub/different-types-of-chalcedony
 // https://www.mineralminers.com/html/indxpolx.htm
-const entries: readonly StoneEntry[] = [
+const entries = [
   ['Amethyst', 'calm'],
   ['Moonstone', 'intuition'],
   ['Labradorite', 'curiosity'],
@@ -253,7 +255,8 @@ const entries: readonly StoneEntry[] = [
   ['Heliodor', 'joy'],
   ['Boulder Opal', 'creativity'],
   ['Black Agate', 'boundaries'],
-];
+] as const satisfies readonly StoneEntry[];
+export type CrystalName = (typeof entries)[number][0];
 
 const generatedImageSources: number[] = [
   require('../assets/crystals/amethyst.jpg'),
@@ -405,6 +408,7 @@ export const crystalCatalog: Crystal[] = entries.map(([name, key]) => {
     description: meaning.description
       .replaceAll('{name}', name)
       .replaceAll('{note}', meaning.note.toLowerCase()),
+    guideDescription: crystalGuideCopy[name],
     specimenDescription: specimenBriefs[name as keyof typeof specimenBriefs],
     themes: meaning.themes,
     tone: toneByName[name] ?? meaning.tone,

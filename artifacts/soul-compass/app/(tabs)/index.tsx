@@ -1,11 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useScrollToTop } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
+import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
 import { dailyReading } from '@/constants/content';
 import { getDailyRituals } from '@/constants/daily-rituals';
@@ -61,6 +62,8 @@ type Detail = {
 };
 
 export default function CosmosScreen() {
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
+  useScrollToTop(scrollRef);
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
@@ -101,6 +104,7 @@ export default function CosmosScreen() {
         : null;
 
   return (
+    <TabEdgeSwipe tabIndex={0} testID="tab-edge-swipe-cosmos">
     <SafeAreaView
       edges={[]}
       style={[
@@ -133,6 +137,8 @@ export default function CosmosScreen() {
         ))}
       </View>
       <ScrollView
+        ref={scrollRef}
+        testID="cosmos-main-scroll"
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18 },
@@ -428,6 +434,7 @@ export default function CosmosScreen() {
         </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
+    </TabEdgeSwipe>
   );
 }
 

@@ -12,6 +12,8 @@ const state = vi.hoisted(() => ({
   calculate: vi.fn(),
   platformOS: 'web',
   appStateListeners: new Set<(nextState: string) => void>(),
+  focusCallback: null as null | (() => void),
+  scrollToTopRef: null as null | { current: unknown },
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -26,7 +28,11 @@ vi.mock('@workspace/api-client-react', () => ({
 }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('expo-router', () => ({
+  useRouter: () => ({ push: vi.fn(), navigate: vi.fn() }),
+  useFocusEffect: (callback: () => void) => { state.focusCallback = callback; },
+  useScrollToTop: (ref: { current: unknown }) => { state.scrollToTopRef = ref; },
+}));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
@@ -102,27 +108,55 @@ function findText(root: ReactTestInstance, text: string) {
   return root.findAllByType(Text).find((node) => node.props.children === text);
 }
 
+async function openGuide(root: ReactTestInstance) {
+  const toggle = root.findByProps({ testID: 'natal-guide-toggle' });
+  if (!toggle.props.accessibilityState?.expanded) {
+    await act(async () => { toggle.props.onPress(); });
+  }
+}
+
 function resumeApp() {
   state.appStateListeners.forEach(listener => listener('active'));
 }
 
-test('planet explanations connect the planet, sign, and house in plain personal language', () => {
+test('planet explanations translate sign and house placements into everyday personal language', () => {
   const sun = explainPlanet('Sun', 'Aquarius', 6);
   expect(sun.title).toBe('Sun in Aquarius · House 6');
-  expect(sun.body).toContain('sense of self');
-  expect(sun.body).toContain('independent and drawn to original ideas');
-  expect(sun.body).toContain('your sixth house');
-  expect(sun.body).toContain('routines and practical care');
-  expect(sun.body).toContain('room to improve how things get done');
-  expect(sun.body).not.toMatch(/In astrology|Astrologers often describe/);
+  expect(sun.body).toContain('Your Sun is about what helps you feel like yourself and what gives you confidence.');
+  expect(sun.body).toContain('With Aquarius, you may be independent, open to unusual ideas, and comfortable doing things your own way.');
+  expect(sun.body).toContain('It may shape your routines, daily work, and how you look after everyday needs.');
+  expect(sun.body).not.toMatch(/connected with|in your \w+ house|In astrology|Astrologers often describe/i);
 
   const moon = explainPlanet('Moon', 'Pisces', 7);
   expect(moon.title).toBe('Moon in Pisces · House 7');
-  expect(moon.body).toContain('feelings and what helps you feel safe');
-  expect(moon.body).toContain('sensitive to moods and guided by imagination');
-  expect(moon.body).toContain('your seventh house');
-  expect(moon.body).toContain('close partnerships');
-  expect(moon.body).toContain('without losing track of your own needs');
+  expect(moon.body).toContain('Your Moon is about what you feel and what helps you feel safe.');
+  expect(moon.body).toContain('With Pisces, you may be imaginative, empathetic, and sensitive to the mood around you.');
+  expect(moon.body).toContain('You may see it in close relationships, shared decisions, and what helps both people feel heard.');
+
+  const scorpioSun = explainPlanet('Sun', 'Scorpio', 9);
+  expect(scorpioSun.body).toContain('keen to get to the bottom of things');
+  expect(scorpioSun.body).toContain('learning, travel, the ideas you believe in, and questions that help you make sense of life');
+});
+
+test('all planet, sign, and house combinations use plain-language explanations', () => {
+  const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+  const signs = [
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+  ];
+
+  for (const planet of planets) {
+    for (const sign of signs) {
+      for (let house = 1; house <= 12; house += 1) {
+        const explanation = explainPlanet(planet, sign, house);
+        expect(explanation.body).toContain(`Your ${planet} is about`);
+        expect(explanation.body).toContain(`With ${sign}, you may be`);
+        expect(explanation.body).toMatch(/You may|It may/);
+        expect(explanation.body).not.toMatch(/connected with|\bhouse\b|In astrology|Astrologers often describe/i);
+        expect(explanation.question).toBeTruthy();
+      }
+    }
+  }
 });
 
 test('unknown birth time does not add a house interpretation', () => {
@@ -135,6 +169,8 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.storage.clear();
   state.appStateListeners.clear();
+  state.focusCallback = null;
+  state.scrollToTopRef = null;
   state.platformOS = 'web';
   state.calculate.mockReset().mockResolvedValue(chartResult);
   const profile = {
@@ -149,6 +185,8 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => renderer?.unmount());
   renderer = undefined;
+  state.focusCallback = null;
+  state.scrollToTopRef = null;
 });
 
 test('Natal Chart sends no request until Agree, which starts exactly one calculation', async () => {
@@ -322,7 +360,7 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(findText(root, 'Sun trine Moon')).toBeDefined();
 });
 
-test('Natal Chart shows the plain-language guide and all house cusps without the redundant labels or toggle', async () => {
+test('Natal Chart guide starts closed, centers its title, and closes again on re-entry', async () => {
   const record = JSON.parse(state.storage.get(LOCAL_KEY)!);
   record.privacy = {
     astrologyApiConsent: true,
@@ -347,7 +385,27 @@ test('Natal Chart shows the plain-language guide and all house cusps without the
   const root = renderer!.root;
   expect(findText(root, 'NATAL CHART')).toBeUndefined();
   expect(findText(root, 'HOW TO READ THIS')).toBeDefined();
+  expect(findText(root, 'Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')).toBeUndefined();
+  const guideToggle = root.findByProps({ testID: 'natal-guide-toggle' });
+  expect(guideToggle.props.accessibilityState).toEqual({ expanded: false });
+  expect(guideToggle.props.style).toEqual(expect.objectContaining({
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  }));
+  const guideTitle = root.findByProps({ testID: 'natal-guide-title' });
+  expect(guideTitle.props.style).toEqual(expect.objectContaining({
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  }));
+
+  await act(async () => { guideToggle.props.onPress(); });
   expect(findText(root, 'Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-guide-toggle' }).props.accessibilityState).toEqual({ expanded: true });
+  await act(async () => { state.focusCallback?.(); });
+  expect(findText(root, 'Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')).toBeUndefined();
+  expect(root.findByProps({ testID: 'natal-guide-toggle' }).props.accessibilityState).toEqual({ expanded: false });
   expect(root.findAllByProps({ testID: 'natal-details-toggle' })).toHaveLength(0);
   expect(findText(root, 'CHART DETAILS')).toBeDefined();
   expect(findText(root, 'HOUSE CUSPS')).toBeDefined();
@@ -357,6 +415,8 @@ test('Natal Chart shows the plain-language guide and all house cusps without the
   )).toBe(false);
 
   const scrollView = root.findByProps({ accessibilityLabel: 'Natal chart' });
+  expect(scrollView.props.testID).toBe('natal-main-scroll');
+  expect(state.scrollToTopRef).not.toBeNull();
   expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
   expect(scrollView.props.contentContainerStyle[1].paddingBottom).toBe(32);
 });
@@ -382,6 +442,7 @@ test('timed chart keeps angles but omits Placidus houses when the location canno
 
   const root = renderer!.root;
   await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
+  await openGuide(root);
   expect(root.findByProps({ testID: 'natal-angle-ascendant' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
@@ -413,6 +474,7 @@ test('timed chart omits angle tiles when the calculation cannot provide angles',
 
   const root = renderer!.root;
   await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
+  await openGuide(root);
   expect(root.findAllByProps({ testID: 'natal-angle-ascendant' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-angle-midheaven' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
@@ -458,6 +520,7 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   expect(findText(root, 'MIDHEAVEN')).toBeUndefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
+  await openGuide(root);
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('Houses depend on your exact birth time'),
   )).toBe(true);

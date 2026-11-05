@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useNatalCalculation } from '@/hooks/useNatalCalculation';
 import type { NatalChartResponse } from '@workspace/api-client-react';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useScrollToTop } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
+import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
@@ -29,29 +30,30 @@ const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
 type ChartExplanation = { title: string; body: string; question?: string };
 
 const planetThemes: Record<string, string> = {
-  sun: 'confidence and your sense of self', moon: 'your feelings and what helps you feel safe',
-  mercury: 'thinking and communication', venus: 'close connections and what matters to you',
-  mars: 'energy and taking action', jupiter: 'growth and seeing the bigger picture',
-  saturn: 'responsibility and routines', uranus: 'change and doing things your own way',
-  neptune: 'imagination and ideals', pluto: 'deep change and personal boundaries',
+  sun: 'what helps you feel like yourself and what gives you confidence',
+  moon: 'what you feel and what helps you feel safe',
+  mercury: 'how you think things through, learn, and put ideas into words',
+  venus: 'what matters to you, what you enjoy, and who you feel close to',
+  mars: 'how you use your energy, stand up for yourself, and take action',
+  jupiter: 'what helps you grow, stay hopeful, and try new things',
+  saturn: 'where patience, practice, and responsibility help you make steady progress',
+  uranus: 'where you need freedom and prefer to find your own way',
+  neptune: 'your imagination, hopes, and the feelings you pick up from other people',
+  pluto: 'how you face big changes, build trust, and let go of what you cannot control',
 };
 const signPersonalities: Record<string, string> = {
-  aries: 'direct and ready to take initiative',
-  taurus: 'steady and practical',
-  gemini: 'curious and open to conversation',
-  cancer: 'caring and attentive to emotional security',
-  leo: 'warm and expressive',
-  virgo: 'observant and focused on practical details',
-  libra: 'fair-minded and attentive to other people',
-  scorpio: 'private, intense, and interested in what lies beneath the surface',
-  sagittarius: 'open to exploration and the bigger picture',
-  capricorn: 'patient and focused on steady progress',
-  aquarius: 'independent and drawn to original ideas',
-  pisces: 'sensitive to moods and guided by imagination',
-};
-const houseOrdinals: Record<number, string> = {
-  1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 5: 'fifth', 6: 'sixth',
-  7: 'seventh', 8: 'eighth', 9: 'ninth', 10: 'tenth', 11: 'eleventh', 12: 'twelfth',
+  aries: 'direct and quick to act',
+  taurus: 'patient, steady, and drawn to what feels dependable',
+  gemini: 'curious, quick to ask questions, and likely to enjoy talking ideas through',
+  cancer: 'caring, protective, and quick to notice how others feel',
+  leo: 'warm, expressive, and eager to share what you care about',
+  virgo: 'practical, observant, and quick to notice what could work better',
+  libra: 'thoughtful about fairness and how your choices affect others',
+  scorpio: 'private, good at noticing what others miss, and keen to get to the bottom of things',
+  sagittarius: 'curious about new places, ideas, and ways of seeing life',
+  capricorn: 'patient, determined, and willing to work toward long-term goals',
+  aquarius: 'independent, open to unusual ideas, and comfortable doing things your own way',
+  pisces: 'imaginative, empathetic, and sensitive to the mood around you',
 };
 const signTones: Record<string, string> = {
   aries: 'taking initiative', taurus: 'steadily and practically',
@@ -79,67 +81,57 @@ export function explainPlanet(
   if (planet.toLowerCase() === 'moon' && uncertainMoonRange && uncertainMoonRange.length > 1) {
     return {
       title: 'Moon sign range',
-      body: `The Moon was in ${uncertainMoonRange.join(' or ')} during your birth date. Without a birth time, we cannot tell which sign was in place when you were born, so this chart does not guess. The Moon describes feelings and what helps you feel safe.`,
+      body: `On your birthday, the Moon was in ${uncertainMoonRange.join(' or ')}. Since your birth time is unknown, we cannot tell which one was in place when you were born. The Moon describes what you feel and what helps you feel secure.`,
       question: 'What helps you feel settled when things change?',
     };
   }
   const key = planet.toLowerCase();
   const theme = planetThemes[key] ?? 'a personal theme in your life';
   const signPersonality = signPersonalities[sign.toLowerCase()];
-  const houseIsKnown = typeof house === 'number' && houseThemes[house] !== undefined;
-  const ordinal = houseIsKnown ? houseOrdinals[house!] : undefined;
+  const houseIsKnown = typeof house === 'number' && houseContexts[house] !== undefined;
   const body = [
-    `Your ${name} is connected with ${theme}.`,
+    `Your ${name} is about ${theme}.`,
     signPersonality
-      ? `In ${cap(sign)}, this side of you may be ${signPersonality}.`
-      : `${cap(sign)} gives this part of your chart its own style.`,
+      ? `With ${cap(sign)}, you may be ${signPersonality}.`
+      : `${cap(sign)} gives this part of you its own style.`,
     ...(houseIsKnown
-      ? [
-          `In your ${ordinal} house, this connects with ${houseThemes[house!]}.`,
-          houseApplications[house!],
-        ]
+      ? [houseContexts[house!]]
       : []),
   ].join(' ');
   return {
     title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
     body,
     question: houseIsKnown
-      ? planetQuestions[key] ?? 'Does this feel familiar in this part of your life?'
-      : `Which part of ${theme} feels most familiar to you?`,
+      ? planetQuestions[key] ?? 'Where do you notice this in everyday life?'
+      : 'Which part of this description feels most familiar to you?',
   };
 }
 
-const houseThemes: Record<number, string> = {
-  1: 'self and first impressions', 2: 'resources and personal values', 3: 'learning and everyday communication',
-  4: 'home and roots', 5: 'creativity and play', 6: 'routines and practical care',
-  7: 'close partnerships', 8: 'shared resources and change', 9: 'learning and wider horizons',
-  10: 'work and public life', 11: 'friendships and shared aims', 12: 'rest and inner life',
-};
-const houseApplications: Record<number, string> = {
-  1: 'You may notice this in how you introduce yourself or begin something new; being comfortable in your own skin matters here.',
-  2: 'This can shape what helps you feel secure and how you decide what is worth your time and money.',
-  3: 'You may notice it in everyday conversations and learning; talking things through can help you sort out your thoughts.',
-  4: 'Home and family may bring this theme close to the surface, especially around where you feel you belong.',
-  5: 'You may notice it in creativity, play, romance, and what lets you enjoy expressing yourself.',
-  6: 'You may feel most engaged when your work is useful and leaves room to improve how things get done.',
-  7: 'Close relationships may affect how settled you feel; it helps to care for others without losing track of your own needs.',
-  8: 'Trust and shared resources may feel important here; honesty can help when life is changing.',
-  9: 'Learning, travel, or new ideas may help you see this part of life from a wider angle.',
-  10: 'You may care about work and long-term goals that reflect what matters to you.',
-  11: 'Friends and groups may help you explore shared hopes and choose connections that feel mutual.',
-  12: 'Quiet time may help you process this part of life; you do not have to understand every feeling right away.',
+const houseContexts: Record<number, string> = {
+  1: 'You may notice this in how you show up, make a first impression, or start something new.',
+  2: 'It may shape what you value, how you handle money, and what helps you feel secure.',
+  3: 'It may show up in everyday conversations, the questions you ask, and how you learn new things.',
+  4: 'It may feel close to home—your family, your roots, and the places where you feel you belong.',
+  5: 'You may notice it in your creativity, romance, hobbies, and the things you do for fun.',
+  6: 'It may shape your routines, daily work, and how you look after everyday needs.',
+  7: 'You may see it in close relationships, shared decisions, and what helps both people feel heard.',
+  8: 'It may come up around trust, shared money or responsibilities, close relationships, and major changes.',
+  9: 'You may notice it through learning, travel, the ideas you believe in, and questions that help you make sense of life.',
+  10: 'It may shape your work, long-term goals, and what you want to be known for.',
+  11: 'You may see it in friendships, communities, shared plans, and the future you want to build with others.',
+  12: 'It may be strongest in quiet moments, when you need rest or time to sort through feelings privately.',
 };
 const planetQuestions: Record<string, string> = {
   sun: 'Where in this part of life do you feel most like yourself?',
   moon: 'What helps you feel safe and understood here?',
-  mercury: 'What might become clearer if you talk or write it through?',
-  venus: 'What would make this part of life more balanced or enjoyable?',
-  mars: 'What is one direct step you could take without rushing?',
-  jupiter: 'What would you like to learn or explore here?',
-  saturn: 'What steady step would make this feel more manageable?',
-  uranus: 'Where could you try a more original approach?',
-  neptune: 'How can you follow your imagination while keeping expectations clear?',
-  pluto: 'What are you ready to understand or change more deeply?',
+  mercury: 'What might feel clearer if you talk or write it through?',
+  venus: 'What would make this part of life more enjoyable or fair?',
+  mars: 'What is one small step you can take without rushing?',
+  jupiter: 'What would you like to learn, try, or understand better here?',
+  saturn: 'What steady routine or small commitment would help you keep going?',
+  uranus: 'Where would doing things your own way help?',
+  neptune: 'How can you make room for imagination while staying clear about what is realistic?',
+  pluto: 'What are you ready to face, change, or let go of in this area?',
 };
 
 export function explainAspect(first: string, second: string, type: string): ChartExplanation {
@@ -192,6 +184,8 @@ function errorMessage(err: unknown): string {
 }
 
 export default function NatalScreen() {
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
+  useScrollToTop(scrollRef);
   const colors = useColors();
   const c = colors.cosmos;
   const insets = useSafeAreaInsets();
@@ -239,6 +233,7 @@ export default function NatalScreen() {
   const heroHeight = Math.round(windowHeight * 0.42);
 
   return (
+    <TabEdgeSwipe tabIndex={2} testID="tab-edge-swipe-natal">
     <SafeAreaView
       edges={[]}
       style={[styles.safeArea, { backgroundColor: c.homeBackground }]}
@@ -263,6 +258,8 @@ export default function NatalScreen() {
         ))}
       </View>
       <ScrollView
+        ref={scrollRef}
+        testID="natal-main-scroll"
         accessibilityLabel="Natal chart"
         contentContainerStyle={[
           styles.scrollContent,
@@ -444,12 +441,17 @@ export default function NatalScreen() {
         </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
+    </TabEdgeSwipe>
   );
 }
 
 function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
 }) {
+  const [guideOpen, setGuideOpen] = useState(false);
+  useFocusEffect(useCallback(() => {
+    setGuideOpen(false);
+  }, []));
   const hasKnownBirthMoment = timeKnown
     && data.input.birthTimeKnown
     && data.calculation.birthTimeResolution === 'known';
@@ -471,6 +473,8 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
         timeKnown={timeKnown}
         housesAvailable={housesAvailable}
         anglesAvailable={angles !== null}
+        open={guideOpen}
+        onToggle={() => setGuideOpen((value) => !value)}
       />
       {disambiguation ? (
         <Card c={c}>
@@ -612,20 +616,23 @@ function Guide({
   timeKnown,
   housesAvailable,
   anglesAvailable,
+  open,
+  onToggle,
 }: {
   c: Palette;
   timeKnown: boolean;
   housesAvailable: boolean;
   anglesAvailable: boolean;
+  open: boolean;
+  onToggle: () => void;
 }) {
-  const [open, setOpen] = useState(true);
   const items: [string, string][] = [
     ['Chart method', !timeKnown
       ? 'This chart uses the tropical zodiac. Placidus houses depend on your exact birth time, so they are omitted.'
       : housesAvailable
         ? 'This chart uses the tropical zodiac, a common Western way of mapping the signs, and Placidus to divide the chart into twelve houses.'
         : 'This chart uses the tropical zodiac. Placidus houses could not be calculated for this location, so no substitute house system was used.'],
-    ['Planets', 'Each planet stands for a life theme. For example, the Moon is connected with feelings, and Mercury with thinking and communication.'],
+    ['Planets', 'Each planet is a different part of everyday life. The Sun is about what makes you feel like yourself; the Moon, what you feel and what helps you feel safe; Mercury, how you think, learn, and put ideas into words.'],
     ['Signs', 'A sign describes the style a theme may take: for example, direct, steady, curious, or imaginative.'],
     ['Houses', !timeKnown
       ? 'Houses depend on your exact birth time, so they are left out when that time is unknown.'
@@ -642,9 +649,21 @@ function Guide({
   ];
   return (
     <Card c={c}>
-      <Pressable testID="natal-guide-toggle" accessibilityRole="button" onPress={() => setOpen((v) => !v)} style={styles.guideHead}>
-        <Label c={c} icon="book-open" text="HOW TO READ THIS" />
-        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={c.secondary} />
+      <Pressable
+        testID="natal-guide-toggle"
+        accessibilityRole="button"
+        accessibilityLabel="How to read this"
+        accessibilityState={{ expanded: open }}
+        onPress={onToggle}
+        style={styles.guideHead}
+      >
+        <View testID="natal-guide-title" style={styles.guideTitleCenter}>
+          <Feather name="book-open" size={14} color={c.secondary} />
+          <Text style={[styles.label, { color: c.secondary }]}>HOW TO READ THIS</Text>
+        </View>
+        <View pointerEvents="none" style={styles.guideChevronWrap}>
+          <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={c.secondary} />
+        </View>
       </Pressable>
       {open ? (
         <>
@@ -756,7 +775,23 @@ const styles = StyleSheet.create({
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   btn: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 14, paddingVertical: 9 },
   btnText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
-  guideHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
+  guideHead: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    minHeight: 32,
+    position: 'relative',
+  },
+  guideTitleCenter: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'center' },
+  guideChevronWrap: {
+    alignItems: 'flex-end',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 24,
+  },
   explanationSafeArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 20 },
   explanationScrim: { ...StyleSheet.absoluteFill, opacity: 0.76 },
   explanationCard: { alignSelf: 'center', width: '100%', maxWidth: 440, maxHeight: '88%', borderWidth: 1, borderRadius: 24, paddingHorizontal: 22, paddingTop: 18 },

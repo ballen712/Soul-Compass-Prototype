@@ -7,12 +7,16 @@ const state = vi.hoisted(() => ({
   push: vi.fn(),
   getDailyAstrology: vi.fn(),
   profile: null as unknown,
+  scrollToTopRef: null as null | { current: unknown },
 }));
 
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push }) }));
+vi.mock('expo-router', () => ({
+  useRouter: () => ({ push: state.push }),
+  useScrollToTop: (ref: { current: unknown }) => { state.scrollToTopRef = ref; },
+}));
 vi.mock('../assets/images/cosmos-starfield.jpg', () => ({ default: 'cosmos-starfield' }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
@@ -77,6 +81,7 @@ afterEach(async () => {
   state.push.mockReset();
   state.getDailyAstrology.mockReset();
   state.profile = null;
+  state.scrollToTopRef = null;
 });
 
 test('A moment to keep opens in a centered modal and closes without a chart request', async () => {
@@ -101,6 +106,8 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(starLayer.props.children).toHaveLength(24);
   expect(starLayer.props.style.bottom).toBe(0);
   const scrollView = root.findByProps({ accessibilityLabel: 'Daily reflection' });
+  expect(scrollView.props.testID).toBe('cosmos-main-scroll');
+  expect(state.scrollToTopRef).not.toBeNull();
   expect(scrollView.props.bounces).toBe(false);
   expect(scrollView.props.alwaysBounceVertical).toBe(false);
   expect(scrollView.props.overScrollMode).toBe('never');

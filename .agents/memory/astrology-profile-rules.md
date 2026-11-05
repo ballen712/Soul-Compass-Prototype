@@ -34,3 +34,9 @@ For daily crystal suggestions, the current residence's time zone sets the local 
 **Why:** the product decision is to keep city coordinates out of crystal matching rather than imply that local horizons or other location-based astrological factors are part of the current method.
 
 **How to apply:** describe the time-zone/date role plainly in the Stone Guide and product documentation; test that changing city coordinates without changing time zone does not change planetary factors or crystal matches.
+
+Natal Chart interpretation copy should be simple, personal, and understandable to people unfamiliar with astrology. Explain placements through recognizable qualities and everyday behavior instead of relying on astrology jargon.
+
+**Why:** the user wants people to understand what their planet, sign, and house placements may mean in ordinary life.
+
+**How to apply:** keep placement labels for orientation, but translate planet, sign, and house combinations into clear, consistent examples across all placements.

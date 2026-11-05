@@ -5,8 +5,10 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   push: vi.fn(),
+  navigate: vi.fn(),
   guideScrollTo: vi.fn(),
   collectionScrollToOffset: vi.fn(),
+  collectionScrollToIndex: vi.fn(),
   suggestions: [] as Array<{ crystal: Record<string, unknown>; reason: string; basis: string; matchedIntentions: string[] }>,
   crystalOptions: null as null | Record<string, unknown>,
   homeLocalDate: vi.fn(() => '2026-11-06'),
@@ -25,6 +27,7 @@ const state = vi.hoisted(() => ({
     name: 'Moonstone',
     note: 'Reflection · steadiness',
     description: 'A gentle reminder to pause.',
+    guideDescription: 'Use it during a quiet reflection practice.',
     specimenDescription: 'A pearly white stone with a soft blue flash.',
     image: 0,
     imageDescription: 'Moonstone on linen',
@@ -34,6 +37,7 @@ const state = vi.hoisted(() => ({
     name: 'Amethyst',
     note: 'Stillness · perspective',
     description: 'A reminder to slow down.',
+    guideDescription: 'Use it as a calm focus during meditation.',
     specimenDescription: 'A violet cluster of pointed quartz crystals.',
     image: 2,
     imageDescription: 'Amethyst cluster',
@@ -43,6 +47,7 @@ const state = vi.hoisted(() => ({
     name: 'Labradorite',
     note: 'Curiosity · change',
     description: 'A reminder to stay curious.',
+    guideDescription: 'Use it while considering a fresh direction.',
     specimenDescription: 'A grey stone with blue-green flashes across its surface.',
     image: 3,
     imageDescription: 'Labradorite stone',
@@ -51,15 +56,40 @@ const state = vi.hoisted(() => ({
     name: 'Rose Quartz',
     note: 'Connection · care',
     description: 'A good fit for care and connection.',
+    guideDescription: 'Keep it nearby for a heart-centered meditation or gratitude practice.',
     specimenDescription: 'A pale pink quartz with a cloudy, translucent finish.',
     themes: ['connection', 'empathy'],
     tone: 'pink',
+  },
+  obsidian: {
+    id: 'obsidian',
+    name: 'Obsidian',
+    note: 'Boundaries · release',
+    description: 'A reminder to make room for what matters.',
+    guideDescription: 'Use it while reflecting on boundaries and what you are ready to release.',
+    specimenDescription: 'A glossy black volcanic glass with a smooth surface.',
+    image: 7,
+    imageDescription: 'Polished black obsidian',
+    themes: ['boundaries'],
+    tone: 'black',
+  },
+  amazonite: {
+    id: 'amazonite',
+    name: 'Amazonite',
+    note: 'Honesty · balance',
+    description: 'A reminder to speak clearly and kindly.',
+    guideDescription: 'Keep it nearby when journaling about honest communication and self-respect.',
+    specimenDescription: 'A blue-green feldspar with pale streaks.',
+    image: 8,
+    imageDescription: 'Blue-green amazonite',
+    themes: ['communication'],
+    tone: 'blue-green',
   },
 }));
 
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push }) }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push, navigate: state.navigate }) }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 59, right: 0, bottom: 34, left: 0 }),
@@ -69,6 +99,7 @@ vi.mock('react-native', () => ({
   FlatList: React.forwardRef(({ data, renderItem, ListEmptyComponent, ...props }: any, ref: any) => {
     React.useImperativeHandle(ref, () => ({
       scrollToOffset: (options: unknown) => state.collectionScrollToOffset(options),
+      scrollToIndex: (options: unknown) => state.collectionScrollToIndex(options),
     }), []);
     return React.createElement(
       'FlatList',
@@ -112,7 +143,14 @@ vi.mock('react-native-keyboard-controller', () => ({
 }));
 vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/constants/content', () => ({
-  crystalCatalog: [state.moonstone, state.amethyst, state.labradorite, state.roseQuartz],
+  crystalCatalog: [
+    state.moonstone,
+    state.amethyst,
+    state.labradorite,
+    state.roseQuartz,
+    state.obsidian,
+    state.amazonite,
+  ],
   samplePrimaryCrystal: state.moonstone,
   alternativeCrystals: [state.amethyst, state.labradorite],
 }));
@@ -163,6 +201,7 @@ vi.mock('@/hooks/useLocalClock', () => ({
 }));
 
 import CrystalsScreen from '../app/(tabs)/crystals';
+import { TabEdgeSwipe } from '../components/TabEdgeSwipe';
 
 let renderer: ReactTestRenderer | undefined;
 
@@ -170,8 +209,10 @@ afterEach(async () => {
   await act(async () => renderer?.unmount());
   renderer = undefined;
   state.push.mockReset();
+  state.navigate.mockReset();
   state.guideScrollTo.mockReset();
   state.collectionScrollToOffset.mockReset();
+  state.collectionScrollToIndex.mockReset();
   state.profileContext.toggleCrystal.mockReset();
   state.profileContext.profile = null;
   state.crystalOptions = null;
@@ -243,7 +284,7 @@ test('the full collection can be searched, opened, and added to a local collecti
   expect(root.findByProps({ testID: 'catalog-stone-moonstone' })).toBeDefined();
   expect(root.findAll((node) =>
     node.type === Pressable && String(node.props.testID ?? '').startsWith('catalog-stone-'),
-  )).toHaveLength(4);
+  )).toHaveLength(6);
 
   await act(async () => {
     root.findByProps({ testID: 'crystal-catalog-search' }).props.onChangeText('pale pink');
@@ -260,6 +301,7 @@ test('the full collection can be searched, opened, and added to a local collecti
   expect(detailText).not.toContain('Real stones vary');
   expect(detailText).toContain('GOOD FOR');
   expect(detailText).toContain('A good fit for care and connection.');
+  expect(detailText).toContain('heart-centered meditation or gratitude practice');
   expect(detailText).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   await act(async () => { addStone.props.onPress(); });
@@ -277,7 +319,66 @@ test('the full collection can be searched, opened, and added to a local collecti
   expect(root.findByProps({ testID: 'open-crystal-collection' })).toBeDefined();
 });
 
-test('the full collection restores its scroll position after returning from stone details', async () => {
+test('tab edge swipes change tabs only for clear horizontal gestures that start at an edge', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const swipe = renderer!.root.findAllByProps({ testID: 'tab-edge-swipe-crystals' })
+    .find((node) => String(node.type) === 'View')!.props;
+
+  expect(swipe.onMoveShouldSetResponderCapture({}, { x0: 398, dx: -28, dy: 4 })).toBe(true);
+  expect(swipe.onMoveShouldSetResponderCapture({}, { x0: 398, dx: -28, dy: 30 })).toBe(false);
+  expect(swipe.onMoveShouldSetResponderCapture({}, { x0: 200, dx: -80, dy: 3 })).toBe(false);
+
+  await act(async () => {
+    swipe.onResponderRelease({}, { x0: 398, dx: -100, dy: 8 });
+  });
+  expect(state.navigate).toHaveBeenCalledWith('/(tabs)/natal');
+
+  await act(async () => {
+    swipe.onResponderRelease({}, { x0: 3, dx: 100, dy: 6 });
+  });
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)');
+
+  await act(async () => {
+    swipe.onResponderRelease({}, { x0: 398, dx: -100, dy: 90 });
+  });
+  expect(state.navigate).toHaveBeenCalledTimes(2);
+});
+
+test('tab edge swipes wrap between the first and last tabs in both directions', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => {
+    renderer = create(
+      <TabEdgeSwipe tabIndex={0} testID="tab-edge-swipe-first">
+        <Text>Cosmos</Text>
+      </TabEdgeSwipe>,
+    );
+  });
+  let handlers = renderer!.root.findAllByProps({ testID: 'tab-edge-swipe-first' })
+    .find((node) => String(node.type) === 'View')!.props;
+  expect(handlers.onMoveShouldSetResponderCapture({}, { x0: 3, dx: 28, dy: 4 })).toBe(true);
+  await act(async () => { handlers.onResponderRelease({}, { x0: 3, dx: 110, dy: 8 }); });
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/natal');
+  await act(async () => { handlers.onResponderRelease({}, { x0: 398, dx: -110, dy: 8 }); });
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/crystals');
+
+  await act(async () => {
+    renderer!.update(
+      <TabEdgeSwipe tabIndex={2} testID="tab-edge-swipe-last">
+        <Text>Natal Chart</Text>
+      </TabEdgeSwipe>,
+    );
+  });
+  handlers = renderer!.root.findAllByProps({ testID: 'tab-edge-swipe-last' })
+    .find((node) => String(node.type) === 'View')!.props;
+  expect(handlers.onMoveShouldSetResponderCapture({}, { x0: 398, dx: -28, dy: 4 })).toBe(true);
+  await act(async () => { handlers.onResponderRelease({}, { x0: 398, dx: -110, dy: 8 }); });
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)');
+  await act(async () => { handlers.onResponderRelease({}, { x0: 3, dx: 110, dy: 8 }); });
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/crystals');
+});
+
+test('the full collection centers each opened stone after returning from its details', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   await act(async () => { renderer = create(<CrystalsScreen />); });
   const root = renderer!.root;
@@ -288,27 +389,53 @@ test('the full collection restores its scroll position after returning from ston
   let list = root.findByProps({ testID: 'full-crystal-catalog-list' });
   await act(async () => {
     list.props.onScroll({ nativeEvent: { contentOffset: { y: 840 } } });
-    root.findByProps({ testID: 'catalog-stone-rose-quartz' }).props.onPress();
+    root.findByProps({ testID: 'catalog-stone-obsidian' }).props.onPress();
   });
+  expect(root.findAllByType(Text).some((node) => node.props.children === 'Obsidian')).toBe(true);
   await act(async () => {
     const edge = root.findAllByProps({ testID: 'crystal-catalog-edge-swipe-back' })
       .find((node) => String(node.type) === 'View')!.props;
-    edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
+    edge.onResponderRelease({}, { x0: 12, dx: 210, dy: 8 });
   });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
   await act(async () => { list.props.onContentSizeChange(400, 2400); });
-  expect(state.collectionScrollToOffset).toHaveBeenNthCalledWith(1, { offset: 840, animated: false });
+  expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(1, {
+    index: 4,
+    viewPosition: 0.5,
+    animated: false,
+  });
+  expect(state.collectionScrollToOffset).not.toHaveBeenCalled();
 
   await act(async () => {
     list.props.onScroll({ nativeEvent: { contentOffset: { y: 1260 } } });
-    root.findByProps({ testID: 'catalog-stone-labradorite' }).props.onPress();
+    root.findByProps({ testID: 'catalog-stone-amazonite' }).props.onPress();
   });
+  expect(root.findAllByType(Text).some((node) => node.props.children === 'Amazonite')).toBe(true);
   await act(async () => {
-    root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress();
+    const edge = root.findAllByProps({ testID: 'crystal-catalog-edge-swipe-back' })
+      .find((node) => String(node.type) === 'View')!.props;
+    edge.onResponderRelease({}, { x0: 12, dx: 210, dy: 8 });
   });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
   await act(async () => { list.props.onContentSizeChange(400, 2400); });
-  expect(state.collectionScrollToOffset).toHaveBeenNthCalledWith(2, { offset: 1260, animated: false });
+  expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(2, {
+    index: 5,
+    viewPosition: 0.5,
+    animated: false,
+  });
+
+  await act(async () => {
+    list.props.onScroll({ nativeEvent: { contentOffset: { y: 1680 } } });
+    root.findByProps({ testID: 'catalog-stone-labradorite' }).props.onPress();
+  });
+  await act(async () => { root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress(); });
+  list = root.findByProps({ testID: 'full-crystal-catalog-list' });
+  await act(async () => { list.props.onContentSizeChange(400, 2400); });
+  expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(3, {
+    index: 2,
+    viewPosition: 0.5,
+    animated: false,
+  });
 });
 
 test('the collection button clears the tab bar and detail artwork scales to the screen', async () => {

@@ -18,25 +18,26 @@ const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
 type ChartExplanation = { title: string; body: string; question?: string };
 
 const planetThemes: Record<string, string> = {
-  sun: 'identity and vitality', moon: 'emotional needs and comfort', mercury: 'thinking and communication',
-  venus: 'connection and what you value', mars: 'energy and how you take action', jupiter: 'growth and perspective',
-  saturn: 'responsibility and structure', uranus: 'independence and change', neptune: 'imagination and ideals',
-  pluto: 'deep change and personal power',
+  sun: 'confidence and your sense of self', moon: 'your feelings and what helps you feel safe',
+  mercury: 'thinking and communication', venus: 'close connections and what matters to you',
+  mars: 'energy and taking action', jupiter: 'growth and seeing the bigger picture',
+  saturn: 'responsibility and routines', uranus: 'change and doing things your own way',
+  neptune: 'imagination and ideals', pluto: 'deep change and personal boundaries',
 };
 const signTones: Record<string, string> = {
-  aries: 'directly and with initiative', taurus: 'steadily and through what feels tangible',
-  gemini: 'curiously and through exchange', cancer: 'with care for safety and belonging',
-  leo: 'warmly and with creative confidence', virgo: 'thoughtfully and with attention to detail',
-  libra: 'with an eye for balance and connection', scorpio: 'intensely and with a wish to understand what is beneath the surface',
-  sagittarius: 'openly and in search of meaning', capricorn: 'patiently and with a practical aim',
-  aquarius: 'independently and with room for new ideas', pisces: 'imaginatively and with sensitivity',
+  aries: 'taking initiative', taurus: 'steadily and practically',
+  gemini: 'with curiosity', cancer: 'with care and a need for security',
+  leo: 'with warmth and creativity', virgo: 'with care and attention to detail',
+  libra: 'looking for balance and connection', scorpio: 'with depth and a wish to understand',
+  sagittarius: 'openly and in search of meaning', capricorn: 'patiently and with a clear goal',
+  aquarius: 'independently and with fresh ideas', pisces: 'with imagination and sensitivity',
 };
 const aspectMeanings: Record<string, string> = {
-  conjunction: 'brings the two themes close together, so they may feel linked',
-  opposition: 'sets the two themes across from each other, inviting you to notice a balance',
-  trine: 'suggests an easier flow between the two themes',
-  square: 'suggests friction between the two themes that may invite a new approach',
-  sextile: 'suggests a possible opening for the two themes to support one another',
+  conjunction: 'brings the two themes together',
+  opposition: 'puts the two themes in tension and can bring balance into focus',
+  trine: 'shows an easier connection between the two themes',
+  square: 'points to tension that may call for a new approach',
+  sextile: 'can point to a chance for the themes to support each other',
 };
 
 export function explainPlanet(
@@ -49,17 +50,17 @@ export function explainPlanet(
   if (planet.toLowerCase() === 'moon' && uncertainMoonRange && uncertainMoonRange.length > 1) {
     return {
       title: 'Moon sign range',
-      body: `The Moon could have been in ${uncertainMoonRange.join(' or ')} on your birth date. Without a known birth time, this chart cannot tell which one applies, so it does not choose a single Moon sign. Its themes are often described as emotional needs and comfort.`,
-      question: 'What helps you feel settled when your needs are changing?',
+      body: `The Moon changed signs during your birth date: ${uncertainMoonRange.join(' or ')}. Without a birth time, we cannot tell which sign applies, so this chart leaves it open. In astrology, the Moon is linked with feelings and what helps you feel safe.`,
+      question: 'What helps you feel settled when things change?',
     };
   }
   const theme = planetThemes[planet.toLowerCase()];
   const tone = signTones[sign.toLowerCase()];
-  const placement = [tone ? `${name} is in ${cap(sign)}, often described as expressing this theme ${tone}` : `${name} is in ${cap(sign)}`, house ? `in House ${house}, an area associated with ${houseThemes[house] ?? 'a part of everyday life'}` : null].filter(Boolean).join(' ');
+  const placement = `${name} is in ${cap(sign)}${house ? `, House ${house} (${houseThemes[house] ?? 'part of everyday life'})` : ''}.`;
   return {
     title: `${name} in ${cap(sign)}${house ? ` · House ${house}` : ''}`,
-    body: `In astrological tradition, ${name.toLowerCase()} points to ${theme ?? 'a personal theme'}. ${placement}. This is a symbolic lens, not a fixed description.`,
-    question: `Where might you notice ${theme ?? 'this theme'} in your life?`,
+    body: `In astrology, ${name.toLowerCase()} is linked with ${theme ?? 'a personal theme'}. ${placement}${tone ? ` Astrologers often describe ${cap(sign)} as ${tone}.` : ''} Use this as a way to reflect, not as a label.`,
+    question: `Where do you notice ${theme ?? 'this theme'} in your life?`,
   };
 }
 
@@ -76,8 +77,8 @@ export function explainAspect(first: string, second: string, type: string): Char
   const link = aspectMeanings[type.toLowerCase()] ?? 'describes a relationship between the two themes';
   return {
     title: `${cap(first)} ${type.toLowerCase()} ${cap(second)}`,
-    body: `In astrological tradition, this aspect ${link}: ${firstTheme} and ${secondTheme}. You might notice these themes working together in different ways; this is a prompt for reflection, not a verdict.`,
-    question: `How do ${firstTheme} and ${secondTheme} meet in your experience?`,
+    body: `In astrology, this aspect ${link}: ${firstTheme} and ${secondTheme}. You may experience these themes in your own way. Use this as a prompt to reflect, not a fixed answer.`,
+    question: `How do ${firstTheme} and ${secondTheme} show up for you?`,
   };
 }
 
@@ -85,8 +86,8 @@ export function explainAngle(label: string, sign: string): ChartExplanation {
   const isAscendant = label.toLowerCase() === 'ascendant';
   return {
     title: `${label} in ${cap(sign)}`,
-    body: `In astrological tradition, the ${label} is a symbolic lens on ${isAscendant ? 'how you meet new situations and come across to others' : 'long-term direction and your public or working life'}. ${cap(sign)} is often described as doing this ${signTones[sign.toLowerCase()] ?? 'in its own distinctive way'}. It is not a fixed description.`,
-    question: `Does that way of approaching ${isAscendant ? 'new situations' : 'your direction'} feel familiar?`,
+    body: `In astrology, the ${label} is linked with ${isAscendant ? 'how you approach new situations' : 'your long-term direction, work, and public life'}. ${cap(sign)} is often described as doing this ${signTones[sign.toLowerCase()] ?? 'in its own way'}. Treat it as a prompt, not a fixed description.`,
+    question: `Does this way of approaching ${isAscendant ? 'new situations' : 'your direction'} feel familiar?`,
   };
 }
 
@@ -227,10 +228,10 @@ export default function NatalScreen() {
             <Card c={c}>
               <Text style={[styles.cardTitle, { color: c.foreground }]}>Your permission comes first</Text>
               <Text style={[styles.body, { color: c.foreground }]}>
-                Agree once to calculate your optional Natal Chart. Soul Compass sends only your birth date, time if known, and birthplace coordinates and time zone. The chart is saved on this device, so opening the app will not send the same details again. If you change your birth details, a new chart may be calculated under this permission.
+                If you agree, we send your birth date, your birth time if you know it, and your birthplace coordinates and time zone to calculate your Natal Chart. We do not send your name, current home, language, intentions, or collection. The chart is saved on this device, so opening the app does not send the same details again. If you change your birth details, we may calculate a new chart.
               </Text>
               <Text style={[styles.body, { color: c.mutedForeground }]}>
-                You can withdraw permission in Settings. A saved chart stays on this device. Requests are not queued offline or sent when you reconnect.
+                You can withdraw permission in Settings. Your saved chart stays on this device. If you are offline, the request is not saved for later.
               </Text>
               {consentError ? <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{consentError}</Text> : null}
               {declined ? (
@@ -254,7 +255,7 @@ export default function NatalScreen() {
               {twice ? (
                 <>
                   <Text style={[styles.body, { color: c.mutedForeground }]}>
-                    Clocks were turned back that night, so {profile.birthTime.status === 'known' ? profile.birthTime.localTime : 'this time'} happened twice. Choose which occurrence to use for this chart. Your profile is not changed.
+                    The clocks changed that night, so {profile.birthTime.status === 'known' ? profile.birthTime.localTime : 'this time'} happened twice. Choose which time to use for this chart. Your saved profile will not change.
                   </Text>
                   <View style={styles.choiceRow}>
                     <Btn c={c} label="Earlier occurrence" onPress={() => choose('earlier')} active={disambiguation === 'earlier'} />
@@ -350,11 +351,11 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
         <Card c={c}>
           <Label c={c} icon="clock" text="BIRTH TIME UNKNOWN" />
           <Text style={[styles.body, { color: c.mutedForeground }]}>
-            Positions are calculated for 12:00 noon local time as a reference. The Ascendant, Midheaven and houses depend on the exact time, so they are left out.
+            Since your birth time is unknown, noon is used only as a reference. Your rising sign, Midheaven, and houses are left out because they depend on the exact time.
           </Text>
           {data.moonSignRange.length > 1 ? (
             <Text style={[styles.body, { color: c.foreground }]}>
-              The Moon moves quickly. During your birth date it was in {data.moonSignRange.join(' or ')}, so your Moon sign is uncertain.
+              The Moon changed signs during your birth date: {data.moonSignRange.join(' or ')}. Without a birth time, we cannot tell which sign applies.
             </Text>
           ) : null}
         </Card>
@@ -414,7 +415,7 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
       <Card c={c}>
         <Label c={c} icon="git-merge" text="MAJOR ASPECTS" />
         {aspects.length === 0 ? (
-          <Text style={[styles.body, { color: c.mutedForeground }]}>No major aspects within orb.</Text>
+          <Text style={[styles.body, { color: c.mutedForeground }]}>No major planetary connections are close to your birth chart today.</Text>
         ) : aspects.map((a, i) => (
           <Pressable
             key={`${a.first}-${a.second}-${a.type}`}

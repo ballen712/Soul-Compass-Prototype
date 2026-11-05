@@ -10,8 +10,9 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather', Ionicons: 'Ionicons' }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
+vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push }) }));
-vi.mock('../assets/images/cosmos-art.jpg', () => ({ default: 'cosmos-art' }));
+vi.mock('../assets/images/cosmos-starfield.jpg', () => ({ default: 'cosmos-starfield' }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
@@ -24,10 +25,12 @@ vi.mock('react-native', () => ({
   ScrollView: 'ScrollView',
   StyleSheet: {
     absoluteFill: { top: 0, right: 0, bottom: 0, left: 0 },
+    absoluteFillObject: { top: 0, right: 0, bottom: 0, left: 0 },
     create: (styles: unknown) => styles,
   },
   Text: 'Text',
   View: 'View',
+  useWindowDimensions: () => ({ height: 844, width: 390 }),
 }));
 vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/constants/content', () => ({
@@ -35,6 +38,8 @@ vi.mock('@/constants/content', () => ({
     label: 'SAMPLE REFLECTION',
     title: 'A quieter kind of clarity.',
     body: 'Choose one thing to notice.',
+    favorableFocus: 'Choose one thing.',
+    gentleCaution: 'Take your time.',
     reflection: 'What deserves my attention?',
     status: 'Sample reflection.',
   },
@@ -43,6 +48,7 @@ vi.mock('@/hooks/useColors', () => ({
   useColors: () => ({
     cosmos: {
       background: '#111B2B',
+      homeBackground: '#070B13',
       card: '#1D2B40',
       foreground: '#F1EEE6',
       secondary: '#D6C39B',
@@ -73,6 +79,9 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
     renderer = create(<CosmosScreen />);
   });
   const root = renderer!.root;
+  const screenCopy = root.findAllByType(Text).map((node) => node.props.children);
+  expect(screenCopy).toContain('A GOOD FOCUS TODAY');
+  expect(screenCopy).toContain('WHAT TO LEAVE FOR LATER');
   const moment = root.findAllByType(Pressable).find(
     (button: ReactTestInstance) => button.props.accessibilityLabel === 'About A moment to keep',
   );

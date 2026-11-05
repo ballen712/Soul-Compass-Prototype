@@ -18,10 +18,10 @@ const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
 function dayContext(astrology: Calculated | undefined): string {
   const aspect = astrology?.aspects[0];
-  if (aspect?.quality === 'challenging') return 'Today may ask for patience';
-  if (aspect?.aspect === 'conjunction') return 'A strong theme may call for clear focus today';
-  if (aspect) return 'Today may offer a small opening to notice';
-  return 'A steady day can make room for reflection';
+  if (aspect?.quality === 'challenging') return 'Take one thing at a time today';
+  if (aspect?.aspect === 'conjunction') return 'One clear focus may help today';
+  if (aspect) return 'Look for one small step you can take today';
+  return 'Make a little room to reflect today';
 }
 
 function rank(astrology: Calculated | undefined, { intentions = [], hiddenCrystals = [] }: Options): CrystalRecommendation | null {
@@ -43,8 +43,8 @@ function rank(astrology: Calculated | undefined, { intentions = [], hiddenCrysta
     ? ` It also reflects your intention to ${winner.matched.join(' and ')}.`
     : '';
   const reason = astrology
-    ? `${dayContext(astrology)}. ${winner.crystal.name} can be a gentle reminder of ${meaning}.${intention}`
-    : `Your intention to ${winner.matched.join(' and ')} can be reflected in ${winner.crystal.name}'s traditional association with ${meaning}.`;
+    ? `${dayContext(astrology)}. ${winner.crystal.name} is traditionally linked with ${meaning}.${intention}`
+    : `Your intention to ${winner.matched.join(' and ')} fits with ${winner.crystal.name}'s traditional association with ${meaning}.`;
   return {
     crystal: winner.crystal,
     basis: astrology ? 'chart' : 'intention',
@@ -66,12 +66,12 @@ export function getCompanionReason(
 ): string {
   const companionMeaning = associations[crystal.name]?.meaning ?? 'a different perspective';
   if (!recommendation) {
-    return `As a sample, ${crystal.name} is traditionally associated with ${companionMeaning}.`;
+    return `Sample suggestion: ${crystal.name} is traditionally linked with ${companionMeaning}.`;
   }
   const context = recommendation.basis === 'chart'
     ? 'today’s theme'
     : recommendation.matchedIntentions.length > 0
       ? `your intention to ${recommendation.matchedIntentions.join(' and ')}`
       : 'your chosen stone';
-  return `Alongside ${recommendation.crystal.name}, ${crystal.name} offers another symbolic prompt for ${context}: ${companionMeaning}.`;
+  return `${crystal.name} offers another symbolic reminder for ${context}: ${companionMeaning}.`;
 }

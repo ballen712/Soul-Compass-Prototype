@@ -134,7 +134,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
     >
       <Text style={styles.title}>A little about you.</Text>
       <Text style={styles.description}>
-        Your birthplace is essential for a future natal chart. Birth time is optional.
+        Add your birth date and birthplace for your chart. Your birth time is optional.
       </Text>
 
       <Text style={styles.label}>DATE OF BIRTH</Text>
@@ -181,17 +181,17 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       </Pressable>
       {!birthTimeKnown && (
         <Text style={styles.precisionNote}>
-          You can continue without a time. Readings will avoid time-sensitive chart details.
+          You can continue without it. Your chart will leave out details that depend on birth time.
         </Text>
       )}
 
       <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Place of Birth' : 'Place of Birth'}</Text>
-      <Text style={styles.sectionDescription}>Required for natal-chart calculations. This is where you were born, not where you live now.</Text>
+      <Text style={styles.sectionDescription}>We use this for your birth chart. It is different from where you live now.</Text>
       <HomeCityPicker label="Place of birth" value={birthPlace} onSelect={setBirthPlace} />
 
       <View style={styles.sectionDivider} />
       <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Current Residence' : 'Current Residence'}</Text>
-      <Text style={styles.sectionDescription}>Recommended for local dates and location-dependent daily readings. You can add this later in Settings.</Text>
+      <Text style={styles.sectionDescription}>Add where you live so daily readings use your local date. You can do this later in Settings.</Text>
       {residenceEnabled ? (
         <>
           <HomeCityPicker label="Current residence" value={currentResidence} onSelect={setCurrentResidence} />

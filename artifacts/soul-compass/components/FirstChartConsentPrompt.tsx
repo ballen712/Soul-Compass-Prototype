@@ -52,16 +52,16 @@ export function FirstChartConsentPrompt() {
             style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
             <ScrollView contentContainerStyle={styles.copy} showsVerticalScrollIndicator={false}>
-              <Text style={[styles.eyebrow, { color: colors.secondary }]}>OPTIONAL DEEP DIVE</Text>
+              <Text style={[styles.eyebrow, { color: colors.secondary }]}>OPTIONAL</Text>
               <Text style={[styles.title, { color: colors.foreground }]}>Create your Natal Chart?</Text>
               <Text style={[styles.body, { color: colors.foreground }]}>
-                To calculate it, Soul Compass sends your birth date, time if known, and birthplace coordinates and time zone to our server. Your name, residence, preferences and collection are not included.
+                If you agree, we send your birth date, your birth time if you know it, and your birthplace coordinates and time zone to our server to calculate your chart. We do not send your name, current home, preferences, or collection.
               </Text>
               <Text style={[styles.body, { color: colors.foreground }]}>
-                The result is saved on this device. Opening the app again will not send the same birth details. If you edit them, a new chart may be calculated under this permission. Requests are not queued offline or sent when you reconnect.
+                Your chart is saved on this device. Opening the app again will not send the same details. If you change your birth details, we may calculate a new chart. If you are offline, the request is not saved for later.
               </Text>
               <Text style={[styles.note, { color: colors.mutedForeground }]}>
-                Cosmos and Crystals work if you choose “Not now.” You can agree later in Natal Chart. Withdrawing in Settings blocks future requests; a saved chart stays on this device.
+                Cosmos and Crystals still work if you choose “Not now.” You can agree later on the Natal Chart screen. You can withdraw permission in Settings. Your saved chart stays on this device.
               </Text>
               {message ? (
                 <Text accessibilityRole="alert" style={[styles.body, { color: colors.foreground }]}>{message}</Text>

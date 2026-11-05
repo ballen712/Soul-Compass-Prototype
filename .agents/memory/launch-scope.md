@@ -26,3 +26,9 @@ Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosm
 **Why:** the user wants the daily reflection to remain the main entry point, while making the deeper chart useful to curious readers.
 
 **How to apply:** use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
+
+The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and fading into a near-black navy background. Its daily reading should explain the theme in plain language, then offer a useful focus and a gentle caution.
+
+**Why:** the user asked for a centered, full-bleed cosmic header and concise daily guidance that is easy to understand.
+
+**How to apply:** keep the artwork calm and dark enough for text contrast, and phrase focus/caution as reflective suggestions rather than predictions.

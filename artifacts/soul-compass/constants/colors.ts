@@ -20,6 +20,7 @@ const colors = {
     input: '#DDD6C8',
     cosmos: {
       background: '#111B2B',
+      homeBackground: '#070B13',
       surface: '#172438',
       card: '#1D2B40',
       foreground: '#F1EEE6',

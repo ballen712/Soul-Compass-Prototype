@@ -1,32 +1,33 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable } from 'react-native';
+import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
-import cosmosArt from '../../assets/images/cosmos-art.jpg';
+import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
 const reflectionExplanations: Record<string, string> = {
-  'A quieter kind of clarity.':
-    'Choose one conversation, task, or feeling that needs your attention now. The rest can wait; you do not have to solve everything at once.',
-  'Bring one strong theme into focus.':
-    'This is about choosing one small action instead of splitting your attention across everything. Treat it as a prompt, not a prediction.',
-  'Notice a small opening.':
-    'Look for a manageable step toward something you value. It is an idea to consider, not a promise that an opportunity will appear.',
-  'Make room for a different response.':
-    'If something feels difficult, pause and name it. Then consider one expectation or response you could adjust; you do not have to fix everything.',
-  'Use what feels naturally available.':
-    'Start with a skill, habit, or support you already have, and use it for one practical task. This is a suggestion, not a rule.',
-  'Consider both sides before deciding.':
-    'Give another point of view a fair hearing alongside your own before making a commitment. You can still decide what fits for you.',
-  'Return to a steady point.':
-    'When things feel unclear, think of a familiar quality, routine, or strength that could help you choose one next step. It is a prompt for reflection, not a fixed description or prediction.',
+  'Focus on one thing at a time.':
+    'You do not have to solve everything today. Choose one thing that matters and return to the rest when you are ready.',
+  'Focus on what matters most.':
+    'Give one important task your attention. A small step is enough; you do not need to do it all at once.',
+  'Take one small step.':
+    'Look for one practical step toward something you care about. This is an idea to consider, not a promise.',
+  'Pause and try another approach.':
+    'If something feels difficult, pause and name what is bothering you. Then choose one thing you can change.',
+  'Use a strength you already have.':
+    'Start with a skill or routine that has helped you before, and use it for one practical task.',
+  'Hear both sides before deciding.':
+    'Give another point of view a fair hearing before you decide. You can still choose what feels right for you.',
+  'Start with what you know.':
+    'Think of a familiar skill or routine that could help with your next step. Keep what feels useful and leave the rest.',
 };
 
 const dailyRituals = [
@@ -39,6 +40,7 @@ const dailyRituals = [
 export default function CosmosScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const { profile } = useProfile();
   const router = useRouter();
   const [activeDetail, setActiveDetail] = useState<'reflection' | 'moment' | 'ritual' | null>(null);
@@ -52,6 +54,10 @@ export default function CosmosScreen() {
   const reading = calculatedReading ?? dailyReading;
   const localDateKey =
     now.getFullYear() * 10_000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const pageWidth = Math.min(windowWidth - 46, 480);
+  const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
+  const heroHeight = Math.round(windowHeight * 0.37);
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const dailyRitual = dailyRituals[localDateKey % dailyRituals.length];
   const detail = activeDetail === 'reflection'
     ? {
@@ -63,37 +69,61 @@ export default function CosmosScreen() {
     : activeDetail === 'moment'
       ? {
           title: 'About this question',
-            body: 'Notice when a related choice, task, or conversation comes up. You can answer in a few words, think it over, or leave it unanswered. There is no need to act on it right away.',
+            body: 'When a related choice or conversation comes up, take a moment to think about it. You can answer this question now, later, or not at all.',
             question: reading.reflection,
           examples: [],
         }
       : activeDetail === 'ritual'
         ? {
             title: 'A small daily ritual',
-            body: 'Optional: choose one small action, or skip it. These are simple prompts for attention, not a way to cause a particular result.',
+            body: 'Pick one small action if it feels helpful, or skip it. These are gentle reminders, not a way to make something happen.',
               examples: dailyRituals.filter((ritual) => ritual !== dailyRitual),
           }
         : null;
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={[]}
       style={[
         styles.safeArea,
-        { backgroundColor: colors.cosmos.background },
-        Platform.OS === 'web' && {
-          paddingTop: Math.max(insets.top, 67),
-        },
+        { backgroundColor: colors.cosmos.homeBackground },
       ]}
     >
       <StatusBar style="light" />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 18 },
+        ]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
         accessibilityLabel="Daily reflection"
       >
         <View style={styles.page}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.heroArt,
+              {
+                top: -(topInset + 18),
+                left: -heroBleed,
+                right: -heroBleed,
+                height: heroHeight,
+              },
+            ]}
+          >
+            <Image
+              source={cosmosArt}
+              accessibilityLabel="A centered crescent moon in a quiet field of stars"
+              resizeMode="cover"
+              style={styles.heroImage}
+            />
+            <LinearGradient
+              colors={['transparent', 'transparent', colors.cosmos.homeBackground]}
+              locations={[0, 0.54, 1]}
+              style={styles.heroFade}
+            />
+          </View>
           <View style={styles.brandRow}>
             <View
               style={[
@@ -133,13 +163,6 @@ export default function CosmosScreen() {
           </View>
 
           <View style={styles.hero} accessibilityRole="header">
-            <Image
-              source={cosmosArt}
-              accessibilityLabel="A crescent moon above a quiet horizon, traced with delicate celestial orbits"
-              resizeMode="cover"
-              style={styles.heroImage}
-            />
-            <View style={[styles.heroShade, { backgroundColor: colors.cosmos.background }]} />
             <View style={styles.heroCopy}>
               <View style={styles.eyebrowRow}>
                 <View style={[styles.eyebrowLine, { backgroundColor: colors.cosmos.secondary }]} />
@@ -194,7 +217,7 @@ export default function CosmosScreen() {
             </Pressable>
             {astrology?.status === 'unavailable' ? (
               <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
-                A personal reflection isn’t available right now. Review your saved details in Settings.
+                Your personal reading isn’t available right now. Check your saved details in Settings.
               </Text>
             ) : !calculatedReading ? (
               <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
@@ -208,12 +231,38 @@ export default function CosmosScreen() {
                 </Text>
               </Pressable>
             ) : null}
-            <View
-              style={[
-                styles.cardRule,
-                { backgroundColor: colors.cosmos.border },
-              ]}
-            />
+              <View
+                style={[
+                  styles.cardRule,
+                  { backgroundColor: colors.cosmos.border },
+                ]}
+              />
+
+              <View style={styles.guidanceSection}>
+                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                  A GOOD FOCUS TODAY
+                </Text>
+                <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
+                  {reading.favorableFocus}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.cardRule,
+                  styles.guidanceRule,
+                  { backgroundColor: colors.cosmos.border },
+                ]}
+              />
+
+              <View style={styles.guidanceSection}>
+                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                  WHAT TO LEAVE FOR LATER
+                </Text>
+                <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
+                  {reading.gentleCaution}
+                </Text>
+              </View>
 
             <Pressable
               accessibilityRole="button"
@@ -419,7 +468,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 23,
-    paddingTop: 18,
     paddingBottom: 48,
   },
   page: {
@@ -463,19 +511,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginBottom: 20,
     marginHorizontal: -23,
-    overflow: 'hidden',
     position: 'relative',
+  },
+  heroArt: {
+    overflow: 'hidden',
+    position: 'absolute',
   },
   heroImage: {
     height: '100%',
     position: 'absolute',
-    right: -16,
+    width: '100%',
     top: 0,
-    width: '78%',
   },
-  heroShade: {
+  heroFade: {
     ...StyleSheet.absoluteFill,
-    opacity: 0.38,
   },
   heroCopy: { paddingHorizontal: 23, paddingBottom: 13 },
   eyebrowRow: {
@@ -590,6 +639,24 @@ const styles = StyleSheet.create({
     height: 1,
     marginTop: 25,
     marginBottom: 24,
+  },
+  guidanceSection: {
+    gap: 7,
+    paddingVertical: 3,
+  },
+  guidanceLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 9,
+    letterSpacing: 1.35,
+  },
+  guidanceText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  guidanceRule: {
+    marginTop: 15,
+    marginBottom: 15,
   },
   reflectionRow: {
     alignItems: 'flex-start',

@@ -130,7 +130,7 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
   const moonstoneReason = getCompanionReason(samplePrimaryCrystal, focus);
   const labradoriteReason = getCompanionReason(alternativeCrystals[1], focus);
-  assert.match(moonstoneReason, /Alongside Amethyst/);
+  assert.match(moonstoneReason, /offers another symbolic reminder/);
   assert.notEqual(moonstoneReason, labradoriteReason);
   assert.doesNotMatch(moonstoneReason, /calculated|natal|aspect|ephemeris/i);
 });

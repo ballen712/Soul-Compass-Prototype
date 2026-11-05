@@ -149,7 +149,7 @@ export default function CrystalsScreen() {
                 { color: colors.crystals.foreground },
               ]}
             >
-              Find a stone to meet you here.
+              Find a stone for today.
             </Text>
           </View>
 
@@ -239,7 +239,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                {recommendation?.reason ?? 'As a sample reflection, Moonstone can be a prompt to pause and listen inward. Add an intention in Settings for a personal stone pairing.'}
+                {recommendation?.reason ?? 'This is a sample suggestion. Moonstone is traditionally linked with reflection. Add an intention in Settings for a more personal suggestion.'}
               </Text>
               <CollectionToggle name={featuredCrystal.name} />
             </View>

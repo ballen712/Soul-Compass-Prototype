@@ -138,7 +138,7 @@ export default function SettingsScreen() {
 
           {tab === 'preferences' ? (
             <>
-              <Section title="Future language preference" description="English is the only language available right now. Choosing another option only records your preference for possible future versions. It does not translate any screen today.">
+               <Section title="Future language preference" description="The app is currently in English. Your choice is saved for a future version; it will not translate screens today.">
                 <View style={styles.chips}>
                   {[...LANGUAGES, ...(LANGUAGES.some((l) => l.code === preferences.language) || !preferences.language ? [] : [{ code: preferences.language, label: `Saved: ${preferences.language}` }])].map((l) => (
                     <Chip key={l.code} label={l.label} active={preferences.language === l.code}
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
                   ))}
                 </View>
               </Section>
-              <Section title="Intentions" description="Recognized intentions help rank a stone from the full catalog, owned or not. With a daily chart available, its leading theme also contributes. Rest, Focus, Reflection, Courage, Connection, Change, calm, clarity, stillness, curiosity and intuition are recognized; other words stay saved without an automatic match. This is reflection, not a prediction or health advice.">
+               <Section title="Intentions" description="Use intentions to help choose a stone that fits what matters to you. You can get suggestions for stones you do not own. A personal daily reading can also affect a suggestion. We recognize Rest, Focus, Reflection, Courage, Connection, Change, calm, clarity, stillness, curiosity, and intuition. Other words are saved but do not change the match. These are reflection prompts, not predictions or health advice.">
                 <View style={styles.chips}>
                   {Array.from(new Set([...INTENTIONS, ...preferences.crystalPreferences.intentions])).map((i) => (
                     <Chip key={i} label={i} active={preferences.crystalPreferences.intentions.includes(i)} onPress={() => toggleIntention(i)} />
@@ -159,7 +159,7 @@ export default function SettingsScreen() {
                     intentions: Array.from(new Set(customIntentions.split(',').map(value => value.trim()).filter(Boolean))) },
                 }), 'Intentions saved.')}><Text style={styles.back}>Save custom intentions</Text></Pressable>
               </Section>
-              <Section title="Your collection" description="Stones you own or want to keep track of. Your collection does not limit which stone can be suggested.">
+               <Section title="Your collection" description="Keep track of stones you own or are interested in. Your collection does not limit which stones can be suggested.">
                 {CATALOG.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
                   return (
@@ -174,7 +174,7 @@ export default function SettingsScreen() {
                   );
                 })}
               </Section>
-              <Section title="Hidden stones" description="Hidden stones will not appear on the Crystals screen. Show them again here at any time.">
+               <Section title="Hidden stones" description="Hidden stones stay off the Crystals screen until you restore them here.">
                 {CATALOG.map((c) => {
                   const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
                   return (
@@ -193,15 +193,15 @@ export default function SettingsScreen() {
 
           {tab === 'privacy' ? (
             <>
-              <Section title="What runs on this device" description="Daily reflections, practical rituals and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
-              <Section title="What uses the network" description="City search sends only your typed query through the Soul Compass server to Geoapify, not your saved birth profile. Geoapify receives normal server connection metadata; we do not forward your device IP or headers. Search runs only when you tap Search." />
-              <Section title="City search protection" description="To protect city search, our server keeps daily keyed source hashes and usage counters. These counters contain no raw IPs, search queries, profiles or birth data. Source hashes change daily; expired entries are removed when search traffic resumes." />
+              <Section title="What runs on this device" description="Daily readings, simple rituals, and stone suggestions are worked out here using your saved profile, current home, and intentions. This information is not sent anywhere for these features." />
+              <Section title="What uses the network" description="When you search for a city, only the words you type go through the Soul Compass server to Geoapify. Your saved birth profile is not sent. Geoapify sees the server’s normal connection details; we do not pass along your device IP address or headers. A search happens only when you tap Search." />
+              <Section title="City search protection" description="Our server keeps short-lived counters to protect city search. They do not contain raw IP addresses, search terms, profiles, or birth details. The source hashes change each day, and expired records are removed when another search comes in." />
               <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
-                  After you agree once, Soul Compass calculates your Natal Chart when no matching saved chart exists, such as the first calculation or after you change your birth details. The request contains your birth date, birth time if known, and birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included. A matching chart is stored on this device, so ordinary app openings do not send another request.
+                  If you agree, Soul Compass sends your birth date, your birth time if you know it, and your birthplace coordinates and time zone to calculate your Natal Chart. It does this the first time, or again if you change your birth details. Your name, current home, language, intentions, and collection are not sent. The chart is saved on this device, so opening the app does not send the same details again.
                 </Text>
                 <Text style={styles.body}>
-                  You can withdraw permission at any time. Withdrawing blocks future requests and cancels or discards an active result where possible, but cannot undo a request already sent. A saved chart remains on this device. Requests are not queued while offline or retried when you reconnect; if a calculation fails, retry it from the error shown on Natal Chart.
+                  You can withdraw permission at any time. This stops future requests and cancels or discards an active result when possible, but it cannot undo a request already sent. Your saved chart stays on this device. Requests are not saved for later when you are offline. If a calculation fails, retry it from the message on the Natal Chart screen.
                 </Text>
                 <Text style={styles.status}>
                   Status: {privacy.astrologyApiConsent ? 'Allowed' : privacy.revokedAt && privacy.consentTimestamp ? 'Withdrawn' : privacy.consentVersion && privacy.consentVersion !== CONSENT_VERSION ? 'Renewal needed' : 'Not allowed'}
@@ -219,14 +219,14 @@ export default function SettingsScreen() {
                   </Pressable>
                 )}
               </Section>
-              <Section title="Local storage" description="Your profile, preferences and collection are kept in this app's local storage, which is not encrypted. There is no account, cloud sync, or export. Deleting the app, losing the device or clearing browser data can erase it permanently. Your operating system's device backups may include this app's data." />
+              <Section title="Local storage" description="Your profile, preferences, and collection stay in this app on this device. This storage is not encrypted. There is no account, cloud sync, or export. Deleting the app, losing the device, or clearing browser data can erase your information. Your device backup may include app data." />
             </>
           ) : null}
 
           {tab === 'about' ? (
             <>
               <Section title="Support" description={PRODUCT.supportEmail}>
-                <Text style={styles.body}>Please do not email birth details or private profile data. The app never attaches them automatically.</Text>
+                <Text style={styles.body}>Please do not email us your birth details or private profile information. The app never attaches them.</Text>
                 <Pressable accessibilityRole="link" onPress={() => void run(async () => {
                   await Linking.openURL(`mailto:${PRODUCT.supportEmail}?subject=Soul%20Compass%20support`);
                 }, 'Email draft opened. No profile data was attached.')} style={styles.secondaryButton}>
@@ -234,8 +234,8 @@ export default function SettingsScreen() {
                 </Pressable>
               </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
-              <Section title="Privacy" description="No account. Profile, collection and a calculated Natal Chart are stored on this device. Daily reflections and rituals are calculated on-device. Birth details go to the server only to calculate a chart after you give permission; an unchanged saved chart is not requested again, and permission can be withdrawn in Privacy." />
-              <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup is powered by Geoapify with © OpenStreetMap contributors; attribution and provider privacy links appear beside each city search. The Free plan permits commercial use within its credits, request-rate and feature limits. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes draw on traditional symbolism for reflection; they are not medical or scientific advice. The app is in English only." />
+              <Section title="Privacy" description="No account is needed. Your profile, collection, and saved Natal Chart stay on this device. Daily readings and rituals are worked out here. With your permission, birth details are sent to calculate a chart. The same saved chart is not requested again, and you can withdraw permission in Privacy." />
+              <Section title="Licenses" description="Astrology calculations use Astronomy Engine (MIT), not a paid ephemeris. City search uses Geoapify and OpenStreetMap data; attribution and provider privacy links appear beside each search. Geoapify’s Free plan allows commercial use within its credit, rate, and feature limits. The app is built with Expo and React Native (MIT). Feather icons are MIT-licensed; Inter uses the SIL Open Font License 1.1. Readings and stone notes use traditional symbolism for reflection, not medical or scientific advice. The app is currently in English." />
             </>
           ) : null}
         </KeyboardAwareScrollViewCompat>

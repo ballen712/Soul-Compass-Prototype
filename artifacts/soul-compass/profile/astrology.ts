@@ -75,6 +75,8 @@ export type CalculatedReading = {
   label: string;
   title: string;
   body: string;
+  favorableFocus: string;
+  gentleCaution: string;
   reflection: string;
   factorSummary: string;
 };
@@ -292,16 +294,48 @@ function makeCalculatedReading(
       Pluto: 'deep change and boundaries',
     };
     const aspectAdvice = {
-      conjunction: { title: 'Bring one strong theme into focus.', action: 'Choose one small action instead of trying to do everything at once', question: 'Where would a deliberate focus help' },
-      sextile: { title: 'Notice a small opening.', action: 'Try a manageable step toward something you value', question: 'What small opportunity can I act on' },
-      square: { title: 'Make room for a different response.', action: 'Pause, name what feels difficult and adjust one expectation', question: 'What can I change about my response' },
-      trine: { title: 'Use what feels naturally available.', action: 'Use a familiar strength to support one practical task', question: 'Which existing strength can support me' },
-      opposition: { title: 'Consider both sides before deciding.', action: 'Listen to a different viewpoint before making a commitment', question: 'What other perspective deserves room' },
+      conjunction: {
+        title: 'Focus on what matters most.',
+        action: 'Take one small step instead of trying to do everything at once',
+        favorableFocus: 'Choose one important task and give it your attention.',
+        gentleCaution: 'Try not to take on everything at once.',
+        question: 'What would I like to focus on',
+      },
+      sextile: {
+        title: 'Take one small step.',
+        action: 'Try one manageable step toward something you care about',
+        favorableFocus: 'A simple conversation or practical first step may be worth trying.',
+        gentleCaution: 'You do not need to wait for perfect conditions to begin.',
+        question: 'What small step feels possible',
+      },
+      square: {
+        title: 'Pause and try another approach.',
+        action: 'Pause, name what feels difficult, and change one thing you can control',
+        favorableFocus: 'Take one challenge at a time and give yourself a moment to think.',
+        gentleCaution: 'Avoid reacting while frustration is still high.',
+        question: 'What could I do differently',
+      },
+      trine: {
+        title: 'Use a strength you already have.',
+        action: 'Use a familiar strength to move one practical task forward',
+        favorableFocus: 'Lean on a skill or routine that has helped you before.',
+        gentleCaution: 'Do not assume things will sort themselves out without your attention.',
+        question: 'Which strength can I use today',
+      },
+      opposition: {
+        title: 'Hear both sides before deciding.',
+        action: 'Listen to another point of view before making a commitment',
+        favorableFocus: 'A choice or conversation may benefit from hearing both sides.',
+        gentleCaution: 'Try not to treat a disagreement as an all-or-nothing choice.',
+        question: 'What other point of view should I hear',
+      },
     }[leadingAspect.aspect];
     return {
       label: 'TODAY’S REFLECTION',
       title: aspectAdvice.title,
-      body: `Notice ${transitTheme[leadingAspect.transitBody]} today; ${aspectAdvice.action.charAt(0).toLowerCase()}${aspectAdvice.action.slice(1)}.`,
+      body: `Today’s theme touches ${transitTheme[leadingAspect.transitBody]}. ${aspectAdvice.action}.`,
+      favorableFocus: aspectAdvice.favorableFocus,
+      gentleCaution: aspectAdvice.gentleCaution,
       reflection: `${aspectAdvice.question} today?`,
       factorSummary: `${leadingAspect.transitBody} ${leadingAspect.aspect} natal ${leadingAspect.natalBody} · within ${leadingAspect.maxOrb.toFixed(1)}°`,
     };
@@ -311,9 +345,11 @@ function makeCalculatedReading(
   const anchor = natalSun ?? natalPlacements[0];
   return {
     label: 'TODAY’S REFLECTION',
-    title: 'Return to a steady point.',
-    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} quality can be a guide today; let it support one choice at your own pace.`,
-    reflection: `Where could your ${anchor.sign} ${anchor.body.toLowerCase()} nature support you today?`,
+    title: 'Start with what you know.',
+    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} themes can be a useful prompt. Take one step at your own pace.`,
+    favorableFocus: 'Use a skill or routine you already trust to move one practical task forward.',
+    gentleCaution: 'You do not need to wait for perfect clarity before you begin.',
+    reflection: `Where could your ${anchor.sign} ${anchor.body.toLowerCase()} strengths help today?`,
     factorSummary: `${anchor.sign} ${anchor.body} · no close major transit`,
   };
 }

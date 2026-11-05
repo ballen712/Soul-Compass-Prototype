@@ -118,6 +118,7 @@ export type DailyAstrology =
       transits: { body: Planet; longitude: number; sign: (typeof ZODIAC_SIGNS)[number] }[];
       aspects: TransitAspect[];
       preciseBirthMoment: boolean;
+      /** The saved residence's local calendar day; coordinates do not affect planetary factors. */
       calculationDate: string;
       sourceLabel: string;
     }

@@ -28,3 +28,9 @@ When saved birth date, time, or birthplace changes, invalidate the old chart by 
 **Why:** an automatic refresh can start its asynchronous cache lookup before the profile-change effect runs; otherwise it may capture the prior request revision and discard the new chart request.
 
 **How to apply:** keep chart refreshes keyed to birth date, time, and birthplace; refresh after a valid local save only while consent remains active, and test changes while a previous chart request is still in flight.
+
+For daily crystal suggestions, the current residence's time zone sets the local calendar date and stable daily tie-break. Planetary factors remain geocentric at the current instant; residence coordinates do not directly affect the stone score. Do not add location-specific crystal scoring without an evidence-backed method and a product decision.
+
+**Why:** the product decision is to keep city coordinates out of crystal matching rather than imply that local horizons or other location-based astrological factors are part of the current method.
+
+**How to apply:** describe the time-zone/date role plainly in the Stone Guide and product documentation; test that changing city coordinates without changing time zone does not change planetary factors or crystal matches.

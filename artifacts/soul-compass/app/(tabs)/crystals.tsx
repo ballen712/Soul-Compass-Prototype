@@ -17,6 +17,7 @@ import { useProfile } from '@/profile/ProfileContext';
 import {
   calculateNatalElementBalance,
   getCrystalSuggestions,
+  getHomeLocalDate,
   getNatalCrystalSuggestions,
 } from '@/profile/astrology';
 import { type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
@@ -190,7 +191,9 @@ export default function CrystalsScreen() {
       {
         hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
         feeling: preferences.crystalPreferences.feeling,
-        dateKey: `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
+        dateKey: profile?.currentResidence
+          ? getHomeLocalDate(now, profile.currentResidence)
+          : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
       },
       3,
     ),
@@ -601,7 +604,7 @@ export default function CrystalsScreen() {
                     The guide includes {crystalCatalog.length} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    With your saved birth chart and current city, the daily reading uses your chart and today’s planetary transits. Your city sets the reading’s local date; we do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.
+                    With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
                     If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.

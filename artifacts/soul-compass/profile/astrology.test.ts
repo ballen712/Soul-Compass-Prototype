@@ -101,14 +101,48 @@ test('birth clock time uses the birth city, not the current residence time zone'
 });
 
 test('daily calculation date follows the saved home time zone', () => {
-  const result = calculateDailyAstrology(
-    makeProfile(),
-    new Date('2026-06-01T01:00:00.000Z'),
+  const instant = new Date('2026-06-01T01:00:00.000Z');
+  const result = calculateDailyAstrology(makeProfile(), instant);
+  const londonResult = calculateDailyAstrology(
+    makeProfile({ currentResidence: london }),
+    instant,
   );
 
   assert.equal(result.status, 'calculated');
-  if (result.status !== 'calculated') return;
+  assert.equal(londonResult.status, 'calculated');
+  if (result.status !== 'calculated' || londonResult.status !== 'calculated') return;
   assert.equal(result.calculationDate, 'May 31, 2026');
+  assert.equal(londonResult.calculationDate, 'June 1, 2026');
+  assert.deepEqual(result.transits, londonResult.transits);
+  assert.deepEqual(result.aspects, londonResult.aspects);
+});
+
+test('current-city coordinates do not change geocentric factors or stone matches', () => {
+  const instant = new Date('2026-06-01T12:00:00.000Z');
+  const newYork = calculateDailyAstrology(makeProfile(), instant);
+  const boston = calculateDailyAstrology(
+    makeProfile({
+      currentResidence: {
+        city: 'Boston',
+        country: 'United States',
+        latitude: 42.3601,
+        longitude: -71.0589,
+        timeZone: 'America/New_York',
+      },
+    }),
+    instant,
+  );
+
+  assert.equal(newYork.status, 'calculated');
+  assert.equal(boston.status, 'calculated');
+  if (newYork.status !== 'calculated' || boston.status !== 'calculated') return;
+  assert.equal(newYork.calculationDate, boston.calculationDate);
+  assert.deepEqual(newYork.transits, boston.transits);
+  assert.deepEqual(newYork.aspects, boston.aspects);
+  assert.deepEqual(
+    getCrystalSuggestions(newYork).map(({ crystal }) => crystal.name),
+    getCrystalSuggestions(boston).map(({ crystal }) => crystal.name),
+  );
 });
 
 test('daily calculation does not substitute birthplace when residence is unset', () => {

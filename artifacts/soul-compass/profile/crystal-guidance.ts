@@ -324,6 +324,8 @@ function rank(
   const chartTags = getChartThemes(astrology);
   const feelingTags = new Set<string>(selectedFeeling?.themes ?? []);
   const leadAspect = astrology?.aspects[0];
+  // Residence affects this daily tie-break only through calculationDate; its
+  // coordinates never enter crystal scoring or the geocentric chart factors.
   const tieSeed = [
     astrology?.calculationDate ?? dateKey ?? 'no-chart',
     leadAspect ? `${leadAspect.transitBody}-${leadAspect.aspect}-${leadAspect.natalBody}` : '',

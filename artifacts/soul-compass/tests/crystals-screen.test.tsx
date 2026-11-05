@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
   guideScrollTo: vi.fn(),
   collectionScrollToOffset: vi.fn(),
   suggestions: [] as Array<{ crystal: Record<string, unknown>; reason: string; basis: string; matchedIntentions: string[] }>,
+  crystalOptions: null as null | Record<string, unknown>,
+  homeLocalDate: vi.fn(() => '2026-11-06'),
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
   profileContext: {
@@ -144,7 +146,11 @@ vi.mock('@/profile/ProfileContext', () => ({
 }));
 vi.mock('@/profile/astrology', () => ({
   calculateNatalElementBalance: () => state.natalBalance,
-  getCrystalSuggestions: () => state.suggestions,
+  getCrystalSuggestions: (_astrology: unknown, options: Record<string, unknown>) => {
+    state.crystalOptions = options;
+    return state.suggestions;
+  },
+  getHomeLocalDate: state.homeLocalDate,
   getNatalCrystalSuggestions: () => state.natalRecommendations,
   getSampleAlternatives: () => [state.amethyst, state.labradorite],
   getSampleCrystal: () => state.moonstone,
@@ -168,9 +174,29 @@ afterEach(async () => {
   state.collectionScrollToOffset.mockReset();
   state.profileContext.toggleCrystal.mockReset();
   state.profileContext.profile = null;
+  state.crystalOptions = null;
+  state.homeLocalDate.mockClear();
   state.suggestions = [];
   state.natalBalance = null;
   state.natalRecommendations = [];
+});
+
+test('feeling-based crystal suggestions use the saved city local date without a chart', async () => {
+  const residence = {
+    city: 'Kiritimati',
+    country: 'Kiribati',
+    latitude: 1.8721,
+    longitude: -157.4278,
+    timeZone: 'Pacific/Kiritimati',
+  };
+  state.profileContext.profile = {
+    birthDate: '2000-01-01',
+    currentResidence: residence,
+  };
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+
+  expect(state.crystalOptions?.dateKey).toBe('2026-11-06');
+  expect(state.homeLocalDate).toHaveBeenCalledWith(new Date('2026-11-05T12:00:00.000Z'), residence);
 });
 
 test('the Stone Guide explains daily companions and opens from its info button', async () => {
@@ -192,7 +218,9 @@ test('the Stone Guide explains daily companions and opens from its info button',
   const modal = root.findByProps({ testID: 'stone-guide-modal' });
   const copy = modal.findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(copy).toContain('With your saved birth chart and current city');
-  expect(copy).toContain('we do not use GPS');
+  expect(copy).toContain('time zone sets the local date and daily tie-break');
+  expect(copy).toContain('coordinates do not directly change the stone match');
+  expect(copy).toContain('We do not use GPS');
   expect(copy).toContain('pendant, ring, or bracelet');
   expect(copy).toContain('Add to Collection');
   expect(copy).not.toMatch(/symbolic|not proven|not a proven effect|guaranteed effect|health advice/i);

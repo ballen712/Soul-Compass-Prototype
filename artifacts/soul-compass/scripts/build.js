@@ -3,6 +3,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
+const { validateStaticBuild } = require('./static-build-integrity');
 
 let metroProcess = null;
 
@@ -574,6 +575,12 @@ async function main() {
 
   console.log('Updating manifests and creating landing page...');
   updateManifests(manifests, timestamp, baseUrl, assetsByHash);
+
+  validateStaticBuild({
+    staticBuildDir: path.join(projectRoot, 'static-build'),
+    timestamp,
+  });
+  console.log('Static build integrity check passed');
 
   console.log('Build complete! Deploy to:', baseUrl);
 

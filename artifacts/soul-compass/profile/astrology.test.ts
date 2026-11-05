@@ -326,18 +326,86 @@ test('natal crystal set has eight unique, chart-weighted stones and respects hid
     item.crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
   )));
 });
-test('Cosmos sections have distinct roles and text across all major aspect patterns', () => {
+test('daily focus and caution stay practical and non-predictive across all major aspects', () => {
   const chart = calculateDailyAstrology(makeProfile(), new Date('2026-11-05T12:00:00Z'));
   assert.equal(chart.status, 'calculated');
   if (chart.status !== 'calculated') return;
-  for (const aspect of ['conjunction', 'sextile', 'square', 'trine', 'opposition'] as const) {
-    const reading = makeCalculatedReading(chart.natalPlacements, [{ ...chart.aspects[0], aspect }]);
-    const copy = [reading.title, reading.body, reading.favorableFocus, reading.gentleCaution, reading.reflection];
-    assert.equal(new Set(copy.map((text) => text.toLowerCase().replace(/[^a-z]/g, ''))).size, 5);
-    assert.ok(reading.body.length > reading.favorableFocus.length);
-    assert.ok(reading.reflection.endsWith('?'));
-    assert.doesNotMatch(reading.reflection, /today today/);
+
+  const aspectCases = [
+    {
+      aspect: 'conjunction',
+      favorableFocus: 'Detailed work with a clear starting point may feel satisfying.',
+      gentleCaution: 'Do not let every notification choose your next task.',
+    },
+    {
+      aspect: 'sextile',
+      favorableFocus: 'A first conversation or a small test of an idea may show you a useful path.',
+      gentleCaution: 'Check the practical details before promising more than you can give.',
+    },
+    {
+      aspect: 'square',
+      favorableFocus: 'Thoughtful problem-solving may work better than rushing to an answer.',
+      gentleCaution: 'Give yourself a beat before replying in the heat of the moment.',
+    },
+    {
+      aspect: 'trine',
+      favorableFocus: 'A practiced skill or routine can help you make steady progress.',
+      gentleCaution: 'Do not fill every free hour just because things feel manageable.',
+    },
+    {
+      aspect: 'opposition',
+      favorableFocus: 'A conversation with room for listening and compromise may be more useful than a quick answer.',
+      gentleCaution: 'Do not make a disagreement carry more meaning than it needs to.',
+    },
+  ] as const;
+  const firstNatal = chart.natalPlacements[0]!;
+  const secondNatal = chart.natalPlacements[1]!;
+
+  for (const { aspect, favorableFocus, gentleCaution } of aspectCases) {
+    const reading = makeCalculatedReading(chart.natalPlacements, [{
+      transitBody: firstNatal.body,
+      transitSign: firstNatal.sign,
+      natalBody: secondNatal.body,
+      natalSign: secondNatal.sign,
+      aspect,
+      quality: aspect === 'conjunction' ? 'intensifying'
+        : aspect === 'square' || aspect === 'opposition' ? 'challenging'
+          : 'supportive',
+      maxOrb: 0.5,
+    }]);
+    assert.equal(reading.favorableFocus, favorableFocus, `${aspect} focus`);
+    assert.equal(reading.gentleCaution, gentleCaution, `${aspect} caution`);
+    assert.ok(reading.favorableFocus.length > 30, `${aspect} focus should be a complete, useful sentence`);
+    assert.ok(reading.gentleCaution.length > 30, `${aspect} caution should be a complete, gentle sentence`);
+    assert.doesNotMatch(
+      `${reading.favorableFocus} ${reading.gentleCaution}`,
+      /\b(?:destined|fated|guaranteed|inevitable|will happen|will succeed|will fail)\b/i,
+      `${aspect} guidance must not promise or predict an outcome`,
+    );
   }
+
+  const fallback = makeCalculatedReading(chart.natalPlacements, []);
+  assert.equal(fallback.favorableFocus, 'A familiar skill may help you finish one practical task.');
+  assert.equal(fallback.gentleCaution, 'You do not need a complete plan before taking a first look.');
+  assert.doesNotMatch(
+    `${fallback.favorableFocus} ${fallback.gentleCaution}`,
+    /\b(?:destined|fated|guaranteed|inevitable|will happen|will succeed|will fail)\b/i,
+  );
+
+  const reflection = makeCalculatedReading(chart.natalPlacements, [{
+    transitBody: firstNatal.body,
+    transitSign: firstNatal.sign,
+    natalBody: secondNatal.body,
+    natalSign: secondNatal.sign,
+    aspect: 'conjunction',
+    quality: 'supportive',
+    maxOrb: 0.5,
+  }]);
+  const copy = [reflection.title, reflection.body, reflection.favorableFocus, reflection.gentleCaution, reflection.reflection];
+  assert.equal(new Set(copy.map((text) => text.toLowerCase().replace(/[^a-z]/g, ''))).size, 5);
+  assert.ok(reflection.body.length > reflection.favorableFocus.length);
+  assert.ok(reflection.reflection.endsWith('?'));
+  assert.doesNotMatch(reflection.reflection, /today today/);
   assert.equal(new Set([dailyReading.body, dailyReading.favorableFocus, dailyReading.gentleCaution, dailyReading.reflection]).size, 4);
 });
 test('minute cache is shared only for the same profile and refreshes after local midnight', () => {

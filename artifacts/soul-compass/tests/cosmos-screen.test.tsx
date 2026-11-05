@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   push: vi.fn(),
   getDailyAstrology: vi.fn(),
+  profile: null as unknown,
 }));
 
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
@@ -62,7 +63,7 @@ vi.mock('@/hooks/useColors', () => ({
     },
   }),
 }));
-vi.mock('@/profile/ProfileContext', () => ({ useProfile: () => ({ profile: null }) }));
+vi.mock('@/profile/ProfileContext', () => ({ useProfile: () => ({ profile: state.profile }) }));
 vi.mock('@/profile/daily-cache', () => ({ getDailyAstrology: state.getDailyAstrology }));
 vi.mock('@/hooks/useLocalClock', () => ({ useLocalClock: () => new Date('2026-11-05T12:00:00.000Z') }));
 
@@ -75,6 +76,7 @@ afterEach(async () => {
   renderer = undefined;
   state.push.mockReset();
   state.getDailyAstrology.mockReset();
+  state.profile = null;
 });
 
 test('A moment to keep opens in a centered modal and closes without a chart request', async () => {
@@ -145,6 +147,51 @@ test('daily reflection opens directly to its plain-language explanation', async 
   const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
   expect(modalCopy).not.toContain('A plain-language read');
   expect(modalCopy.join(' ')).toContain('choose what matters');
+});
+
+test('calculated focus and caution are both visible and readable in the Cosmos card', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.profile = {};
+  state.getDailyAstrology.mockReturnValue({
+    status: 'calculated',
+    reading: {
+      label: 'TODAY’S REFLECTION',
+      title: 'Treat tension as information.',
+      body: 'Today highlights energy and initiative. A mismatch between your needs and the day’s demands may ask for a closer look.',
+      favorableFocus: 'Thoughtful problem-solving may work better than rushing to an answer.',
+      gentleCaution: 'Give yourself a beat before replying in the heat of the moment.',
+      reflection: 'Where would asking for help be wiser than pushing through today?',
+      factorSummary: 'Mars square natal Moon · within 0.5°',
+    },
+  });
+
+  await act(async () => {
+    renderer = create(<CosmosScreen />);
+  });
+
+  const root = renderer!.root;
+  expect(state.getDailyAstrology).toHaveBeenCalled();
+  expect(root.findAllByType(Text).map((node) => node.props.children)).toContain(
+    'Thoughtful problem-solving may work better than rushing to an answer.',
+  );
+  expect(root.findAllByType(Text).map((node) => node.props.children)).toContain(
+    'Give yourself a beat before replying in the heat of the moment.',
+  );
+
+  for (const text of [
+    'Thoughtful problem-solving may work better than rushing to an answer.',
+    'Give yourself a beat before replying in the heat of the moment.',
+  ]) {
+    const guidance = root.findAllByType(Text).find((node) => node.props.children === text);
+    expect(guidance).toBeDefined();
+    const textStyles = Array.isArray(guidance!.props.style)
+      ? guidance!.props.style
+      : [guidance!.props.style];
+    expect(textStyles).toContainEqual(expect.objectContaining({
+      fontSize: 14,
+      lineHeight: 21,
+    }));
+  }
 });
 
 test('ritual ideas use the shared info button and no optional label', async () => {

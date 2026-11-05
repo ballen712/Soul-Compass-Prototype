@@ -15,19 +15,19 @@ import { useLocalClock } from '@/hooks/useLocalClock';
 
 const reflectionExplanations: Record<string, string> = {
   'Focus on one thing at a time.':
-    'You do not have to solve everything today. Choose one thing that matters and return to the rest when you are ready.',
+    'This is a reminder to choose what matters, not to clear every task on your list. Give one task or conversation your attention, then return to the rest when you are ready. You do not have to solve everything at once.',
   'Focus on what matters most.':
-    'Give one important task your attention. A small step is enough; you do not need to do it all at once.',
+    'The day’s theme points toward choosing rather than doing more. Notice which task, conversation, or decision matters most to you, and give it some unhurried attention. One useful step is enough for now.',
   'Take one small step.':
-    'Look for one practical step toward something you care about. This is an idea to consider, not a promise.',
+    'A useful start does not need to be a big move. Think of something you care about, then choose the easiest practical step you can take today. You can see what you learn before deciding what comes next.',
   'Pause and try another approach.':
-    'If something feels difficult, pause and name what is bothering you. Then choose one thing you can change.',
+    'If something feels harder than expected, that does not mean the whole day is going badly. Pause and name what is getting in the way. Then look for one part you can change instead of pushing harder at everything.',
   'Use a strength you already have.':
-    'Start with a skill or routine that has helped you before, and use it for one practical task.',
+    'You may not need a completely new answer. Think of a skill, habit, or kind of support that has helped you before, and bring it to one practical task. Keep what works for you and leave the rest.',
   'Hear both sides before deciding.':
-    'Give another point of view a fair hearing before you decide. You can still choose what feels right for you.',
+    'When two needs or points of view are in tension, give each a fair hearing before you decide. Listening does not mean agreeing with everyone; it can help you see what matters and choose what feels right for you.',
   'Start with what you know.':
-    'Think of a familiar skill or routine that could help with your next step. Keep what feels useful and leave the rest.',
+    'When you are unsure what to do next, begin with something familiar. A skill or routine you trust may help you take one practical step without needing to know the whole way forward.',
 };
 
 const dailyRituals = [
@@ -36,6 +36,37 @@ const dailyRituals = [
   'Step outside briefly and notice the light, sounds, or air.',
   'Pause to stretch your shoulders before your next task.',
 ];
+
+const backgroundStars = [
+  { x: 0.08, y: 0.48, size: 1.5, opacity: 0.2 },
+  { x: 0.28, y: 0.53, size: 2, opacity: 0.23 },
+  { x: 0.77, y: 0.56, size: 1.5, opacity: 0.19 },
+  { x: 0.93, y: 0.61, size: 2, opacity: 0.2 },
+  { x: 0.15, y: 0.69, size: 1.5, opacity: 0.23 },
+  { x: 0.56, y: 0.73, size: 2, opacity: 0.18 },
+  { x: 0.87, y: 0.81, size: 1.5, opacity: 0.22 },
+  { x: 0.38, y: 0.9, size: 2, opacity: 0.18 },
+  { x: 0.06, y: 1.01, size: 1.5, opacity: 0.21 },
+  { x: 0.7, y: 1.08, size: 2, opacity: 0.2 },
+  { x: 0.22, y: 1.17, size: 1.5, opacity: 0.2 },
+  { x: 0.96, y: 1.24, size: 1.5, opacity: 0.22 },
+  { x: 0.48, y: 1.31, size: 2, opacity: 0.18 },
+  { x: 0.11, y: 1.43, size: 1.5, opacity: 0.2 },
+  { x: 0.83, y: 1.51, size: 2, opacity: 0.19 },
+  { x: 0.34, y: 1.62, size: 1.5, opacity: 0.22 },
+  { x: 0.64, y: 1.74, size: 2, opacity: 0.18 },
+  { x: 0.03, y: 1.83, size: 1.5, opacity: 0.2 },
+  { x: 0.9, y: 1.94, size: 2, opacity: 0.2 },
+  { x: 0.23, y: 2.04, size: 1.5, opacity: 0.19 },
+  { x: 0.55, y: 2.16, size: 2, opacity: 0.2 },
+  { x: 0.78, y: 2.27, size: 1.5, opacity: 0.2 },
+];
+
+type Detail = {
+  title?: string;
+  body: string;
+  examples: string[];
+};
 
 export default function CosmosScreen() {
   const colors = useColors();
@@ -56,28 +87,25 @@ export default function CosmosScreen() {
     now.getFullYear() * 10_000 + (now.getMonth() + 1) * 100 + now.getDate();
   const pageWidth = Math.min(windowWidth - 46, 480);
   const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
-  const heroHeight = Math.round(windowHeight * 0.37);
+  const heroHeight = Math.round(windowHeight * 0.46);
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const dailyRitual = dailyRituals[localDateKey % dailyRituals.length];
-  const detail = activeDetail === 'reflection'
+  const detail: Detail | null = activeDetail === 'reflection'
     ? {
-        title: 'A plain-language read',
         body: reflectionExplanations[reading.title] ??
-          'Use this as one idea to think over, not a prediction or instruction. Keep what feels useful and leave the rest.',
+          'This reading is one way to think about the day’s theme and how it might connect with your life. It is not a prediction or instruction. Keep what feels useful and leave the rest.',
         examples: [],
       }
     : activeDetail === 'moment'
       ? {
-          title: 'About this question',
-            body: 'When a related choice or conversation comes up, take a moment to think about it. You can answer this question now, later, or not at all.',
-            question: reading.reflection,
+          body: 'This prompt connects today’s reflection with something real in your life. Think of a task, conversation, or choice that brings the theme to mind. You can sit with the question, write a few words, or leave it unanswered. There is no right answer and no need to act right away.',
           examples: [],
         }
       : activeDetail === 'ritual'
         ? {
-            title: 'A small daily ritual',
-            body: 'Pick one small action if it feels helpful, or skip it. These are gentle reminders, not a way to make something happen.',
-              examples: dailyRituals.filter((ritual) => ritual !== dailyRitual),
+            title: 'Other ideas for today',
+            body: 'Choose one if it feels useful, or skip them. These are simple ways to pause, not rules you need to follow.',
+            examples: dailyRituals.filter((ritual) => ritual !== dailyRitual),
           }
         : null;
 
@@ -114,15 +142,45 @@ export default function CosmosScreen() {
           >
             <Image
               source={cosmosArt}
-              accessibilityLabel="A centered crescent moon in a quiet field of stars"
+              accessibilityLabel="A quiet field of stars in a deep navy sky"
               resizeMode="cover"
               style={styles.heroImage}
             />
             <LinearGradient
               colors={['transparent', 'transparent', colors.cosmos.homeBackground]}
-              locations={[0, 0.54, 1]}
+              locations={[0, 0.46, 1]}
               style={styles.heroFade}
             />
+          </View>
+          <View
+            pointerEvents="none"
+            accessible={false}
+            style={[
+              styles.starLayer,
+              {
+                top: -(topInset + 18),
+                left: -heroBleed,
+                right: -heroBleed,
+                height: windowHeight * 2.5,
+              },
+            ]}
+          >
+            {backgroundStars.map((star, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.starDot,
+                  {
+                    backgroundColor: colors.cosmos.foreground,
+                    height: star.size,
+                    left: `${star.x * 100}%`,
+                    opacity: star.opacity,
+                    top: windowHeight * star.y,
+                    width: star.size,
+                  },
+                ]}
+              />
+            ))}
           </View>
           <View style={styles.brandRow}>
             <View
@@ -185,8 +243,8 @@ export default function CosmosScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open a plain-language explanation of today’s reflection"
-              accessibilityHint="Opens a short explanation"
+              accessibilityLabel="Read more about today’s reflection"
+              accessibilityHint="Opens a simple explanation of the daily reading"
               onPress={() => setActiveDetail('reflection')}
               style={styles.reflectionPrompt}
             >
@@ -199,12 +257,9 @@ export default function CosmosScreen() {
                 >
                   {reading.title}
                 </Text>
-                <Feather
-                  name="info"
-                  size={15}
-                  color={colors.cosmos.secondary}
-                  style={styles.promptIndicator}
-                />
+                <View style={styles.infoCircle}>
+                  <Feather name="info" size={15} color={colors.cosmos.secondary} />
+                </View>
               </View>
               <Text
                 style={[
@@ -240,7 +295,7 @@ export default function CosmosScreen() {
 
               <View style={styles.guidanceSection}>
                 <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
-                  A GOOD FOCUS TODAY
+                  FOCUS FOR TODAY
                 </Text>
                 <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
                   {reading.favorableFocus}
@@ -264,25 +319,20 @@ export default function CosmosScreen() {
                 </Text>
               </View>
 
+            <View
+              style={[
+                styles.cardRule,
+                styles.momentRule,
+                { backgroundColor: colors.cosmos.border },
+              ]}
+            />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="About A moment to keep"
+              accessibilityLabel="Read more about A moment to keep"
               accessibilityHint="Opens a simple explanation"
               onPress={() => setActiveDetail('moment')}
               style={styles.reflectionRow}
             >
-              <View
-                style={[
-                  styles.reflectionIcon,
-                  { borderColor: colors.cosmos.reflectionBorder },
-                ]}
-              >
-                <Feather
-                  name="sun"
-                  size={16}
-                  color={colors.cosmos.secondary}
-                />
-              </View>
               <View style={styles.reflectionCopy}>
                 <Text
                   style={[
@@ -301,7 +351,9 @@ export default function CosmosScreen() {
                   “{reading.reflection}”
                 </Text>
               </View>
-              <Feather name="chevron-right" size={15} color={colors.cosmos.secondary} />
+              <View style={styles.infoCircle}>
+                <Feather name="info" size={15} color={colors.cosmos.secondary} />
+              </View>
             </Pressable>
           </View>
 
@@ -326,12 +378,9 @@ export default function CosmosScreen() {
               </Text>
             </View>
             <View style={styles.ritualFooter}>
-              <Text style={[styles.ritualNote, { color: colors.cosmos.mutedForeground }]}>
-                OPTIONAL
-              </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="See a few optional daily ritual ideas"
+                accessibilityLabel="Explore other daily ritual ideas"
                 accessibilityHint="Opens practical examples"
                 onPress={() => setActiveDetail('ritual')}
                 style={({ pressed }) => [
@@ -340,9 +389,11 @@ export default function CosmosScreen() {
                 ]}
               >
                 <Text style={[styles.ritualButtonText, { color: colors.cosmos.secondary }]}>
-                  More ideas
+                  Explore other ideas
                 </Text>
-                <Feather name="arrow-up-right" size={14} color={colors.cosmos.secondary} />
+                <View style={styles.infoCircle}>
+                  <Feather name="info" size={15} color={colors.cosmos.secondary} />
+                </View>
               </Pressable>
             </View>
           </View>
@@ -413,15 +464,15 @@ export default function CosmosScreen() {
                 },
               ]}
             >
-              <View style={styles.detailHeader}>
-                <View style={styles.detailHeadingCopy}>
+              <View style={[styles.detailHeader, !detail.title && styles.detailHeaderNoTitle]}>
+                {detail.title ? (
                   <Text
                     accessibilityRole="header"
                     style={[styles.detailTitle, { color: colors.cosmos.foreground }]}
                   >
                     {detail.title}
                   </Text>
-                </View>
+                ) : null}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Close explanation"
@@ -436,11 +487,6 @@ export default function CosmosScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.detailScrollContent}
               >
-                {'question' in detail ? (
-                  <Text style={[styles.detailQuestion, { color: colors.cosmos.foreground }]}>
-                    “{detail.question}”
-                  </Text>
-                ) : null}
                 <Text style={[styles.detailBody, { color: colors.cosmos.mutedForeground }]}>
                   {detail.body}
                 </Text>
@@ -525,6 +571,13 @@ const styles = StyleSheet.create({
   },
   heroFade: {
     ...StyleSheet.absoluteFill,
+  },
+  starLayer: {
+    position: 'absolute',
+  },
+  starDot: {
+    borderRadius: 2,
+    position: 'absolute',
   },
   heroCopy: { paddingHorizontal: 23, paddingBottom: 13 },
   eyebrowRow: {
@@ -614,8 +667,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  promptIndicator: {
-    marginTop: 8,
+  infoCircle: {
+    alignItems: 'center',
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
   },
   readingBody: {
     fontFamily: 'Inter_400Regular',
@@ -658,19 +714,15 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginBottom: 15,
   },
+  momentRule: {
+    marginTop: 22,
+    marginBottom: 18,
+  },
   reflectionRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 12,
     minHeight: 44,
-  },
-  reflectionIcon: {
-    alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 34,
-    justifyContent: 'center',
-    width: 34,
   },
   reflectionCopy: {
     flex: 1,
@@ -709,11 +761,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 23,
   },
-  ritualNote: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 9,
-    letterSpacing: 1.1,
-  },
   ritualAction: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
@@ -723,7 +770,7 @@ const styles = StyleSheet.create({
   ritualFooter: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginTop: 2,
   },
   ritualButton: {
@@ -737,7 +784,7 @@ const styles = StyleSheet.create({
   },
   ritualButtonText: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 10,
+    fontSize: 11,
   },
   modalSafeArea: {
     flex: 1,
@@ -766,9 +813,10 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: 'space-between',
   },
-  detailHeadingCopy: {
-    flex: 1,
-    paddingTop: 7,
+  detailHeaderNoTitle: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    minHeight: 44,
   },
   detailTitle: {
     fontFamily: 'Georgia',
@@ -790,12 +838,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 14,
-  },
-  detailQuestion: {
-    fontFamily: 'Georgia',
-    fontSize: 18,
-    lineHeight: 26,
-    marginBottom: 16,
   },
   exampleRow: {
     alignItems: 'flex-start',

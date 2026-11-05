@@ -32,3 +32,9 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 **Why:** the user asked for a centered, full-bleed cosmic header and concise daily guidance that is easy to understand.
 
 **How to apply:** keep the artwork calm and dark enough for text contrast, and phrase focus/caution as reflective suggestions rather than predictions.
+
+Keep a sparse scattering of tiny stars visible through the Cosmos page. Use the same circled information symbol for expandable explanations, and let explanatory dialogs begin with the plain-language copy instead of a redundant heading or repeated question.
+
+**Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.
+
+**How to apply:** keep the stars subtle around text, and reserve other icons for navigation or non-expandable decoration.

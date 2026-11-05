@@ -36,7 +36,7 @@ vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/constants/content', () => ({
   dailyReading: {
     label: 'SAMPLE REFLECTION',
-    title: 'A quieter kind of clarity.',
+    title: 'Focus on one thing at a time.',
     body: 'Choose one thing to notice.',
     favorableFocus: 'Choose one thing.',
     gentleCaution: 'Take your time.',
@@ -80,22 +80,62 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   });
   const root = renderer!.root;
   const screenCopy = root.findAllByType(Text).map((node) => node.props.children);
-  expect(screenCopy).toContain('A GOOD FOCUS TODAY');
+  expect(screenCopy).toContain('FOCUS FOR TODAY');
   expect(screenCopy).toContain('WHAT TO LEAVE FOR LATER');
+  expect(screenCopy).not.toContain('OPTIONAL');
+  expect(root.findAllByProps({ name: 'info' })).toHaveLength(3);
   const moment = root.findAllByType(Pressable).find(
-    (button: ReactTestInstance) => button.props.accessibilityLabel === 'About A moment to keep',
+    (button: ReactTestInstance) => button.props.accessibilityLabel === 'Read more about A moment to keep',
   );
   expect(moment).toBeDefined();
 
   await act(async () => { moment?.props.onPress(); });
   const stage = root.findByProps({ testID: 'cosmos-explanation-stage' });
   expect(stage.props.style.justifyContent).toBe('center');
-  expect(root.findByProps({ testID: 'cosmos-explanation-modal' })).toBeDefined();
-  expect(root.findAllByType(Text).some((node) => node.props.children === 'About this question')).toBe(true);
+  const modal = root.findByProps({ testID: 'cosmos-explanation-modal' });
+  expect(modal).toBeDefined();
+  const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
+  expect(modalCopy).not.toContain('About this question');
+  expect(modalCopy).not.toContain('What deserves my attention?');
+  expect(modalCopy.join(' ')).toContain('This prompt connects today’s reflection');
   expect(state.getDailyAstrology).not.toHaveBeenCalled();
 
   await act(async () => {
     root.findByProps({ accessibilityLabel: 'Close explanation' }).props.onPress();
   });
   expect(root.findAllByProps({ testID: 'cosmos-explanation-modal' })).toHaveLength(0);
+});
+
+test('daily reflection opens directly to its plain-language explanation', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => {
+    renderer = create(<CosmosScreen />);
+  });
+  const root = renderer!.root;
+  const reflection = root.findByProps({
+    accessibilityLabel: 'Read more about today’s reflection',
+  });
+
+  await act(async () => { reflection.props.onPress(); });
+  const modal = root.findByProps({ testID: 'cosmos-explanation-modal' });
+  const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
+  expect(modalCopy).not.toContain('A plain-language read');
+  expect(modalCopy.join(' ')).toContain('choose what matters');
+});
+
+test('ritual ideas use the shared info button and no optional label', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => {
+    renderer = create(<CosmosScreen />);
+  });
+  const root = renderer!.root;
+  const ideasButton = root.findByProps({
+    accessibilityLabel: 'Explore other daily ritual ideas',
+  });
+
+  await act(async () => { ideasButton.props.onPress(); });
+  const modal = root.findByProps({ testID: 'cosmos-explanation-modal' });
+  const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
+  expect(modalCopy).toContain('Other ideas for today');
+  expect(modalCopy).not.toContain('OPTIONAL');
 });

@@ -1,0 +1,1 @@
+export const SCREEN_HORIZONTAL_GUTTER = 24;

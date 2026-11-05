@@ -8,10 +8,11 @@ import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, Style
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
-import { SettingsButton } from '@/components/SettingsButton';
+import { TabScreenHeader } from '@/components/TabScreenHeader';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
 import { screenTypography } from '@/constants/typography';
+import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 import { useProfile } from '@/profile/ProfileContext';
 
 type Disambiguation = 'earlier' | 'later';
@@ -240,22 +241,20 @@ export default function NatalScreen() {
               style={styles.heroFade}
             />
           </View>
-          <View style={styles.brandRow}>
-            <Text style={[styles.brandName, { color: c.foreground }]}>SOUL COMPASS</Text>
-            <SettingsButton />
-          </View>
-
-          <View style={styles.intro}>
-            <Text style={[styles.title, { color: c.foreground }]}>The Sky of the Day{'\n'}You Arrived</Text>
-            {profile ? (
-              <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+          <TabScreenHeader
+            title={'The Sky of the Day\nYou Arrived'}
+            titleColor={c.foreground}
+            subtitleColor={c.mutedForeground}
+            subtitle={profile ? (
+              <>
                 {profile.birthDate}
                 {profile.birthTime.status === 'known' ? ` at ${profile.birthTime.localTime}` : ', time unknown'}
                 {` \u00B7 ${profile.birthPlace.city}, ${profile.birthPlace.country}`}
                 {'\n'}Tropical zodiac.
-              </Text>
-            ) : null}
-          </View>
+              </>
+            ) : undefined}
+            afterSpacing={7}
+          />
 
           {!loaded ? (
             <Skeleton c={c} />
@@ -669,13 +668,12 @@ const styles = StyleSheet.create({
   heroArt: { overflow: 'hidden', position: 'absolute' },
   heroImage: { height: '100%', position: 'absolute', top: 0, width: '100%' },
   heroFade: { ...StyleSheet.absoluteFill },
-  scrollContent: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 34 },
+  scrollContent: {
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
+    paddingBottom: 34,
+  },
   page: { width: '100%', maxWidth: 480 },
-  brandRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  brandName: { ...screenTypography.wordmark },
-  intro: { marginTop: 22, marginBottom: 24 },
-  title: { ...screenTypography.pageTitle },
-  subtitle: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 21, marginTop: 14 },
   card: { borderRadius: 28, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },
   cardTitle: { fontFamily: 'Georgia', fontSize: 22, marginBottom: 8 },
   labelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 12 },

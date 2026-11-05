@@ -6,10 +6,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
-import { SettingsButton } from '@/components/SettingsButton';
+import { TabScreenHeader } from '@/components/TabScreenHeader';
 import { dailyReading } from '@/constants/content';
 import { getDailyRituals } from '@/constants/daily-rituals';
-import { screenTypography } from '@/constants/typography';
+import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
@@ -77,7 +77,7 @@ export default function CosmosScreen() {
   const reading = calculatedReading ?? dailyReading;
   const ritualChoices = getDailyRituals(now, 4);
   const dailyRitual = ritualChoices[0] ?? 'Take three easy breaths before beginning a task.';
-  const pageWidth = Math.min(windowWidth - 46, 480);
+  const pageWidth = Math.min(windowWidth - SCREEN_HORIZONTAL_GUTTER * 2, 480);
   const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
   const heroHeight = Math.round(windowHeight * 0.46);
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
@@ -169,23 +169,11 @@ export default function CosmosScreen() {
               style={styles.heroFade}
             />
           </View>
-          <View style={styles.brandRow}>
-            <Text
-              style={[
-                styles.brandName,
-                { color: colors.cosmos.foreground },
-              ]}
-            >
-              SOUL COMPASS
-            </Text>
-            <SettingsButton />
-          </View>
-
-          <View style={styles.hero} accessibilityRole="header">
-            <View style={styles.heroCopy}>
-              <Text style={[styles.title, { color: colors.cosmos.foreground }]}>Today’s reflection</Text>
-            </View>
-          </View>
+          <TabScreenHeader
+            title="Today’s reflection"
+            titleColor={colors.cosmos.foreground}
+            afterSpacing={23}
+          />
 
           <View
             style={[
@@ -449,31 +437,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: 'center',
-    paddingHorizontal: 23,
+    paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
     paddingBottom: 24,
   },
   page: {
     width: '100%',
     maxWidth: 480,
-  },
-  brandRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  brandName: {
-    ...screenTypography.wordmark,
-  },
-  intro: {
-    marginTop: 45,
-    marginBottom: 23,
-  },
-  hero: {
-    height: 105,
-    justifyContent: 'flex-end',
-    marginBottom: 10,
-    marginHorizontal: -23,
-    position: 'relative',
   },
   heroArt: {
     overflow: 'hidden',
@@ -494,10 +463,6 @@ const styles = StyleSheet.create({
   starDot: {
     borderRadius: 2,
     position: 'absolute',
-  },
-  heroCopy: { paddingHorizontal: 23, paddingBottom: 13 },
-  title: {
-    ...screenTypography.pageTitle,
   },
   orbit: {
     alignItems: 'center',

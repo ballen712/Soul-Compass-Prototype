@@ -33,11 +33,11 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 
 **How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
-Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app.
+Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app. Keep the wordmark, settings control, page-title baseline, horizontal gutter, and subtitle spacing consistent across all three tabs.
 
-**Why:** the user asked for the three tabs to feel consistent while explicitly keeping Crystals beige.
+**Why:** the user asked for the three tabs to feel consistent while explicitly keeping Crystals beige, then requested pixel-aligned wordmarks, headings, subtitles, and settings icons.
 
-**How to apply:** align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals.
+**How to apply:** use the shared tab header and layout tokens, align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals.
 
 Cosmos overview, focus, caution, and reflection should offer complementary perspectives, not repeat one instruction in different words. Small ritual ideas should change daily; repetition after some time is acceptable.
 

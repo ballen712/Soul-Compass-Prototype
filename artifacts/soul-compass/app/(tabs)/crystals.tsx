@@ -6,7 +6,6 @@ import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollV
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
-import { SettingsButton } from '@/components/SettingsButton';
 import {
   crystalCatalog,
   type Crystal,
@@ -23,6 +22,9 @@ import {
 import { type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
+
+import { TabScreenHeader } from '@/components/TabScreenHeader';
+import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -142,6 +144,7 @@ function describeElementBalance(
 export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const { preferences, profile } = useProfile();
   const [guideOpen, setGuideOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
@@ -233,37 +236,29 @@ export default function CrystalsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={[]}
       style={[
         styles.safeArea,
         { backgroundColor: colors.crystals.background },
-        Platform.OS === 'web' && {
-          paddingTop: Math.max(insets.top, 67),
-        },
       ]}
     >
       <StatusBar style="dark" />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18 },
+        ]}
+        contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.page}>
-          <View style={styles.brandRow}>
-            <Text
-              style={[
-                styles.brandName,
-                { color: colors.crystals.foreground },
-              ]}
-            >
-              SOUL COMPASS
-            </Text>
-            <View style={styles.brandSpacer} />
-            <SettingsButton />
-          </View>
-
-          <View style={styles.intro}>
-            <View style={styles.titleRow}>
-              <Text style={[styles.title, { color: colors.crystals.foreground }]}>The Stone Guide</Text>
+          <TabScreenHeader
+            title="The Stone Guide"
+            titleColor={colors.crystals.foreground}
+            subtitleColor={colors.crystals.mutedForeground}
+            subtitle="Find a stone for today."
+            afterSpacing={16}
+            titleAccessory={
               <Pressable
                 testID="stone-guide-info"
                 accessibilityRole="button"
@@ -277,9 +272,8 @@ export default function CrystalsScreen() {
               >
                 <Feather name="info" size={15} color={colors.crystals.secondary} />
               </Pressable>
-            </View>
-            <Text style={[styles.subtitle, { color: colors.crystals.mutedForeground }]}>Find a stone for today.</Text>
-          </View>
+            }
+          />
 
           <HiddenNote count={hiddenCount} />
           {hiddenCount === catalog.length ? (
@@ -861,20 +855,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingTop: 14,
+    paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
     paddingBottom: 34,
   },
   page: {
     width: '100%',
     maxWidth: 480,
   },
-  brandRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  brandSpacer: { flex: 1 },
   guideInfoButton: {
     alignItems: 'center',
     height: 44,
@@ -1145,18 +1132,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 6,
   },
-  brandName: {
-    ...screenTypography.wordmark,
-  },
-  intro: {
-    marginTop: 38,
-    marginBottom: 22,
-  },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 4 },
-  title: {
-    ...screenTypography.pageTitle,
-  },
-  subtitle: { ...screenTypography.body, marginTop: 7 },
   featureCard: {
     borderRadius: 28,
     borderWidth: 1,

@@ -8,3 +8,4 @@
 - [Quota storage scope](quota-storage-scope.md) — Usage-based PostgreSQL approved for operational counters only; test distinct real processes and keep production verification separate.
 - [Workspace dependency links](workspace-dependency-links.md) — Check pnpm links and catalog compatibility before interpreting missing test/type packages as source errors.
 - [Birth input cursor behavior](birth-input-cursor.md) — Keep date and time digit-first formatting automatic without cursor jumps during typing, editing, deletion, or paste.
+- [Onboarding-gated visual checks](onboarding-gated-visual-tests.md) — Use an isolated browser profile with synthetic local data and revoked consent; this does not replace native device testing.

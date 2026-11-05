@@ -8,13 +8,23 @@ import { useProfile } from '@/profile/ProfileContext';
 import { CONSENT_VERSION } from '@/profile/local';
 import type { UserProfile } from '@/profile/profile';
 import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
+import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { PRODUCT } from '@/constants/product';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-');
 const CATALOG = [samplePrimaryCrystal, ...alternativeCrystals].map((c) => ({ id: slugOf(c.name), name: c.name }));
 const INTENTIONS = ['Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change'];
-const LANGUAGES = [{ code: 'en', label: 'English' }, { code: 'es', label: 'Spanish' }, { code: 'fr', label: 'French' }, { code: 'de', label: 'German' }, { code: 'pt', label: 'Portuguese' }];
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'hu', label: 'Hungarian' },
+  { code: 'it', label: 'Italian' },
+  { code: 'de', label: 'German' },
+  { code: 'fr', label: 'French' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'pt', label: 'Portuguese' },
+];
 
 type Tab = 'profile' | 'preferences' | 'privacy' | 'about';
 
@@ -22,6 +32,30 @@ function Chip({ label, active, onPress, testID }: { label: string; active: boole
   return (
     <Pressable testID={testID} accessibilityRole="switch" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function FeelingChoice({ option, selected, onPress }: {
+  option: (typeof FEELING_OPTIONS)[number];
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      testID={`settings-feeling-${option.id}`}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={[styles.feelingChoice, selected && styles.feelingChoiceActive]}
+    >
+      <View style={styles.feelingCopy}>
+        <Text style={[styles.feelingTitle, selected && styles.feelingTitleActive]}>{option.label}</Text>
+        <Text style={styles.feelingDescription}>{option.description}</Text>
+      </View>
+      <View style={[styles.feelingIndicator, selected && styles.feelingIndicatorActive]}>
+        {selected ? <View style={styles.feelingDot} /> : null}
+      </View>
     </Pressable>
   );
 }
@@ -44,7 +78,7 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [customIntentions, setCustomIntentions] = useState(preferences.crystalPreferences.intentions.join(', '));
+  const [customIntentions, setCustomIntentions] = useState(() => preferences.crystalPreferences.intentions.join(', '));
 
   if (!profile) return null;
 
@@ -68,6 +102,13 @@ export default function SettingsScreen() {
     const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i];
     void run(() => savePreferences({ ...preferences, crystalPreferences: { ...preferences.crystalPreferences, intentions: next } }), 'Intentions saved.');
   };
+  const toggleFeeling = (id: string) => {
+    const feeling = preferences.crystalPreferences.feeling === id ? null : id;
+    void run(() => savePreferences({
+      ...preferences,
+      crystalPreferences: { ...preferences.crystalPreferences, feeling },
+    }), feeling ? 'Today’s feeling saved. It will guide stone suggestions alongside transits when available.' : 'Today’s feeling cleared.');
+  };
   const toggleHidden = (id: string) => {
     const cur = preferences.crystalPreferences.hiddenCrystals;
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
@@ -77,7 +118,7 @@ export default function SettingsScreen() {
   const padBottom = { paddingBottom: Math.max(insets.bottom, 34) + 24 };
   const sections: { key: Tab; label: string; description: string }[] = [
     { key: 'profile', label: 'Profile', description: 'Birth details and places' },
-    { key: 'preferences', label: 'Preferences', description: 'Intentions, language and collection' },
+    { key: 'preferences', label: 'Preferences', description: 'Daily feeling, intentions, language and collection' },
     { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
     { key: 'about', label: 'About', description: 'Support and provider licenses' },
   ];
@@ -146,7 +187,25 @@ export default function SettingsScreen() {
                   ))}
                 </View>
               </Section>
-               <Section title="Intentions" description="Use intentions to help choose a stone that fits what matters to you. You can get suggestions for stones you do not own. A personal daily reading can also affect a suggestion. We recognize Rest, Focus, Reflection, Courage, Connection, Change, calm, clarity, stillness, curiosity, and intuition. Other words are saved but do not change the match. These are reflection prompts, not predictions or health advice.">
+                <Section
+                  title="How are you feeling today?"
+                  description="Choose one option that feels closest. Your feeling helps shape the stone suggestion alongside the day's transit theme when a personal chart is available. This is a reflection prompt, not a prediction."
+                >
+                  <View style={styles.feelingList}>
+                    {FEELING_OPTIONS.map((option) => (
+                      <FeelingChoice
+                        key={option.id}
+                        option={option}
+                        selected={preferences.crystalPreferences.feeling === option.id}
+                        onPress={() => toggleFeeling(option.id)}
+                      />
+                    ))}
+                  </View>
+                </Section>
+                <Section
+                  title="Intentions"
+                  description="Choose what you would like to make space for. These intentions can further guide stone suggestions alongside your feeling and the day's chart theme. You can still get suggestions for stones you do not own. These are reflection prompts, not predictions or health advice."
+                >
                 <View style={styles.chips}>
                   {Array.from(new Set([...INTENTIONS, ...preferences.crystalPreferences.intentions])).map((i) => (
                     <Chip key={i} label={i} active={preferences.crystalPreferences.intentions.includes(i)} onPress={() => toggleIntention(i)} />
@@ -159,7 +218,10 @@ export default function SettingsScreen() {
                     intentions: Array.from(new Set(customIntentions.split(',').map(value => value.trim()).filter(Boolean))) },
                 }), 'Intentions saved.')}><Text style={styles.back}>Save custom intentions</Text></Pressable>
               </Section>
-               <Section title="Your collection" description="Keep track of stones you own or are interested in. Your collection does not limit which stones can be suggested.">
+               <Section
+                 title="Your collection"
+                 description={`This guide currently has ${CATALOG.length} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today's suggestion. Your collection does not limit recommendations.`}
+               >
                 {CATALOG.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
                   return (
@@ -174,7 +236,7 @@ export default function SettingsScreen() {
                   );
                 })}
               </Section>
-               <Section title="Hidden stones" description="Hidden stones stay off the Crystals screen until you restore them here.">
+               <Section title="Hidden stones" description="If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time.">
                 {CATALOG.map((c) => {
                   const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
                   return (
@@ -193,7 +255,7 @@ export default function SettingsScreen() {
 
           {tab === 'privacy' ? (
             <>
-              <Section title="What runs on this device" description="Daily readings, simple rituals, and stone suggestions are worked out here using your saved profile, current home, and intentions. This information is not sent anywhere for these features." />
+              <Section title="What runs on this device" description="Daily readings, simple rituals, and stone suggestions are worked out here using your saved profile, current home, feeling, and intentions. This information is not sent anywhere for these features." />
               <Section title="What uses the network" description="When you search for a city, only the words you type go through the Soul Compass server to Geoapify. Your saved birth profile is not sent. Geoapify sees the server’s normal connection details; we do not pass along your device IP address or headers. A search happens only when you tap Search." />
               <Section title="City search protection" description="Our server keeps short-lived counters to protect city search. They do not contain raw IP addresses, search terms, profiles, or birth details. The source hashes change each day, and expired records are removed when another search comes in." />
               <Section title="Full natal chart (server)">
@@ -270,6 +332,16 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#58664F', borderColor: '#58664F' },
   chipText: { color: '#45473F', fontSize: 13 },
   chipTextActive: { color: '#F5F1E8' },
+  feelingList: { gap: 8 },
+  feelingChoice: { borderWidth: 1, borderColor: '#D9D3C7', borderRadius: 14, backgroundColor: '#FFFEFB', paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  feelingChoiceActive: { borderColor: '#58664F', backgroundColor: '#F0F1EB' },
+  feelingCopy: { flex: 1, gap: 3 },
+  feelingTitle: { color: '#30352D', fontSize: 14, fontWeight: '600' },
+  feelingTitleActive: { color: '#58664F' },
+  feelingDescription: { color: '#77756F', fontSize: 12, lineHeight: 17 },
+  feelingIndicator: { width: 19, height: 19, borderWidth: 1, borderColor: '#A7A79B', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  feelingIndicatorActive: { borderColor: '#58664F' },
+  feelingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: '#58664F' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#DED9CE' },
   rowLabel: { color: '#25251F', fontSize: 15 },
   smallButton: { borderWidth: 1, borderColor: '#D9D3C7', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6, minWidth: 76, alignItems: 'center' },

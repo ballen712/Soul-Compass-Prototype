@@ -34,11 +34,12 @@ export const PreferencesSchema = z.object({
   crystalPreferences: z.object({
     intentions: z.array(z.string().trim().min(1).max(40)).max(20),
     hiddenCrystals: ids,
+    feeling: z.string().max(40).nullable().default(null),
   }).strict(),
 }).strict();
 export type LocalPreferences = z.infer<typeof PreferencesSchema>;
 export const defaultPreferences = (): LocalPreferences => ({
-  language: 'en', crystalCollection: [], crystalPreferences: { intentions: [], hiddenCrystals: [] },
+  language: 'en', crystalCollection: [], crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
 });
 const timestamp = z.string().datetime().nullable();
 export const PrivacySchema = z.object({

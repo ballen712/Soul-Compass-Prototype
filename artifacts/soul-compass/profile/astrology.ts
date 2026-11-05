@@ -295,39 +295,39 @@ function makeCalculatedReading(
     };
     const aspectAdvice = {
       conjunction: {
-        title: 'Focus on what matters most.',
+        title: 'Give one thing your attention.',
         action: 'Take one small step instead of trying to do everything at once',
-        favorableFocus: 'Choose one important task and give it your attention.',
-        gentleCaution: 'Try not to take on everything at once.',
+        favorableFocus: 'Choose one important thing and give it your full attention.',
+        gentleCaution: 'Try not to answer every demand at once. They can wait their turn.',
         question: 'What would I like to focus on',
       },
       sextile: {
-        title: 'Take one small step.',
+        title: 'Start where you are.',
         action: 'Try one manageable step toward something you care about',
-        favorableFocus: 'A simple conversation or practical first step may be worth trying.',
-        gentleCaution: 'You do not need to wait for perfect conditions to begin.',
+        favorableFocus: 'A small conversation or practical first step could open the way.',
+        gentleCaution: 'You do not need perfect conditions to begin.',
         question: 'What small step feels possible',
       },
       square: {
-        title: 'Pause and try another approach.',
-        action: 'Pause, name what feels difficult, and change one thing you can control',
-        favorableFocus: 'Take one challenge at a time and give yourself a moment to think.',
-        gentleCaution: 'Avoid reacting while frustration is still high.',
+        title: 'Pause before you react.',
+        action: 'Notice what feels difficult, take a breath, and change one thing you can control',
+        favorableFocus: 'Take one challenge at a time; give yourself room to think.',
+        gentleCaution: 'A strong feeling deserves attention, not necessarily the send button.',
         question: 'What could I do differently',
       },
       trine: {
-        title: 'Use a strength you already have.',
+        title: 'Use what you already know.',
         action: 'Use a familiar strength to move one practical task forward',
         favorableFocus: 'Lean on a skill or routine that has helped you before.',
-        gentleCaution: 'Do not assume things will sort themselves out without your attention.',
+        gentleCaution: 'Even a good routine needs your attention; it will not do the day for you.',
         question: 'Which strength can I use today',
       },
       opposition: {
-        title: 'Hear both sides before deciding.',
+        title: 'Make room for both sides.',
         action: 'Listen to another point of view before making a commitment',
-        favorableFocus: 'A choice or conversation may benefit from hearing both sides.',
-        gentleCaution: 'Try not to treat a disagreement as an all-or-nothing choice.',
-        question: 'What other point of view should I hear',
+        favorableFocus: 'A choice or conversation may become clearer when you hear both sides.',
+        gentleCaution: 'A disagreement does not have to become a verdict.',
+        question: 'What might the other person be seeing',
       },
     }[leadingAspect.aspect];
     return {
@@ -345,10 +345,10 @@ function makeCalculatedReading(
   const anchor = natalSun ?? natalPlacements[0];
   return {
     label: 'TODAY’S REFLECTION',
-    title: 'Start with what you know.',
-    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} themes can be a useful prompt. Take one step at your own pace.`,
+    title: 'Begin with what you know.',
+    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} themes can offer a useful starting point. Take one step at your own pace.`,
     favorableFocus: 'Use a skill or routine you already trust to move one practical task forward.',
-    gentleCaution: 'You do not need to wait for perfect clarity before you begin.',
+    gentleCaution: 'Clarity does not have to arrive before you begin.',
     reflection: `Where could your ${anchor.sign} ${anchor.body.toLowerCase()} strengths help today?`,
     factorSummary: `${anchor.sign} ${anchor.body} · no close major transit`,
   };

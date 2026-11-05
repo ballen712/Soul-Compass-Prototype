@@ -126,12 +126,12 @@ export default function CosmosScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + 18 },
+          { paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18 },
         ]}
         alwaysBounceVertical={false}
         bounces={false}
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="never"
+        contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         overScrollMode="never"
         accessibilityLabel="Daily reflection"
       >
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 23,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   page: {
     width: '100%',

@@ -98,7 +98,8 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(scrollView.props.bounces).toBe(false);
   expect(scrollView.props.alwaysBounceVertical).toBe(false);
   expect(scrollView.props.overScrollMode).toBe('never');
-  expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(8);
+  expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
+  expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(24);
   expect(scrollView.findAllByProps({ testID: 'cosmos-background-stars' })).toHaveLength(0);
   const natalLink = scrollView.findByProps({ testID: 'cosmos-natal-link' });
   const page = natalLink.parent!;

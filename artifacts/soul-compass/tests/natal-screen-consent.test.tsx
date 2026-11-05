@@ -10,6 +10,7 @@ import { NatalAutoRefresh, NatalCalculationProvider } from '../hooks/useNatalCal
 const state = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   calculate: vi.fn(),
+  platformOS: 'web',
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -30,7 +31,7 @@ vi.mock('react-native-safe-area-context', () => ({
 }));
 vi.mock('react-native', () => ({
   Platform: {
-    OS: 'web',
+    get OS() { return state.platformOS; },
     select: (options: Record<string, unknown>) => options.web ?? options.default,
   },
   ActivityIndicator: 'ActivityIndicator',
@@ -68,7 +69,7 @@ const chartResult = {
   ],
   planetaryHouses: [{ planet: 'sun', house: 5, cuspDistanceDegrees: 2 }],
   aspects: [{ first: 'sun', second: 'moon', type: 'trine', orb: 1.4, exact: false, applying: true }],
-  houseCusps: [],
+  houseCusps: Array.from({ length: 12 }, (_, index) => ({ house: index + 1, longitude: index * 30 })),
   angles: { ascendant: 0, midheaven: 90, descendant: 180, imumCoeli: 270 },
   moonSignRange: [],
   warnings: [],
@@ -81,6 +82,7 @@ function findText(root: ReactTestInstance, text: string) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.storage.clear();
+  state.platformOS = 'web';
   state.calculate.mockReset().mockResolvedValue(chartResult);
   const profile = {
     birthDate: '2000-01-01',
@@ -193,6 +195,45 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
   await act(async () => { root.findByProps({ testID: 'natal-aspect-sun-trine-moon' }).props.onPress(); });
   expect(findText(root, 'Sun trine Moon')).toBeDefined();
+});
+
+test('Natal Chart shows the plain-language guide and all house cusps without the redundant labels or toggle', async () => {
+  const record = JSON.parse(state.storage.get(LOCAL_KEY)!);
+  record.privacy = {
+    astrologyApiConsent: true,
+    consentTimestamp: new Date().toISOString(),
+    consentVersion: CONSENT_VERSION,
+    revokedAt: null,
+  };
+  state.storage.set(LOCAL_KEY, JSON.stringify(record));
+  state.platformOS = 'ios';
+
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+  });
+
+  const root = renderer!.root;
+  expect(findText(root, 'NATAL CHART')).toBeUndefined();
+  expect(findText(root, 'HOW TO READ THIS')).toBeDefined();
+  expect(findText(root, 'Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')).toBeDefined();
+  expect(root.findAllByProps({ testID: 'natal-details-toggle' })).toHaveLength(0);
+  expect(findText(root, 'CHART DETAILS')).toBeDefined();
+  expect(findText(root, 'HOUSE CUSPS')).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-cusp-12' })).toBeDefined();
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('Astrology is a traditional symbolic practice'),
+  )).toBe(false);
+
+  const scrollView = root.findByProps({ accessibilityLabel: 'Natal chart' });
+  expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
+  expect(scrollView.props.contentContainerStyle[1].paddingBottom).toBe(32);
 });
 
 test('unknown-time uncertain Moon shows its possible range and omits time-dependent angles', async () => {

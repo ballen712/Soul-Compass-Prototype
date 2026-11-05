@@ -1,9 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
 import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
@@ -64,6 +63,7 @@ export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { preferences, profile } = useProfile();
+  const [guideOpen, setGuideOpen] = useState(false);
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
@@ -139,6 +139,19 @@ export default function CrystalsScreen() {
             >
               THE STONE GUIDE
             </Text>
+            <Pressable
+              testID="stone-guide-info"
+              accessibilityRole="button"
+              accessibilityLabel="About the Stone Guide"
+              accessibilityHint="Opens an explanation of daily stone suggestions and your collection"
+              onPress={() => setGuideOpen(true)}
+              style={[
+                styles.guideInfoButton,
+                { borderColor: colors.crystals.border },
+              ]}
+            >
+              <Feather name="info" size={15} color={colors.crystals.secondary} />
+            </Pressable>
             <SettingsButton />
           </View>
 
@@ -196,7 +209,13 @@ export default function CrystalsScreen() {
                     { color: colors.crystals.badgeForeground },
                   ]}
                 >
-                  {recommendation ? recommendation.basis === 'intention' ? 'INTENTION COMPANION' : 'TODAY’S COMPANION' : 'SAMPLE ONLY'}
+                  {recommendation
+                    ? recommendation.basis === 'intention'
+                      ? 'INTENTION COMPANION'
+                      : recommendation.basis === 'feeling'
+                        ? 'FEELING COMPANION'
+                        : 'TODAY’S COMPANION'
+                    : 'SAMPLE ONLY'}
                 </Text>
               </View>
             </View>
@@ -220,18 +239,6 @@ export default function CrystalsScreen() {
                     {featuredCrystal.note}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.crystalSeal,
-                    { borderColor: colors.crystals.border },
-                  ]}
-                >
-                  <Feather
-                    name="sun"
-                    size={17}
-                    color={colors.crystals.secondary}
-                  />
-                </View>
               </View>
               <Text
                 style={[
@@ -239,7 +246,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                {recommendation?.reason ?? 'This is a sample suggestion. Moonstone is traditionally linked with reflection. Add an intention in Settings for a more personal suggestion.'}
+                {recommendation?.reason ?? 'This is a sample suggestion. Moonstone is traditionally linked with reflection. Choose a feeling or intention in Settings for a more personal suggestion.'}
               </Text>
               <CollectionToggle name={featuredCrystal.name} />
             </View>
@@ -341,6 +348,64 @@ export default function CrystalsScreen() {
           </View>
         </View>
       </ScrollView>
+      <Modal
+        visible={guideOpen}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setGuideOpen(false)}
+      >
+        <SafeAreaView edges={['top', 'bottom']} style={styles.guideModalStage}>
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.crystals.foreground, opacity: 0.58 },
+            ]}
+          />
+          <View
+            accessibilityViewIsModal
+            testID="stone-guide-modal"
+            style={[
+              styles.guideModalCard,
+              {
+                backgroundColor: colors.crystals.card,
+                borderColor: colors.crystals.border,
+              },
+            ]}
+          >
+            <View style={styles.guideModalHeader}>
+              <Text style={[styles.guideModalTitle, { color: colors.crystals.foreground }]}>
+                About the Stone Guide
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close Stone Guide explanation"
+                testID="close-stone-guide"
+                hitSlop={10}
+                onPress={() => setGuideOpen(false)}
+                style={styles.guideCloseButton}
+              >
+                <Feather name="x" size={19} color={colors.crystals.foreground} />
+              </Pressable>
+            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.guideModalCopy}
+            >
+              <Text style={[styles.guideModalBody, { color: colors.crystals.foreground }]}>
+                With your saved birth chart and current city, the daily reading uses your chart and today’s planetary transits. Your city sets the local date; we do not use GPS. The suggested stone reflects the day’s chart theme, your selected feeling, and any intentions you have saved.
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.crystals.foreground }]}>
+                If there is no calculated chart, your selected feeling or an intention can still guide a suggestion. Without either, you will see a sample. Crystal meanings here are traditional symbols and prompts, not promises or health advice.
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.crystals.foreground }]}>
+                If you enjoy crystals, use the guide to choose a loose stone or a piece of jewelry—a pendant, ring, or bracelet. Tap “Add to Collection” for stones you already own, so you can see at a glance which companions are already yours.
+              </Text>
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -362,6 +427,56 @@ const styles = StyleSheet.create({
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
+  },
+  guideInfoButton: {
+    alignItems: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    marginLeft: 8,
+    width: 44,
+  },
+  guideModalStage: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  guideModalCard: {
+    alignSelf: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    maxHeight: '82%',
+    maxWidth: 440,
+    padding: 22,
+    width: '100%',
+  },
+  guideModalHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  guideModalTitle: {
+    flex: 1,
+    fontFamily: 'Georgia',
+    fontSize: 22,
+    marginRight: 12,
+  },
+  guideCloseButton: {
+    alignItems: 'center',
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  guideModalCopy: {
+    gap: 15,
+    paddingBottom: 2,
+  },
+  guideModalBody: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 22,
   },
   brandMark: {
     alignItems: 'center',
@@ -449,15 +564,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.2,
     marginTop: 5,
-  },
-  crystalSeal: {
-    alignItems: 'center',
-    borderRadius: 20,
-    borderWidth: 1,
-    height: 39,
-    justifyContent: 'center',
-    marginLeft: 12,
-    width: 39,
   },
   crystalDescription: {
     fontFamily: 'Inter_400Regular',

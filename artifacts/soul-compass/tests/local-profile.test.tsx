@@ -54,13 +54,13 @@ test('profile, residence and all preferences survive provider restart', async ()
   await act(async () => view.saveProfile(profile));
   await act(async () => view.savePreferences({
     language: 'hu', crystalCollection: ['amethyst'],
-    crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'] },
+    crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'], feeling: 'tired' },
   }));
   await act(async () => renderer?.unmount()); await render();
   expect(view.profile).toEqual(profile);
   expect(view.preferences).toEqual({
     language: 'hu', crystalCollection: ['amethyst'],
-    crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'] },
+    crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'], feeling: 'tired' },
   });
   await act(async () => view.saveProfile({ ...profile, birthTime: { status: 'known', localTime: '00:01' } }));
   expect(view.preferences.language).toBe('hu');

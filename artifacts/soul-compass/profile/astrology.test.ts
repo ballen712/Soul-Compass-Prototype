@@ -3,7 +3,7 @@ import test from 'node:test';
 import { calculateDailyAstrology, EPHEMERIS_SOURCE } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { getCompanionReason, getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
+import { FEELING_OPTIONS, getCompanionReason, getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
 import { alternativeCrystals, samplePrimaryCrystal } from '../constants/content';
 
@@ -130,7 +130,8 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
   const moonstoneReason = getCompanionReason(samplePrimaryCrystal, focus);
   const labradoriteReason = getCompanionReason(alternativeCrystals[1], focus);
-  assert.match(moonstoneReason, /offers another symbolic reminder/);
+  assert.match(moonstoneReason, /another angle/);
+  assert.match(moonstoneReason, /not a promise/);
   assert.notEqual(moonstoneReason, labradoriteReason);
   assert.doesNotMatch(moonstoneReason, /calculated|natal|aspect|ephemeris/i);
 });
@@ -148,6 +149,35 @@ test('intention-only suggestions are labeled and arbitrary custom words are not 
   assert.match(result!.reason, /intention to focus/i);
   assert.equal(getIntentionRecommendation({ intentions: ['unmapped custom word'] }), null);
   assert.equal(getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] }), null);
+});
+test('twelve daily feelings produce personal stone suggestions and still respond to transit themes', () => {
+  assert.equal(FEELING_OPTIONS.length, 12);
+  assert.equal(new Set(FEELING_OPTIONS.map(option => option.id)).size, 12);
+  const catalog = new Set(['Moonstone', 'Amethyst', 'Labradorite']);
+  for (const feeling of FEELING_OPTIONS) {
+    assert.ok(getIntentionRecommendation({ feeling: feeling.id }), `${feeling.label} should guide a stone suggestion`);
+    assert.ok(catalog.has(feeling.primary), `${feeling.label} primary stone should exist in the guide`);
+    assert.ok(catalog.has(feeling.secondary), `${feeling.label} alternate stone should exist in the guide`);
+  }
+
+  const chart = calculateDailyAstrology(makeProfile(), new Date('2026-06-01T01:00:00Z'));
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+
+  const withTransit = (aspect: string, quality: string) => ({
+    ...chart,
+    aspects: [{ ...chart.aspects[0], aspect, quality }],
+  }) as typeof chart;
+  const steadyDay = getCrystalRecommendation(withTransit('trine', 'supportive'), { feeling: 'tired' });
+  const demandingDay = getCrystalRecommendation(withTransit('square', 'challenging'), { feeling: 'tired' });
+
+  assert.equal(getIntentionRecommendation({ feeling: 'energized' })?.crystal.name, 'Labradorite');
+  assert.equal(steadyDay?.crystal.name, 'Amethyst');
+  assert.equal(demandingDay?.crystal.name, 'Labradorite');
+  assert.equal(steadyDay?.basis, 'chart');
+  assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
+  assert.equal(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Moonstone');
+  assert.match(getCompanionReason(samplePrimaryCrystal, steadyDay), /how you feel/i);
 });
 test('minute cache is shared only for the same profile and refreshes after local midnight', () => {
   const profile = makeProfile();

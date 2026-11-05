@@ -1,14 +1,24 @@
 import React from 'react';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { Platform } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 
+const tabLabelStyle = {
+  fontFamily: 'Inter_600SemiBold',
+  fontSize: 9,
+};
+
 function NativeTabLayout() {
   return (
-    <NativeTabs>
+    <NativeTabs
+      labelStyle={{
+        default: tabLabelStyle,
+        selected: tabLabelStyle,
+      }}
+    >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'sparkles', selected: 'sparkles' }}
@@ -25,7 +35,7 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'circle.circle', selected: 'circle.circle.fill' }}
         />
-        <NativeTabs.Trigger.Label>Natal Chart</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>NATAL CHART</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -77,14 +87,10 @@ function ClassicTabLayout() {
         options={{
           title: 'CRYSTALS',
           tabBarIcon: ({ color, focused }) => (
-            <Feather
-              name="hexagon"
-              size={19}
-              color={
-                focused
-                  ? colors.navigation.foreground
-                  : colors.navigation.mutedForeground
-              }
+            <MaterialCommunityIcons
+              name="diamond-stone"
+              size={20}
+              color={focused ? colors.navigation.foreground : colors.navigation.mutedForeground}
             />
           ),
         }}
@@ -92,7 +98,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="natal"
         options={{
-          title: 'Natal Chart',
+          title: 'NATAL CHART',
           tabBarIcon: ({ focused }) => (
             <Feather
               name="target"

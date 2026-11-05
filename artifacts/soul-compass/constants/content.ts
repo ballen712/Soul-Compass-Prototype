@@ -1,10 +1,10 @@
 export const dailyReading = {
   label: 'SAMPLE REFLECTION',
-  title: 'Focus on one thing at a time.',
+  title: 'Let one thing be enough today.',
   body:
-    'You do not have to solve everything today. Give one conversation, task, or feeling your attention, and come back to the rest later.',
+    'You do not have to gather every loose thread at once. Give one task, conversation, or feeling your attention; the rest can wait its turn.',
   favorableFocus: 'Choose one thing that matters and give it your full attention.',
-  gentleCaution: 'Try not to rush yourself into answering every open question.',
+  gentleCaution: 'You do not have to answer every open question before lunch.',
   reflection: 'What deserves my attention without being rushed?',
   status: 'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.',
 };

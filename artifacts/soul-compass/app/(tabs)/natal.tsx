@@ -128,7 +128,6 @@ export default function NatalScreen() {
   const { profile, loaded, privacy, setConsent, canCalculate } = useProfile();
   const chart = useNatalCalculation();
   const [disambiguation, setDisambiguation] = useState<Disambiguation | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [activeExplanation, setActiveExplanation] = useState<ChartExplanation | null>(null);
   const [declined, setDeclined] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
@@ -169,23 +168,28 @@ export default function NatalScreen() {
       style={[styles.safeArea, { backgroundColor: c.background }, Platform.OS === 'web' && { paddingTop: Math.max(insets.top, 67) }]}
     >
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        accessibilityLabel="Natal chart"
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Platform.OS === 'ios' ? 0 : 14,
+            paddingBottom: Platform.OS === 'ios' ? 32 : 34,
+          },
+        ]}
+        contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.page}>
           <View style={styles.brandRow}>
             <View style={[styles.brandMark, { borderColor: c.secondary }]}>
               <Feather name="target" size={16} color={c.secondary} />
             </View>
             <Text style={[styles.brandName, { color: c.foreground }]}>SOUL COMPASS</Text>
-            <View style={[styles.brandDivider, { backgroundColor: c.divider }]} />
-            <Text style={[styles.brandCaption, { color: c.mutedForeground }]}>NATAL CHART</Text>
             <SettingsButton />
           </View>
 
           <View style={styles.intro}>
-            <View style={styles.eyebrowRow}>
-              <View style={[styles.eyebrowLine, { backgroundColor: c.secondary }]} />
-              <Text style={[styles.eyebrow, { color: c.secondary }]}>NATAL CHART</Text>
-            </View>
             <Text style={[styles.title, { color: c.foreground }]}>The Sky of the Day{'\n'}You Arrived</Text>
             {profile ? (
               <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
@@ -219,8 +223,6 @@ export default function NatalScreen() {
                 data={data}
                 timeKnown={timeKnown}
                 disambiguation={savedChoice}
-                showDetails={showDetails}
-                toggle={() => setShowDetails((v) => !v)}
                 onExplain={setActiveExplanation}
               />
             </>
@@ -325,8 +327,8 @@ export default function NatalScreen() {
   );
 }
 
-function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, onExplain }: {
-  c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; showDetails: boolean; toggle: () => void; onExplain: (explanation: ChartExplanation) => void;
+function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
+  c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
 }) {
   const houses = useMemo(() => new Map(data.planetaryHouses.map((h) => [h.planet, h.house])), [data.planetaryHouses]);
   const aspects = data.aspects.filter((a) => MAJOR.has(a.type.toLowerCase()));
@@ -335,10 +337,6 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
   return (
     <View style={{ gap: 18 }}>
       <Guide c={c} timeKnown={timeKnown} />
-      <Pressable onPress={toggle} style={[styles.detailsToggle, { borderColor: c.border }]} testID="natal-details-toggle">
-        <Text style={[styles.label, { color: c.secondary }]}>{showDetails ? 'HIDE TECHNICAL DETAILS' : 'SHOW TECHNICAL DETAILS'}</Text>
-        <Feather name={showDetails ? 'chevron-up' : 'chevron-down'} size={14} color={c.secondary} />
-      </Pressable>
       {disambiguation ? (
         <Card c={c}>
           <Text style={[styles.body, { color: c.mutedForeground }]}>
@@ -442,49 +440,48 @@ function ChartView({ c, data, timeKnown, disambiguation, showDetails, toggle, on
         </Card>
       ) : null}
 
-      {showDetails ? (
-        <Card c={c}>
-          <Label c={c} icon="sliders" text="LATITUDE AND DAILY SPEED" />
-          {data.planets.map((p) => (
-            <View key={p.planet} style={styles.detailRow}>
-              <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{cap(p.planet)}</Text>
-              <Text style={[styles.mono, { color: c.mutedForeground }]}>
-                lon {p.longitude.toFixed(2)}°  lat {p.latitude.toFixed(2)}°  {p.speedDegreesPerDay.toFixed(3)}°/d
-              </Text>
-            </View>
-          ))}
-          {timeKnown && data.houseCusps.length > 0 ? (
-            <>
-              <View style={[styles.rule, { backgroundColor: c.border }]} />
-              <Label c={c} icon="grid" text="HOUSE CUSPS" />
-              {data.houseCusps.map((h) => (
-                <View key={h.house} style={styles.detailRow}>
-                  <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>House {h.house}</Text>
-                  <Text style={[styles.mono, { color: c.mutedForeground }]}>{lonLabel(h.longitude)}</Text>
-                </View>
-              ))}
-            </>
-          ) : null}
-          {angles ? (
-            <Text style={[styles.mono, { color: c.mutedForeground, marginTop: 10 }]}>
-              DSC {lonLabel(angles.descendant)}  IC {lonLabel(angles.imumCoeli)}
+      <Card c={c}>
+        <Label c={c} icon="sliders" text="CHART DETAILS" />
+        {data.planets.map((p) => (
+          <View key={p.planet} style={styles.detailRow}>
+            <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{cap(p.planet)}</Text>
+            <Text style={[styles.mono, { color: c.mutedForeground }]}>
+              lon {p.longitude.toFixed(2)}°  lat {p.latitude.toFixed(2)}°  {p.speedDegreesPerDay.toFixed(3)}°/d
             </Text>
-          ) : null}
-        </Card>
-      ) : null}
+          </View>
+        ))}
+        {timeKnown && data.houseCusps.length > 0 ? (
+          <>
+            <View style={[styles.rule, { backgroundColor: c.border }]} />
+            <Label c={c} icon="grid" text="HOUSE CUSPS" />
+            {data.houseCusps.map((h) => (
+              <View key={h.house} testID={`natal-house-cusp-${h.house}`} style={styles.detailRow}>
+                <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>House {h.house}</Text>
+                <Text style={[styles.mono, { color: c.mutedForeground }]}>{lonLabel(h.longitude)}</Text>
+              </View>
+            ))}
+          </>
+        ) : null}
+        {angles ? (
+          <Text style={[styles.mono, { color: c.mutedForeground, marginTop: 10 }]}>
+            DSC {lonLabel(angles.descendant)}  IC {lonLabel(angles.imumCoeli)}
+          </Text>
+        ) : null}
+      </Card>
     </View>
   );
 }
 
 function Guide({ c, timeKnown }: { c: Palette; timeKnown: boolean }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const items: [string, string][] = [
-    ['Planets', 'Kinds of needs or drives, such as communication or connection.'],
-    ['Signs', 'The style or expression those needs may take.'],
-    ['Houses', timeKnown ? 'Life areas where a theme may show up, based on birth time and place.' : 'Life areas based on exact birth time; they are left out of this chart.'],
-    ['Angles', timeKnown ? 'The Ascendant relates to first impressions; the Midheaven is often linked with public or working direction.' : 'The Ascendant and Midheaven depend on birth time, so they are not shown here.'],
-    ['Aspects', 'How two planetary themes interact. Orb tells how close the angle is to exact.'],
-    ['Retrograde', 'A planet can appear to move backward from our viewpoint. In astrology, this is a symbolic detail, not a problem to fix.'],
+    ['Chart method', 'This chart uses the tropical zodiac, a common Western way of mapping the signs, and Placidus to divide the chart into twelve houses.'],
+    ['Planets', 'Each planet stands for a life theme. For example, the Moon is connected with feelings, and Mercury with thinking and communication.'],
+    ['Signs', 'A sign describes the style a theme may take: for example, direct, steady, curious, or imaginative.'],
+    ['Houses', timeKnown ? 'A house points to an area of everyday life—such as home, work, or relationships—where a theme may show up.' : 'Houses depend on your exact birth time, so they are left out when that time is unknown.'],
+    ['Angles', timeKnown ? 'The Ascendant is linked with how you approach new situations. The Midheaven is linked with work and the part of life others see.' : 'The Ascendant and Midheaven depend on your exact birth time, so they are not shown here.'],
+    ['Aspects', 'An aspect is the angle between two planets. Astrologers use it to describe how their themes may support or challenge each other. A smaller “orb” means the angle is closer to exact.'],
+    ['Retrograde', 'From Earth, a planet can sometimes look as if it is moving backward. It is only how it appears in the sky; in astrology it adds a symbolic detail, not a problem you need to fix.'],
   ];
   return (
     <Card c={c}>
@@ -495,16 +492,13 @@ function Guide({ c, timeKnown }: { c: Palette; timeKnown: boolean }) {
       {open ? (
         <>
           <Text style={[styles.body, { color: c.foreground }]}>
-            A simple starting point: planet = what, sign = how, house = where. Tap an entry to explore its symbolism.
+            Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.
           </Text>
           {items.map(([k, v]) => (
             <Text key={k} style={[styles.body, { color: c.mutedForeground }]}>
               <Text style={{ color: c.foreground, fontFamily: 'Inter_600SemiBold' }}>{k}. </Text>{v}
             </Text>
           ))}
-          <Text style={[styles.guideNote, { color: c.mutedForeground }]}>
-            Astrology is a traditional symbolic practice, not evidence or a verdict. Treat this as a reflection prompt and keep only what feels useful.
-          </Text>
         </>
       ) : null}
     </Card>
@@ -572,17 +566,12 @@ function ChartLoading({ c }: { c: Palette }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  scrollContent: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 14, paddingBottom: 34 },
+  scrollContent: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 34 },
   page: { width: '100%', maxWidth: 480 },
   brandRow: { alignItems: 'center', flexDirection: 'row' },
   brandMark: { alignItems: 'center', borderRadius: 16, borderWidth: 1, height: 32, justifyContent: 'center', marginRight: 10, width: 32 },
   brandName: { fontFamily: 'Inter_600SemiBold', fontSize: 10, letterSpacing: 1.7 },
-  brandDivider: { height: 13, marginHorizontal: 10, width: 1 },
-  brandCaption: { fontFamily: 'Inter_400Regular', fontSize: 8, letterSpacing: 1.3 },
-  intro: { marginTop: 46, marginBottom: 28 },
-  eyebrowRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 16 },
-  eyebrowLine: { height: 1, marginRight: 9, width: 22 },
-  eyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 10, letterSpacing: 1.9 },
+  intro: { marginTop: 22, marginBottom: 24 },
   title: { fontFamily: 'Georgia', fontSize: 38, fontWeight: '400', letterSpacing: -1.1, lineHeight: 45 },
   subtitle: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 21, marginTop: 14 },
   card: { borderRadius: 26, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },
@@ -608,8 +597,6 @@ const styles = StyleSheet.create({
   btn: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, paddingHorizontal: 14, paddingVertical: 9 },
   btnText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
   guideHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
-  detailsToggle: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', paddingVertical: 12 },
-  guideNote: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 19, marginTop: 3 },
   explanationSafeArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 20 },
   explanationScrim: { ...StyleSheet.absoluteFill, opacity: 0.76 },
   explanationCard: { alignSelf: 'center', width: '100%', maxWidth: 440, maxHeight: '88%', borderWidth: 1, borderRadius: 24, paddingHorizontal: 22, paddingTop: 18 },

@@ -65,7 +65,11 @@ test('the first-run prompt appears after a profile exists and consent is unset',
   state.profile = { birthDate: '2000-01-01' };
   await act(async () => { renderer = create(<FirstChartConsentPrompt />); });
   expect(renderer!.root.findByType(Modal).props.visible).toBe(true);
-  expect(renderer!.root.findAllByType(Text).some(node => node.props.children === 'Create your Natal Chart?')).toBe(true);
+  const copy = renderer!.root.findAllByType(Text).map(node => node.props.children);
+  expect(copy).toContain('Create your Natal Chart?');
+  expect(copy).not.toContain('OPTIONAL');
+  expect(copy.join(' ')).not.toContain('Cosmos and Crystals still work');
+  expect(copy.join(' ')).not.toContain('You can withdraw permission in Settings.');
 });
 
 test('Agree and Not now save one explicit choice and close the prompt', async () => {

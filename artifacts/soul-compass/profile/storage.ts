@@ -149,6 +149,7 @@ export class LocalProfileStore {
     const collectionChanged = different(baseline.crystalCollection, preferences.crystalCollection);
     const intentionsChanged = different(baseline.crystalPreferences.intentions, preferences.crystalPreferences.intentions);
     const hiddenChanged = different(baseline.crystalPreferences.hiddenCrystals, preferences.crystalPreferences.hiddenCrystals);
+    const feelingChanged = different(baseline.crystalPreferences.feeling, preferences.crystalPreferences.feeling);
     return this.update(record => ({
       ...record, preferences: PreferencesSchema.parse({
         language: languageChanged ? preferences.language : record.preferences.language,
@@ -156,6 +157,7 @@ export class LocalProfileStore {
         crystalPreferences: {
           intentions: intentionsChanged ? preferences.crystalPreferences.intentions : record.preferences.crystalPreferences.intentions,
           hiddenCrystals: hiddenChanged ? preferences.crystalPreferences.hiddenCrystals : record.preferences.crystalPreferences.hiddenCrystals,
+          feeling: feelingChanged ? preferences.crystalPreferences.feeling : record.preferences.crystalPreferences.feeling,
         },
       }),
     }));

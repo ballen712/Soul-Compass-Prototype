@@ -9,23 +9,23 @@ Finish important existing product gaps and preserve the Soul Compass design iden
 
 **How to apply:** implement safe scoped corrections, but request approval before major new functionality, paid services, architecture changes, data deletion or external-infrastructure changes. Do not publish or incur costs without explicit approval. Keep traditional astrology/crystal meanings separate from scientifically established facts, and never present sample content or incomplete translations as finished personalized functionality.
 
-Keep Cosmos copy concise—one reflection heading, one short daily message, then “A moment to keep”—but keep the page complete and intentional rather than visually stripped down. Describe crystals by their symbolic connection to the day or a saved intention, not their appearance.
+Keep Cosmos copy concise—one reflection heading, one short daily message, then “A moment to keep”—but keep the page complete and intentional rather than visually stripped down. Let the selected daily feeling, available transit theme, and saved intentions inform crystal suggestions; describe stones as symbolic prompts, not as having guaranteed effects.
 
-**Why:** the user requested less repeated copy, more day-relevant crystal explanations, and then clarified that Cosmos must not feel too short or cut off.
+**Why:** the user asked for daily feeling states to affect crystal picks alongside transits, while keeping the reading simple and grounded.
 
-**How to apply:** avoid duplicated headings and focus labels; use visual composition, not extra copy, to give Cosmos presence. Frame crystal associations as symbolic prompts rather than factual effects.
+**How to apply:** keep mood, chart theme, and optional intentions distinct in the recommendation logic and explanation; never promise that a crystal changes a person's health or circumstances.
 
-Soul Compass is for people seeking self-understanding and direction, including people who are not especially spiritual. Keep the mystical tone accessible through plain language and practical prompts.
+Soul Compass is a spiritual self-exploration app for everyday users, including people who are not especially spiritual. Keep its language simple, welcoming, and practical.
 
-**Why:** the user described the intended audience and asked that explanations feel clear to everyday readers.
+**Why:** the user described Soul Compass as a spiritual app for ordinary people to explore themselves, with wording that is easy to understand.
 
 **How to apply:** explain symbolic readings in grounded language; avoid assuming spiritual beliefs or presenting astrology and rituals as predictions or guaranteed effects.
 
-Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosmos. Let people explore placements, available angles and major aspects through concise, personalized plain-language symbolism.
+Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosmos. Explain its terms in everyday language for people with no astrology background, while keeping each interpretation personal and clear.
 
-**Why:** the user wants the daily reflection to remain the main entry point, while making the deeper chart useful to curious readers.
+**Why:** the user wants the daily reflection to remain the main entry point and explicitly asked that Natal Chart make sense to ordinary readers unfamiliar with astrology.
 
-**How to apply:** use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
+**How to apply:** define planets, signs, houses, angles, aspects and chart methods plainly; use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
 
 The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and continuing across the full near-black background. Keep the blue reading cards distinct and readable. Move “A Daily Pause” closer to the Soul Compass brand.
 
@@ -38,3 +38,9 @@ Keep small stars visible across the full Cosmos background and scroll area. Use 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.
 
 **How to apply:** preserve the blue cards, keep the stars low-contrast, and make the Natal Chart card the clear end of the content. Keep the full-screen star layer outside the ScrollView; a tall decorative child can extend the scrollable area and reveal an empty tail.
+
+The Soul Compass voice should be warm, gently mystical, psychologically reflective, and occasionally lightly humorous. Write original copy rather than imitating or quoting a specific teacher.
+
+**Why:** the user asked for a subtle Osho-inspired warmth while keeping the app's wording clear and human.
+
+**How to apply:** use broad traits such as self-inquiry, directness, gentle paradox, and light humor. Keep astrology and crystal associations symbolic, avoid diagnoses or promises, and do not copy distinctive phrasing.

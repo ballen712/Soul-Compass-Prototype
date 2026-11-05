@@ -37,9 +37,9 @@ const dailyRituals = [
   'Pause to stretch your shoulders before your next task.',
 ];
 
-const backgroundStars = Array.from({ length: 64 }, (_, index) => ({
+const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
   x: ((index * 41 + 19) % 97) / 97,
-  y: 0.34 + (((index * 53 + 13) % 127) / 127) * 2.45,
+  y: ((index * 53 + 13) % 101) / 101,
   size: index % 9 === 0 ? 2 : 1.25,
   opacity: 0.25 + (index % 4) * 0.05,
 }));
@@ -100,6 +100,29 @@ export default function CosmosScreen() {
       ]}
     >
       <StatusBar style="light" />
+      <View
+        pointerEvents="none"
+        accessible={false}
+        testID="cosmos-background-stars"
+        style={styles.starLayer}
+      >
+        {backgroundStars.map((star, index) => (
+          <View
+            key={index}
+            style={[
+              styles.starDot,
+              {
+                backgroundColor: colors.cosmos.foreground,
+                height: star.size,
+                left: `${star.x * 100}%`,
+                opacity: star.opacity,
+                top: `${star.y * 100}%`,
+                width: star.size,
+              },
+            ]}
+          />
+        ))}
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -136,37 +159,6 @@ export default function CosmosScreen() {
               locations={[0, 0.46, 1]}
               style={styles.heroFade}
             />
-          </View>
-          <View
-            pointerEvents="none"
-            accessible={false}
-            testID="cosmos-background-stars"
-            style={[
-              styles.starLayer,
-              {
-                top: -(topInset + 18),
-                left: -heroBleed,
-                right: -heroBleed,
-                height: windowHeight * 2.85,
-              },
-            ]}
-          >
-            {backgroundStars.map((star, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.starDot,
-                  {
-                    backgroundColor: colors.cosmos.foreground,
-                    height: star.size,
-                    left: `${star.x * 100}%`,
-                    opacity: star.opacity,
-                    top: windowHeight * star.y,
-                    width: star.size,
-                  },
-                ]}
-              />
-            ))}
           </View>
           <View style={styles.brandRow}>
             <Text
@@ -484,7 +476,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
   },
   starLayer: {
-    position: 'absolute',
+    ...StyleSheet.absoluteFill,
   },
   starDot: {
     borderRadius: 2,

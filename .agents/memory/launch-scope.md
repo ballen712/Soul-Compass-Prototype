@@ -37,4 +37,4 @@ Keep small stars visible across the full Cosmos background and scroll area. Use 
 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.
 
-**How to apply:** preserve the blue cards, keep the stars low-contrast, and make the Natal Chart card the clear end of the content.
+**How to apply:** preserve the blue cards, keep the stars low-contrast, and make the Natal Chart card the clear end of the content. Keep the full-screen star layer outside the ScrollView; a tall decorative child can extend the scrollable area and reveal an empty tail.

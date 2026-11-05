@@ -92,12 +92,17 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(root.findAllByProps({ name: 'wind' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'arrow-up-right' })).toHaveLength(0);
   const starLayer = root.findByProps({ testID: 'cosmos-background-stars' });
-  expect(starLayer.props.children).toHaveLength(64);
+  expect(starLayer.props.children).toHaveLength(24);
+  expect(starLayer.props.style.bottom).toBe(0);
   const scrollView = root.findByProps({ accessibilityLabel: 'Daily reflection' });
   expect(scrollView.props.bounces).toBe(false);
   expect(scrollView.props.alwaysBounceVertical).toBe(false);
   expect(scrollView.props.overScrollMode).toBe('never');
   expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(8);
+  expect(scrollView.findAllByProps({ testID: 'cosmos-background-stars' })).toHaveLength(0);
+  const natalLink = scrollView.findByProps({ testID: 'cosmos-natal-link' });
+  const page = natalLink.parent!;
+  expect(page.children[page.children.length - 1]).toBe(natalLink);
   const moment = root.findAllByType(Pressable).find(
     (button: ReactTestInstance) => button.props.accessibilityLabel === 'Read more about A moment to keep',
   );

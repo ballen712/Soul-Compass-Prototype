@@ -251,7 +251,7 @@ export default function NatalScreen() {
                 {profile.birthDate}
                 {profile.birthTime.status === 'known' ? ` at ${profile.birthTime.localTime}` : ', time unknown'}
                 {` \u00B7 ${profile.birthPlace.city}, ${profile.birthPlace.country}`}
-                {'\n'}Tropical zodiac, Placidus houses.
+                {'\n'}Tropical zodiac.
               </Text>
             ) : null}
           </View>
@@ -385,13 +385,28 @@ export default function NatalScreen() {
 function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
 }) {
-  const houses = useMemo(() => new Map(data.planetaryHouses.map((h) => [h.planet, h.house])), [data.planetaryHouses]);
+  const hasKnownBirthMoment = timeKnown
+    && data.input.birthTimeKnown
+    && data.calculation.birthTimeResolution === 'known';
+  const housesAvailable = hasKnownBirthMoment
+    && data.calculation.houseStatus === 'available'
+    && data.houseCusps.length > 0;
+  const houses = useMemo(
+    () => new Map((housesAvailable ? data.planetaryHouses : []).map((h) => [h.planet, h.house])),
+    [data.planetaryHouses, housesAvailable],
+  );
   const aspects = data.aspects.filter((a) => MAJOR.has(a.type.toLowerCase()));
-  const angles = timeKnown ? data.angles : null;
+  const angles = hasKnownBirthMoment ? data.angles : null;
 
   return (
     <View style={{ gap: 18 }}>
-      <Guide c={c} timeKnown={timeKnown} />
+      <Label c={c} icon="user" text="PERSONAL NATAL CHART" />
+      <Guide
+        c={c}
+        timeKnown={timeKnown}
+        housesAvailable={housesAvailable}
+        anglesAvailable={angles !== null}
+      />
       {disambiguation ? (
         <Card c={c}>
           <Text style={[styles.body, { color: c.mutedForeground }]}>
@@ -505,7 +520,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
             </Text>
           </View>
         ))}
-        {timeKnown && data.houseCusps.length > 0 ? (
+        {housesAvailable ? (
           <>
             <View style={[styles.rule, { backgroundColor: c.border }]} />
             <Label c={c} icon="grid" text="HOUSE CUSPS" />
@@ -527,14 +542,36 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   );
 }
 
-function Guide({ c, timeKnown }: { c: Palette; timeKnown: boolean }) {
+function Guide({
+  c,
+  timeKnown,
+  housesAvailable,
+  anglesAvailable,
+}: {
+  c: Palette;
+  timeKnown: boolean;
+  housesAvailable: boolean;
+  anglesAvailable: boolean;
+}) {
   const [open, setOpen] = useState(true);
   const items: [string, string][] = [
-    ['Chart method', 'This chart uses the tropical zodiac, a common Western way of mapping the signs, and Placidus to divide the chart into twelve houses.'],
+    ['Chart method', !timeKnown
+      ? 'This chart uses the tropical zodiac. Placidus houses depend on your exact birth time, so they are omitted.'
+      : housesAvailable
+        ? 'This chart uses the tropical zodiac, a common Western way of mapping the signs, and Placidus to divide the chart into twelve houses.'
+        : 'This chart uses the tropical zodiac. Placidus houses could not be calculated for this location, so no substitute house system was used.'],
     ['Planets', 'Each planet stands for a life theme. For example, the Moon is connected with feelings, and Mercury with thinking and communication.'],
     ['Signs', 'A sign describes the style a theme may take: for example, direct, steady, curious, or imaginative.'],
-    ['Houses', timeKnown ? 'A house points to an area of everyday life—such as home, work, or relationships—where a theme may show up.' : 'Houses depend on your exact birth time, so they are left out when that time is unknown.'],
-    ['Angles', timeKnown ? 'The Ascendant is linked with how you approach new situations. The Midheaven is linked with work and the part of life others see.' : 'The Ascendant and Midheaven depend on your exact birth time, so they are not shown here.'],
+    ['Houses', !timeKnown
+      ? 'Houses depend on your exact birth time, so they are left out when that time is unknown.'
+      : housesAvailable
+        ? 'A house points to an area of everyday life—such as home, work, or relationships—where a theme may show up.'
+        : 'Placidus houses were unavailable for this location, so no house placements are shown.'],
+    ['Angles', !timeKnown
+      ? 'The Ascendant and Midheaven depend on your exact birth time, so they are not shown here.'
+      : anglesAvailable
+        ? 'The Ascendant is linked with how you approach new situations. The Midheaven is linked with work and the part of life others see.'
+        : 'Angle values could not be calculated for this chart, so they are not shown.'],
     ['Aspects', 'An aspect is the angle between two planets. Astrologers use it to describe how their themes may support or challenge each other. A smaller “orb” means the angle is closer to exact.'],
     ['Retrograde', 'From Earth, a planet can sometimes look as if it is moving backward. It is only how it appears in the sky; in astrology it adds a symbolic detail, not a problem you need to fix.'],
   ];

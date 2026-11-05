@@ -71,6 +71,10 @@ import NatalScreen from '../app/(tabs)/natal';
 let renderer: ReactTestRenderer | undefined;
 const chartResult = {
   input: { birthTimeKnown: true },
+  calculation: {
+    birthTimeResolution: 'known',
+    houseStatus: 'available',
+  },
   planets: [
     { planet: 'sun', sign: 'Aquarius', degreeInSign: 12.5, retrograde: false, longitude: 312.5, latitude: 0, speedDegreesPerDay: 1 },
     { planet: 'moon', sign: 'Pisces', degreeInSign: 4, retrograde: false, longitude: 334, latitude: 1, speedDegreesPerDay: 13 },
@@ -126,7 +130,14 @@ test('Natal Chart sends no request until Agree, which starts exactly one calcula
 
   expect(state.calculate).toHaveBeenCalledTimes(1);
   expect(state.calculate).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  expect(state.calculate.mock.calls[0][0]).toMatchObject({
+    birthDate: '2000-01-01',
+    birthTime: { status: 'known', localTime: '12:00' },
+    birthPlace: { latitude: 1, longitude: 1, timeZone: 'UTC' },
+  });
+  expect(findText(root, 'PERSONAL NATAL CHART')).toBeDefined();
   expect(findText(root, 'ASCENDANT')).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-cusp-12' })).toBeDefined();
 });
 
 test('previously granted current-version permission refreshes automatically at app opening', async () => {
@@ -244,13 +255,78 @@ test('Natal Chart shows the plain-language guide and all house cusps without the
   expect(scrollView.props.contentContainerStyle[1].paddingBottom).toBe(32);
 });
 
-test('unknown-time uncertain Moon shows its possible range and omits time-dependent angles', async () => {
+test('timed chart keeps angles but omits Placidus houses when the location cannot support them', async () => {
+  state.calculate.mockResolvedValue({
+    ...chartResult,
+    calculation: { ...chartResult.calculation, houseStatus: 'unavailable' },
+    houseCusps: [],
+    planetaryHouses: [],
+    warnings: ['Placidus houses are unavailable at this latitude.'],
+  });
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+  });
+
+  const root = renderer!.root;
+  await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
+  expect(root.findByProps({ testID: 'natal-angle-ascendant' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
+  expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('no substitute house system was used'),
+  )).toBe(true);
+});
+
+test('timed chart omits angle tiles when the calculation cannot provide angles', async () => {
+  state.calculate.mockResolvedValue({
+    ...chartResult,
+    calculation: { ...chartResult.calculation, houseStatus: 'unavailable' },
+    angles: null,
+    houseCusps: [],
+    planetaryHouses: [],
+    warnings: ['Angles are unavailable at this location.'],
+  });
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+  });
+
+  const root = renderer!.root;
+  await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
+  expect(root.findAllByProps({ testID: 'natal-angle-ascendant' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-midheaven' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('Angle values could not be calculated'),
+  )).toBe(true);
+});
+
+test('unknown-time chart omits angles and houses and clearly marks personalized data', async () => {
   const record = JSON.parse(state.storage.get(LOCAL_KEY)!);
   record.profile.birthTime = { status: 'unknown' };
   state.storage.set(LOCAL_KEY, JSON.stringify(record));
   state.calculate.mockResolvedValue({
     ...chartResult,
     input: { birthTimeKnown: false },
+    calculation: {
+      ...chartResult.calculation,
+      birthTimeResolution: 'unknown-reference-local-noon',
+      houseStatus: 'unknown-birth-time',
+    },
     moonSignRange: ['Aquarius', 'Pisces'],
   });
   await act(async () => {
@@ -265,7 +341,20 @@ test('unknown-time uncertain Moon shows its possible range and omits time-depend
   });
   const root = renderer!.root;
   await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
+  expect(state.calculate.mock.calls[0][0]).toMatchObject({
+    birthDate: '2000-01-01',
+    birthTime: { status: 'unknown' },
+    birthPlace: { latitude: 1, longitude: 1, timeZone: 'UTC' },
+  });
+  expect(findText(root, 'PERSONAL NATAL CHART')).toBeDefined();
+  expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('This is a sample'))).toBe(false);
   expect(findText(root, 'ASCENDANT')).toBeUndefined();
+  expect(findText(root, 'MIDHEAVEN')).toBeUndefined();
+  expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('Houses depend on your exact birth time'),
+  )).toBe(true);
   await act(async () => { root.findByProps({ testID: 'natal-planet-moon' }).props.onPress(); });
   expect(findText(root, 'Moon sign range')).toBeDefined();
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('Aquarius or Pisces'))).toBe(true);

@@ -145,25 +145,19 @@ test('hidden recommendations are replaced from the remaining visible catalog', (
   const remaining = getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] });
   if (remaining) assert.ok(!['Amethyst', 'Moonstone', 'Labradorite'].includes(remaining.crystal.name));
 });
-test('weak or missing chart matches do not force a daily stone', () => {
+test('one shared chart theme can guide a stone while missing chart context stays empty', () => {
   const chart = calculateDailyAstrology(makeProfile());
   assert.equal(chart.status, 'calculated');
   if (chart.status !== 'calculated') return;
   const noRelevantThemes = { ...chart, aspects: [], natalPlacements: [] };
   assert.deepEqual(getCrystalSuggestions(noRelevantThemes), []);
 
-  const singleSunPlacement = {
+  const singleAspectChart = {
     ...chart,
-    aspects: [],
-    natalPlacements: chart.natalPlacements.filter((placement) => placement.body === 'Sun'),
+    aspects: chart.aspects.slice(0, 1),
   };
-  const sunThemes = ['confidence', 'direction', 'courage'];
-  const weakChartCandidate = crystalCatalog.find((crystal) =>
-    crystal.themes.filter((theme) => sunThemes.includes(theme)).length === 1,
-  );
-  assert.ok(weakChartCandidate);
-  const chartResults = getCrystalSuggestions(singleSunPlacement, {}, crystalCatalog.length);
-  assert.ok(!chartResults.some((item) => item.crystal.name === weakChartCandidate.name));
+  const chartResults = getCrystalSuggestions(singleAspectChart, {}, crystalCatalog.length);
+  assert.ok(chartResults.length > 0);
 
   const steady = FEELING_OPTIONS.find((option) => option.id === 'steady')!;
   const fullResults = getCrystalSuggestions(undefined, { feeling: steady.id }, crystalCatalog.length);

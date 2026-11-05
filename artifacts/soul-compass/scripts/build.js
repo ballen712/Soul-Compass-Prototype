@@ -475,6 +475,11 @@ function updateBundleUrls(timestamp, baseUrl) {
       },
     );
 
+    bundle = bundle.replace(
+      /^[ \t]*\/\/[#@]\s*sourceMappingURL=[^\r\n]*(?:\r?\n|$)/gm,
+      '',
+    );
+
     fs.writeFileSync(bundlePath, bundle);
   };
 

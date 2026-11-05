@@ -165,9 +165,9 @@ const aspectThemes: Record<string, readonly string[]> = {
 const allThemes = new Set(
   crystalCatalog.flatMap((crystal) => crystal.themes),
 );
-// Two shared themes create a clear chart link; requiring all four themes
-// made many otherwise relevant chart days return no suggestions.
-const MINIMUM_DAILY_CHART_THEME_MATCHES = 2;
+// One shared chart theme is enough for a relevant fallback when a stronger
+// match is not available.
+const MINIMUM_DAILY_CHART_THEME_MATCHES = 1;
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')

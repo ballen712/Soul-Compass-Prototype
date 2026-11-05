@@ -27,6 +27,12 @@ Crystal descriptions should directly say what qualities a stone is good for. Do 
 
 **How to apply:** use simple language tied to the stone’s guide themes and chart context; keep the copy out of clinical or guaranteed-result claims.
 
+For daily crystal picks, one shared chart theme is enough when no stronger match is available; do not select a stone with no relevant theme connection.
+
+**Why:** the user chose a one-theme fallback to avoid empty daily picks without showing unrelated stones.
+
+**How to apply:** keep the no-match state when there is no personal chart or feeling context, or when all matching stones are hidden.
+
 Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosmos. Explain its terms in everyday language for people with no astrology background. Planet interpretations must connect the actual planet, sign, and reliable house placement using authored, plain-language copy rather than generic filler.
 
 **Why:** the user wants the daily reflection to remain the main entry point, asked for accessible chart explanations, and specifically rejected machine-like generic descriptions of planet placements.

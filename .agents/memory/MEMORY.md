@@ -9,3 +9,4 @@
 - [Workspace dependency links](workspace-dependency-links.md) — Check pnpm links and catalog compatibility before interpreting missing test/type packages as source errors.
 - [Birth input cursor behavior](birth-input-cursor.md) — Keep date and time digit-first formatting automatic without cursor jumps during typing, editing, deletion, or paste.
 - [Onboarding-gated visual checks](onboarding-gated-visual-tests.md) — Use an isolated browser profile with synthetic local data and revoked consent; this does not replace native device testing.
+- [Crystal catalog return position](crystal-catalog-return.md) — Keep the list mounted under details and center the opened stone; remounting can lose virtualized row measurements.

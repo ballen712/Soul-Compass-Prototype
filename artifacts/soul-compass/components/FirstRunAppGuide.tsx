@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_GUIDE_INTRO, APP_GUIDE_SEEN_KEY } from '@/constants/app-guide';
+import { APP_GUIDE_SEEN_KEY } from '@/constants/app-guide';
 import { AppGuideCards } from '@/components/AppGuideContent';
 import { useColors } from '@/hooks/useColors';
 import { CONSENT_VERSION } from '@/profile/local';
@@ -87,9 +87,6 @@ export function FirstRunAppGuide() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.content}
             >
-              <Text style={[styles.intro, { color: colors.cosmos.mutedForeground }]}>
-                {APP_GUIDE_INTRO}
-              </Text>
               <Text style={[styles.label, { color: colors.cosmos.secondary }]}>
                 THREE WAYS TO EXPLORE
               </Text>
@@ -122,7 +119,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, lineHeight: 28, fontFamily: 'Inter_600SemiBold' },
   close: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   content: { gap: 16, paddingBottom: 16 },
-  intro: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_400Regular' },
   label: { fontSize: 10, letterSpacing: 1.4, fontFamily: 'Inter_600SemiBold' },
   action: { minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   actionText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },

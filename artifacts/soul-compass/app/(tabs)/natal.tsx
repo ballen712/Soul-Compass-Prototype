@@ -55,6 +55,32 @@ const signPersonalities: Record<string, string> = {
   aquarius: 'independent, open to unusual ideas, and comfortable doing things your own way',
   pisces: 'imaginative, empathetic, and sensitive to the mood around you',
 };
+const signActions: Record<string, string> = {
+  aries: 'act quickly and take initiative',
+  taurus: 'stay patient and build something steadily',
+  gemini: 'ask questions and talk ideas through',
+  cancer: 'act with care and protect what matters',
+  leo: 'share your ideas warmly and creatively',
+  virgo: 'notice details and improve what you can',
+  libra: 'consider fairness and how your choices affect others',
+  scorpio: 'look beneath the surface and seek the truth',
+  sagittarius: 'stay open to new places and ways of thinking',
+  capricorn: 'choose a long-term goal and keep working toward it',
+  aquarius: 'think independently and try an original approach',
+  pisces: 'listen with empathy and notice the mood around you',
+};
+const planetFocuses: Record<string, string> = {
+  sun: 'your confidence and sense of self',
+  moon: 'your emotional comfort and sense of safety',
+  mercury: 'the way you think and communicate',
+  venus: 'what you value and how you connect with others',
+  mars: 'the way you use energy and take action',
+  jupiter: 'the way you grow and find hope',
+  saturn: 'the way you work toward something steadily',
+  uranus: 'your need for freedom and new ideas',
+  neptune: 'your imagination and sensitivity',
+  pluto: 'how you handle trust and major changes',
+};
 const signTones: Record<string, string> = {
   aries: 'taking initiative', taurus: 'steadily and practically',
   gemini: 'with curiosity', cancer: 'with care and a need for security',
@@ -88,16 +114,23 @@ export function explainPlanet(
   const key = planet.toLowerCase();
   const theme = planetThemes[key] ?? 'a personal theme in your life';
   const signPersonality = signPersonalities[sign.toLowerCase()];
-  const houseIsKnown = typeof house === 'number' && houseContexts[house] !== undefined;
-  const body = [
+  const signAction = signActions[sign.toLowerCase()] ?? 'approach things in your own way';
+  const planetFocus = planetFocuses[key] ?? 'this part of your life';
+  const houseGuide = typeof house === 'number' ? houseGuides[house] : undefined;
+  const houseIsKnown = houseGuide !== undefined;
+  const bodyParts = [
     `Your ${name} is about ${theme}.`,
     signPersonality
-      ? `With ${cap(sign)}, you may be ${signPersonality}.`
-      : `${cap(sign)} gives this part of you its own style.`,
-    ...(houseIsKnown
-      ? [houseContexts[house!]]
+      ? `With ${cap(sign)} in your ${name}, you may be ${signPersonality}.`
+      : `With ${cap(sign)} in your ${name}, this part of you may take its own style.`,
+    ...(houseGuide
+      ? [`Your ${ordinalHouse(house!)} House is about ${houseGuide.meaning}.`]
       : []),
-  ].join(' ');
+    houseGuide
+      ? `Together, your ${name} in ${cap(sign)} in your ${ordinalHouse(house!)} House connects ${planetFocus} with ${houseGuide.area}. You may notice this when ${houseGuide.moment}, especially when you ${signAction}.`
+      : `Together, this may mean your ${planetFocus} comes through when you ${signAction}.`,
+  ];
+  const body = bodyParts.join('\n\n');
   return {
     title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
     body,
@@ -107,20 +140,76 @@ export function explainPlanet(
   };
 }
 
-const houseContexts: Record<number, string> = {
-  1: 'You may notice this in how you show up, make a first impression, or start something new.',
-  2: 'It may shape what you value, how you handle money, and what helps you feel secure.',
-  3: 'It may show up in everyday conversations, the questions you ask, and how you learn new things.',
-  4: 'It may feel close to home—your family, your roots, and the places where you feel you belong.',
-  5: 'You may notice it in your creativity, romance, hobbies, and the things you do for fun.',
-  6: 'It may shape your routines, daily work, and how you look after everyday needs.',
-  7: 'You may see it in close relationships, shared decisions, and what helps both people feel heard.',
-  8: 'It may come up around trust, shared money or responsibilities, close relationships, and major changes.',
-  9: 'You may notice it through learning, travel, the ideas you believe in, and questions that help you make sense of life.',
-  10: 'It may shape your work, long-term goals, and what you want to be known for.',
-  11: 'You may see it in friendships, communities, shared plans, and the future you want to build with others.',
-  12: 'It may be strongest in quiet moments, when you need rest or time to sort through feelings privately.',
+const houseGuides: Record<number, { meaning: string; area: string; moment: string }> = {
+  1: {
+    meaning: 'how you show up, the first impression you make, and how you begin new things',
+    area: 'first impressions and new beginnings',
+    moment: 'you meet someone new or begin something',
+  },
+  2: {
+    meaning: 'what you value, how you handle money, and what helps you feel secure',
+    area: 'your values and sense of security',
+    moment: 'you choose what to spend, save, or protect',
+  },
+  3: {
+    meaning: 'everyday conversations, the questions you ask, and how you learn',
+    area: 'everyday conversations and learning',
+    moment: 'you ask questions, learn, or talk an idea through',
+  },
+  4: {
+    meaning: 'home, family, your roots, and where you feel you belong',
+    area: 'home, family, and belonging',
+    moment: 'you create a sense of home or connect with family',
+  },
+  5: {
+    meaning: 'creativity, romance, hobbies, and the things you enjoy',
+    area: 'creativity, romance, and fun',
+    moment: 'you make something, enjoy a hobby, or share what you love',
+  },
+  6: {
+    meaning: 'your routines, daily work, and how you look after everyday needs',
+    area: 'daily routines, work, and self-care',
+    moment: 'you organize your day or take care of a practical task',
+  },
+  7: {
+    meaning: 'close relationships, shared decisions, and listening to each other',
+    area: 'close relationships and shared decisions',
+    moment: 'you make a shared decision or try to understand someone close to you',
+  },
+  8: {
+    meaning: 'trust, shared responsibilities, intimacy, and major changes',
+    area: 'trust, shared responsibilities, and deep change',
+    moment: 'you build trust or move through an important change',
+  },
+  9: {
+    meaning: 'learning, travel, the ideas you believe in, and questions that help you make sense of life',
+    area: 'learning, travel, and the beliefs that guide you',
+    moment: 'you explore a new idea, place, or point of view',
+  },
+  10: {
+    meaning: 'your work, long-term goals, and what you want to be known for',
+    area: 'work, long-term goals, and your public role',
+    moment: 'you take responsibility or work toward an important goal',
+  },
+  11: {
+    meaning: 'friendships, communities, shared plans, and the future you want to build',
+    area: 'friendships, communities, and future plans',
+    moment: 'you collaborate with friends or take part in a community',
+  },
+  12: {
+    meaning: 'quiet moments, rest, and feelings you work through privately',
+    area: 'rest, private feelings, and time alone',
+    moment: 'you rest or take time to process what you feel',
+  },
 };
+
+function ordinalHouse(house: number): string {
+  if (house % 100 >= 11 && house % 100 <= 13) return `${house}th`;
+  if (house % 10 === 1) return `${house}st`;
+  if (house % 10 === 2) return `${house}nd`;
+  if (house % 10 === 3) return `${house}rd`;
+  return `${house}th`;
+}
 const planetQuestions: Record<string, string> = {
   sun: 'Where in this part of life do you feel most like yourself?',
   moon: 'What helps you feel safe and understood here?',
@@ -432,7 +521,14 @@ export default function NatalScreen() {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.explanationBody}>
                 <Text style={[styles.body, { color: c.mutedForeground }]}>{activeExplanation.body}</Text>
                 {activeExplanation.question ? (
-                  <Text style={[styles.explanationQuestion, { color: c.foreground }]}>{activeExplanation.question}</Text>
+                  <>
+                    <Text style={[styles.explanationQuestionLabel, { color: c.secondary }]}>
+                      A question to reflect on
+                    </Text>
+                    <Text style={[styles.explanationQuestion, { color: c.foreground }]}>
+                      {activeExplanation.question}
+                    </Text>
+                  </>
                 ) : null}
               </ScrollView>
             </View>
@@ -799,5 +895,12 @@ const styles = StyleSheet.create({
   explanationTitle: { flex: 1, fontFamily: 'Georgia', fontSize: 24, lineHeight: 31, paddingTop: 8 },
   explanationClose: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
   explanationBody: { paddingTop: 10, paddingBottom: 24 },
+  explanationQuestionLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginTop: 18,
+    textTransform: 'uppercase',
+  },
   explanationQuestion: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 26, marginTop: 6 },
 });

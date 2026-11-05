@@ -392,13 +392,15 @@ test('the full collection centers each opened stone after returning from its det
     root.findByProps({ testID: 'catalog-stone-obsidian' }).props.onPress();
   });
   expect(root.findAllByType(Text).some((node) => node.props.children === 'Obsidian')).toBe(true);
+  expect(root.findByProps({ testID: 'full-crystal-catalog-list' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collection-catalog-background' }).props.pointerEvents).toBe('none');
   await act(async () => {
     const edge = root.findAllByProps({ testID: 'crystal-catalog-edge-swipe-back' })
       .find((node) => String(node.type) === 'View')!.props;
     edge.onResponderRelease({}, { x0: 12, dx: 210, dy: 8 });
   });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
-  await act(async () => { list.props.onContentSizeChange(400, 2400); });
+  expect(root.findByProps({ testID: 'collection-catalog-background' }).props.pointerEvents).toBe('auto');
   expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(1, {
     index: 4,
     viewPosition: 0.5,
@@ -417,7 +419,6 @@ test('the full collection centers each opened stone after returning from its det
     edge.onResponderRelease({}, { x0: 12, dx: 210, dy: 8 });
   });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
-  await act(async () => { list.props.onContentSizeChange(400, 2400); });
   expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(2, {
     index: 5,
     viewPosition: 0.5,
@@ -430,7 +431,6 @@ test('the full collection centers each opened stone after returning from its det
   });
   await act(async () => { root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress(); });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
-  await act(async () => { list.props.onContentSizeChange(400, 2400); });
   expect(state.collectionScrollToIndex).toHaveBeenNthCalledWith(3, {
     index: 2,
     viewPosition: 0.5,
@@ -454,9 +454,10 @@ test('the collection button clears the tab bar and detail artwork scales to the 
   await act(async () => {
     root.findByProps({ testID: 'catalog-stone-moonstone' }).props.onPress();
   });
-  const detailImage = root.find(
+  const detailImage = root.findAll(
     (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone on linen',
-  );
+  ).find((node) => Array.isArray(node.props.style))!;
+  expect(detailImage).toBeDefined();
   expect(detailImage.props.resizeMode).toBe('contain');
   const detailStyle = Object.assign({}, ...detailImage.props.style);
   expect(detailStyle).toMatchObject({ aspectRatio: 1 });

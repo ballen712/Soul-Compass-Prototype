@@ -165,10 +165,8 @@ export default function CrystalsScreen() {
   const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
   const collectionListRef = useRef<FlatList<Crystal> | null>(null);
   const collectionScrollOffsetRef = useRef(0);
-  const restoreCollectionScrollRef = useRef(false);
-  const restoreCollectionStoneNameRef = useRef<string | null>(null);
   const restoreCollectionIndexRef = useRef<number | null>(null);
-  const restoreCollectionRetriedRef = useRef(false);
+  const restoreCollectionRetryCountRef = useRef(0);
   const collectionListViewportHeightRef = useRef(0);
   const guideScrollRef = useRef<ScrollViewInstance | null>(null);
   const guideScrollOffsetRef = useRef(0);
@@ -233,15 +231,29 @@ export default function CrystalsScreen() {
       : 'Save your birth details or choose how you feel today to get a personal suggestion.';
 
   const returnToCollection = () => {
-    restoreCollectionScrollRef.current = true;
-    restoreCollectionStoneNameRef.current = selectedCollectionStone?.name ?? null;
+    const targetIndex = selectedCollectionStone
+      ? catalogMatches.findIndex((stone) => stone.name === selectedCollectionStone.name)
+      : -1;
+    if (targetIndex >= 0) {
+      restoreCollectionIndexRef.current = targetIndex;
+      restoreCollectionRetryCountRef.current = 0;
+      collectionListRef.current?.scrollToIndex({
+        index: targetIndex,
+        viewPosition: 0.5,
+        animated: false,
+      });
+    } else {
+      restoreCollectionIndexRef.current = null;
+      collectionListRef.current?.scrollToOffset({
+        offset: collectionScrollOffsetRef.current,
+        animated: false,
+      });
+    }
     setSelectedCollectionStone(null);
   };
   const closeCollection = () => {
-    restoreCollectionScrollRef.current = false;
-    restoreCollectionStoneNameRef.current = null;
     restoreCollectionIndexRef.current = null;
-    restoreCollectionRetriedRef.current = false;
+    restoreCollectionRetryCountRef.current = 0;
     collectionScrollOffsetRef.current = 0;
     setSelectedCollectionStone(null);
     setCollectionOpen(false);
@@ -478,10 +490,8 @@ export default function CrystalsScreen() {
               setCollectionSearch('');
               setSelectedCollectionStone(null);
               collectionScrollOffsetRef.current = 0;
-              restoreCollectionScrollRef.current = false;
-              restoreCollectionStoneNameRef.current = null;
               restoreCollectionIndexRef.current = null;
-              restoreCollectionRetriedRef.current = false;
+              restoreCollectionRetryCountRef.current = 0;
               setCollectionOpen(true);
             }}
             style={[
@@ -760,8 +770,13 @@ export default function CrystalsScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.collectionContentStage}>
           {selectedCollectionStone ? (
             <ScrollView
+              style={[
+                styles.collectionDetailOverlay,
+                { backgroundColor: colors.crystals.background },
+              ]}
               contentContainerStyle={styles.collectionDetailContent}
               showsVerticalScrollIndicator={false}
             >
@@ -788,9 +803,20 @@ export default function CrystalsScreen() {
               </Text>
               <CollectionToggle name={selectedCollectionStone.name} />
             </ScrollView>
-          ) : collectionOpen ? (
+          ) : null}
+          {collectionOpen ? (
+            <View
+              testID="collection-catalog-background"
+              style={[
+                styles.collectionListPane,
+                selectedCollectionStone ? styles.collectionListHidden : null,
+              ]}
+              pointerEvents={selectedCollectionStone ? 'none' : 'auto'}
+              accessibilityElementsHidden={Boolean(selectedCollectionStone)}
+              importantForAccessibility={selectedCollectionStone ? 'no-hide-descendants' : 'auto'}
+            >
             <KeyboardAvoidingView
-              style={styles.collectionListPane}
+              style={styles.collectionListKeyboard}
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
               <View
@@ -835,30 +861,6 @@ export default function CrystalsScreen() {
                     collectionScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
                   }}
                   scrollEventThrottle={16}
-                  onContentSizeChange={() => {
-                    if (!restoreCollectionScrollRef.current) return;
-                    restoreCollectionScrollRef.current = false;
-                    const stoneName = restoreCollectionStoneNameRef.current;
-                    restoreCollectionStoneNameRef.current = null;
-                    const targetIndex = stoneName
-                      ? catalogMatches.findIndex((stone) => stone.name === stoneName)
-                      : -1;
-                    if (targetIndex >= 0) {
-                      restoreCollectionIndexRef.current = targetIndex;
-                      restoreCollectionRetriedRef.current = false;
-                      collectionListRef.current?.scrollToIndex({
-                        index: targetIndex,
-                        viewPosition: 0.5,
-                        animated: false,
-                      });
-                      return;
-                    }
-                    restoreCollectionIndexRef.current = null;
-                    collectionListRef.current?.scrollToOffset({
-                      offset: collectionScrollOffsetRef.current,
-                      animated: false,
-                    });
-                  }}
                   onScrollToIndexFailed={(info) => {
                     const targetIndex = restoreCollectionIndexRef.current;
                     if (targetIndex === null || info.index !== targetIndex) return;
@@ -873,16 +875,19 @@ export default function CrystalsScreen() {
                       offset: estimatedOffset,
                       animated: false,
                     });
-                    if (restoreCollectionRetriedRef.current) return;
-                    restoreCollectionRetriedRef.current = true;
-                    requestAnimationFrame(() => {
+                    if (restoreCollectionRetryCountRef.current >= 3) {
+                      restoreCollectionIndexRef.current = null;
+                      return;
+                    }
+                    restoreCollectionRetryCountRef.current += 1;
+                    setTimeout(() => {
                       if (restoreCollectionIndexRef.current !== targetIndex) return;
                       collectionListRef.current?.scrollToIndex({
                         index: targetIndex,
                         viewPosition: 0.5,
                         animated: false,
                       });
-                    });
+                    }, 180);
                   }}
                   renderItem={({ item: stone }) => (
                     <Pressable
@@ -925,7 +930,9 @@ export default function CrystalsScreen() {
                 />
               </View>
             </KeyboardAvoidingView>
+            </View>
           ) : null}
+          </View>
         </View>
         </EdgeSwipeBack>
       </Modal>
@@ -1122,6 +1129,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
   },
+  collectionContentStage: {
+    flex: 1,
+    position: 'relative',
+  },
+  collectionDetailOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 1,
+  },
   collectionCloseButton: {
     alignItems: 'center',
     height: 44,
@@ -1131,6 +1146,12 @@ const styles = StyleSheet.create({
   collectionListPane: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  collectionListHidden: {
+    opacity: 0,
+  },
+  collectionListKeyboard: {
+    flex: 1,
   },
   collectionListViewport: { flex: 1 },
   collectionSearchWrap: {

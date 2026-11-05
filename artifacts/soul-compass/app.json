@@ -8,6 +8,7 @@
     "scheme": "soul-compass",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "app.soulcompass.mobile",
       "supportsTablet": false
     },
     "android": {},

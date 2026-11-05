@@ -5,6 +5,7 @@ import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { Platform } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { FirstRunAppGuide } from '@/components/FirstRunAppGuide';
 
 const tabLabelStyle = {
   fontFamily: 'Inter_600SemiBold',
@@ -118,7 +119,17 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
+    return (
+      <>
+        <NativeTabLayout />
+        <FirstRunAppGuide />
+      </>
+    );
   }
-  return <ClassicTabLayout />;
+  return (
+    <>
+      <ClassicTabLayout />
+      <FirstRunAppGuide />
+    </>
+  );
 }

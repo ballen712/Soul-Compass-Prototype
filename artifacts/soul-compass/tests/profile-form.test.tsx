@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LOCAL_KEY, emptyRecord } from '../profile/local';
+import { APP_GUIDE_INTRO } from '../constants/app-guide';
 import type { HomeLocation, UserProfile } from '../profile/profile';
 
 const state = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ vi.mock('react-native', () => ({
   Text: 'Text',
   TextInput: 'TextInput',
   View: 'View',
+  useColorScheme: () => 'light',
 }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: View,
@@ -447,6 +449,11 @@ test('About contains the single crystal-image disclosure', async () => {
     root,
     'Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern.',
   )).toBeDefined();
+  expect(findTextNode(root, 'About Soul Compass')).toBeDefined();
+  expect(findTextNode(root, 'Cosmos')).toBeDefined();
+  expect(findTextNode(root, 'Crystals')).toBeDefined();
+  expect(findTextNode(root, 'Natal Chart')).toBeDefined();
+  expect(findTextNode(root, APP_GUIDE_INTRO)).toBeDefined();
 });
 
 test('catalog search keeps collection and hidden-stone changes saved locally', async () => {

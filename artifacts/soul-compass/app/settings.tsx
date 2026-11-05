@@ -11,6 +11,8 @@ import type { UserProfile } from '@/profile/profile';
 import { crystalCatalog } from '@/constants/content';
 import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { PRODUCT } from '@/constants/product';
+import { APP_GUIDE_INTRO } from '@/constants/app-guide';
+import { AppGuideCards } from '@/components/AppGuideContent';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) =>
@@ -131,7 +133,7 @@ export default function SettingsScreen() {
     { key: 'profile', label: 'Profile', description: 'Birth details and places' },
     { key: 'preferences', label: 'Preferences', description: 'Daily feeling, language and collection' },
     { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
-    { key: 'about', label: 'About', description: 'Support and provider licenses' },
+    { key: 'about', label: 'About', description: 'How to use the app and support' },
   ];
 
   function handleBack() {
@@ -312,6 +314,10 @@ export default function SettingsScreen() {
 
           {tab === 'about' ? (
             <>
+              <Section title="About Soul Compass" description={APP_GUIDE_INTRO} />
+              <Section title="Three ways to explore">
+                <AppGuideCards variant="settings" />
+              </Section>
               <Section title="Support" description={PRODUCT.supportEmail}>
                 <Text style={styles.body}>Please do not email us your birth details or private profile information. The app never attaches them.</Text>
                 <Pressable accessibilityRole="link" onPress={() => void run(async () => {

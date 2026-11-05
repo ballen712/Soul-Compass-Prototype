@@ -102,6 +102,19 @@ not show the Cosmos or Natal screens.
 - A synthetic unknown-time POST to the development Natal endpoint returned
   HTTP 200 with ten planets and no angles. This was an agent smoke test, not an
   iPhone request or real-profile test.
+- Focused synthetic consent regression tests exercise the actual “Not now”
+  prompt action, a pending request withdrawn before its late response, cache
+  preservation, app restart after refusal, and app resume after an offline failure. The generated API
+  client is mocked in these tests, so no network request is sent. Assertions
+  inspect call counts, abort status and synthetic local-cache values; they do
+  not print request bodies or profile values. The race test caught and fixed a
+  cancellation timing issue that could clear an already displayed chart.
+  Physical-device behavior remains unverified.
+- Focused consent verification: 18 tests passed. The full package run had 96
+  passing tests and one unrelated failure in `tests/crystals-screen.test.tsx`
+  (`suggestion.crystal` was undefined). The current package typecheck also
+  reports six errors in the untouched Crystals screen and crystal-guidance
+  files; none are in the files changed for consent verification.
 - The freshly restarted Expo tunnel returned `packager-status:running`. After
   the user's withdrawal confirmation, the API workflow was restarted on
   2026-11-05; its fresh log showed only health-check GETs through 08:46 and no
@@ -143,13 +156,13 @@ must be recorded as inconclusive, not passed.
 | --- | --- | --- |
 | Native launch | Open the current public tunnel in Expo Go and record versions/errors. | User reports the app opens on iPhone 15 Pro / iOS 27.2 / Expo Go 58.0.5. The updated Cosmos details and Natal Chart opened; Settings, Preferences, Privacy and About were previously reported as working. |
 | Phone DNS distinction | Open current HTTPS `/status` in iPhone Safari. | Earlier tunnel returned `packager-status:running` in Safari; the user reports the app now opens. |
-| Manual consent and calculation | With consent off, verify no request before Agree; tap Agree and check loading/result/error. | User confirms tapping “Agree and calculate” and later reports the chart appeared. One HTTP 200 POST at 22:04:41 may correspond; source and payload are unknown. The profile is real, so the request may have transmitted its birth details to the development endpoint. Permission is now withdrawn; do not repeat. Synthetic integration tests cover request, timeout, result and error paths. |
+| Manual consent and calculation | With consent off, verify no request before Agree; tap Agree and check loading/result/error. | User confirms tapping “Agree and calculate” and later reports the chart appeared. One HTTP 200 POST at 22:04:41 may correspond; source and payload are unknown. The profile is real, so the request may have transmitted its birth details to the development endpoint. Permission is now withdrawn; do not repeat. Synthetic integration tests cover request, timeout, result and error paths. A separate synthetic integration test taps “Not now” and confirms no request before or after app restart and resume. |
 | Persistent consent and app launch | Agree once, force-close and relaunch; confirm one request starts without another prompt or Calculate button. | Automated tests cover cache-first loading, updated-consent gating and avoiding duplicate requests for a matching chart. The user confirmed permission status “Withdrawn”; no physical relaunch test after consent was granted. |
 | Cosmos and Crystals copy | Check the reflection heading/message/moment and the stone's symbolic day relevance. | User reports all Cosmos explanations opened on the phone; Crystals was previously reported as good. The latest Crystals copy was not separately confirmed. |
 | Known time | Inspect a known-time chart, angles/houses and optional details. | Synthetic screen tests verify a timed chart displays supported Ascendant/Midheaven, Placidus house cusps and planetary houses. A polar-location response retains supported angles while omitting unavailable houses, and a separate response omits unavailable angles. Tests use only an isolated Example profile (2000-01-01, 12:00, UTC); no saved phone profile was read or edited. Physical display remains unverified because the available phone profile is real and there is no second device. |
 | Unknown time | Use unknown-time mode; confirm no angles/houses are presented as known. | Synthetic screen test verifies the local-noon reference is identified, angles and houses are omitted even if unexpected timed fields appear in the response, the Moon range remains visible, and the chart is marked “PERSONAL NATAL CHART,” not sample content. It uses only the isolated Example profile with unknown time; no saved phone profile was read or edited. Physical display remains unverified for the same safety reason. |
-| Withdrawal during calculation | Start an explicit request, then withdraw permission while pending; check that no late result appears. | Synthetic hook tests cover abort/discard and local-cache retention. Physical race was not tested; the user instead withdrew after the chart action had completed or its outcome was unknown. |
-| No reconnect sends | Reconnect after an offline launch and check that no natal request starts while idle or after resume. | User confirmed offline Settings/Collection and same-screen resume. No chart POST appears in the fresh API log after withdrawal/restart, but logs cannot correlate a network transition to this phone. |
+| Withdrawal during calculation | Start an explicit request, then withdraw permission while pending; check that no late result appears. | Synthetic hook test starts a second pending calculation while a prior chart is cached, withdraws permission, then resolves a late synthetic response. The late result is discarded and both visible chart state and local cache remain unchanged. Physical race was not tested; the user's real profile must not be used. |
+| No reconnect sends | Reconnect after an offline launch and check that no natal request starts while idle or after resume. | Synthetic integration test starts with current consent, simulates an offline request failure, restores the mocked transport, and resumes the app; the request count remains one. The app has no connectivity-triggered retry. Physical reconnection was not tested; earlier server logs cannot correlate a network transition to this phone. |
 | Offline settings and collection | Open Settings sections and Collection offline; verify local content and navigation. | User confirms both opened with Wi-Fi and cellular disabled on the updated app. |
 | Keyboard and safe areas | Edit profile fields with keyboard open; verify lower inputs and save/back controls remain reachable. | User clarified that the affected screen was Natal Chart and reports its controls are now visible. |
 | Lifecycle and local preferences | Background/foreground and reopen without clearing data; confirm no automatic chart request. | User confirms the same screen returned after background/foreground. Non-privacy preference persistence was not tested because the device profile was kept read-only. |
@@ -158,9 +171,10 @@ must be recorded as inconclusive, not passed.
 ## Remaining limitations
 
 - The manual “Not now” choice, timed/untimed chart precision, in-flight
-  revocation race and non-privacy preference persistence were not physically
-  verified. Only the user's real profile is available, so further chart tests
-  must use a separate synthetic profile/device.
+  revocation race, reconnect behavior and non-privacy preference persistence
+  were not physically verified. Automated privacy checks use only synthetic
+  data and a mocked API boundary. Only the user's real profile is available,
+  so further chart tests must use a separate synthetic profile/device.
 - The user confirmed the Natal Chart keyboard now leaves controls visible.
 - Offline use of an already-loaded Expo Go bundle is distinct from a cold
   offline launch; Expo Go may require Metro to reload. Record that separately

@@ -112,11 +112,14 @@ function useNatalCalculationState(): NatalCalculationState {
         }
       }
     } catch (error) {
-      if (alive.current && revision.current === requestRevision) {
-        const readable = error instanceof Error && error.name === 'AbortError'
-          ? new Error('The calculation was cancelled. Check your permission and try again.')
-          : error;
-        setState({ error: readable, disambiguation: choice, isPending: false, isError: true });
+      // Revocation aborts the transport synchronously, before the React effect
+      // that advances the revision can run. Keep any earlier chart intact.
+      if (
+        alive.current
+        && revision.current === requestRevision
+        && !(error instanceof Error && error.name === 'AbortError')
+      ) {
+        setState({ error, disambiguation: choice, isPending: false, isError: true });
       }
     } finally {
       inFlight.current.delete(inFlightKey);

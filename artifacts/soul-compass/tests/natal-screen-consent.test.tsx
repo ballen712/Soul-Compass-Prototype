@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Modal, Text } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { NatalChartResponse } from '@workspace/api-client-react';
@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   calculate: vi.fn(),
   platformOS: 'web',
+  appStateListeners: new Set<(nextState: string) => void>(),
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -31,7 +32,12 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 vi.mock('react-native', () => ({
-  AppState: { addEventListener: () => ({ remove: () => {} }) },
+  AppState: {
+    addEventListener: (_event: string, listener: (nextState: string) => void) => {
+      state.appStateListeners.add(listener);
+      return { remove: () => state.appStateListeners.delete(listener) };
+    },
+  },
   Platform: {
     get OS() { return state.platformOS; },
     select: (options: Record<string, unknown>) => options.web ?? options.default,
@@ -67,6 +73,7 @@ vi.mock('@/hooks/useColors', () => ({
 }));
 
 import NatalScreen from '../app/(tabs)/natal';
+import { FirstChartConsentPrompt } from '../components/FirstChartConsentPrompt';
 
 let renderer: ReactTestRenderer | undefined;
 const chartResult = {
@@ -91,9 +98,14 @@ function findText(root: ReactTestInstance, text: string) {
   return root.findAllByType(Text).find((node) => node.props.children === text);
 }
 
+function resumeApp() {
+  state.appStateListeners.forEach(listener => listener('active'));
+}
+
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.storage.clear();
+  state.appStateListeners.clear();
   state.platformOS = 'web';
   state.calculate.mockReset().mockResolvedValue(chartResult);
   const profile = {
@@ -138,6 +150,71 @@ test('Natal Chart sends no request until Agree, which starts exactly one calcula
   expect(findText(root, 'PERSONAL NATAL CHART')).toBeDefined();
   expect(findText(root, 'ASCENDANT')).toBeDefined();
   expect(root.findByProps({ testID: 'natal-house-cusp-12' })).toBeDefined();
+});
+
+test('Not now refuses consent without a request, including after app restart and resume', async () => {
+  const app = (withPrompt: boolean) => (
+    <ProfileProvider>
+      <NatalCalculationProvider>
+        <NatalAutoRefresh />
+        {withPrompt ? <FirstChartConsentPrompt /> : null}
+        <NatalScreen />
+      </NatalCalculationProvider>
+    </ProfileProvider>
+  );
+  await act(async () => { renderer = create(app(true)); });
+  const root = renderer!.root;
+  expect(root.findAllByType(Modal).filter(modal => modal.props.visible)).toHaveLength(1);
+  expect(state.calculate).not.toHaveBeenCalled();
+
+  const notNow = findText(root, 'Not now');
+  expect(notNow?.parent?.props.onPress).toBeTypeOf('function');
+  await act(async () => { await notNow?.parent?.props.onPress(); });
+  expect(root.findAllByType(Modal).filter(modal => modal.props.visible)).toHaveLength(0);
+  expect(state.calculate).not.toHaveBeenCalled();
+
+  await act(async () => renderer?.unmount());
+  renderer = undefined;
+  await act(async () => { renderer = create(app(false)); });
+  expect(state.calculate).not.toHaveBeenCalled();
+  await act(async () => {
+    resumeApp();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  });
+  expect(state.calculate).not.toHaveBeenCalled();
+});
+
+test('an offline launch does not retry its chart request when connectivity returns and the app resumes', async () => {
+  const record = JSON.parse(state.storage.get(LOCAL_KEY)!);
+  record.privacy = {
+    astrologyApiConsent: true,
+    consentTimestamp: new Date().toISOString(),
+    consentVersion: CONSENT_VERSION,
+    revokedAt: null,
+  };
+  state.storage.set(LOCAL_KEY, JSON.stringify(record));
+  state.calculate.mockRejectedValueOnce(new Error('offline'));
+
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+  });
+  await act(async () => { await new Promise<void>(resolve => setTimeout(resolve, 0)); });
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+
+  // The mocked transport now represents a restored connection; resuming stays idle.
+  state.calculate.mockResolvedValue(chartResult);
+  await act(async () => {
+    resumeApp();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  });
+  expect(state.calculate).toHaveBeenCalledTimes(1);
 });
 
 test('previously granted current-version permission refreshes automatically at app opening', async () => {

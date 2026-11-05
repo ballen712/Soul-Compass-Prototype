@@ -3,6 +3,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { NatalChartResponse } from '@workspace/api-client-react';
 import { CalculateNatalChartResponse } from '@workspace/api-zod';
+import { natalChartCacheKey } from '../services/natal';
 vi.mock('react-native', () => ({
   AppState: { addEventListener: () => ({ remove: () => {} }) },
 }));
@@ -136,18 +137,45 @@ test('a saved chart remains local after permission is withdrawn', async () => {
   expect(state.calculate).toHaveBeenCalledTimes(1);
   expect(chart.data).toBeDefined();
 });
-test('repeated taps are deduplicated and late response after revocation never displays', async () => {
-  await mount(); await act(async () => profile.setConsent(true));
+test('revocation during a pending refresh discards its result and preserves the local chart', async () => {
+  await mount(true);
+  await act(async () => profile.setConsent(true));
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+  const previousChart = chart.data;
+  expect(previousChart).toBeDefined();
+  const profileKey = natalChartCacheKey(profile.profile!);
+  const cachedBefore = await profile.loadNatalChartCache(profileKey);
+  expect(new Date(cachedBefore!.data.calculation.instantUtc).toISOString())
+    .toBe('2000-01-01T12:00:00.000Z');
+
   let resolve!: (result: NatalChartResponse) => void;
-  state.calculate.mockImplementation(() => new Promise<NatalChartResponse>(r => { resolve = r; }));
+  const lateChart = {
+    ...chartResult,
+    calculation: { ...chartResult.calculation, instantUtc: '2001-01-01T12:00:00.000Z' },
+  };
+  state.calculate.mockImplementationOnce(() => new Promise<NatalChartResponse>(r => { resolve = r; }));
   let request!: Promise<void>;
   await act(async () => { request = chart.calculate(null); void chart.calculate(null); });
-  expect(state.calculate).toHaveBeenCalledTimes(1);
-  await act(async () => profile.setConsent(false));
-  expect(state.calculate.mock.calls[0][1].signal.aborted).toBe(true);
-  await act(async () => { resolve({} as NatalChartResponse); await request; });
-  expect(chart.data).toBeUndefined();
-  await act(async () => chart.calculate(null)); expect(state.calculate).toHaveBeenCalledTimes(1);
+  expect(state.calculate).toHaveBeenCalledTimes(2);
+  await act(async () => { await profile.setConsent(false); });
+  expect(chart.data).toBeDefined();
+  expect(state.calculate.mock.calls[1][1].signal.aborted).toBe(true);
+  expect(JSON.stringify(chart.data)).toBe(JSON.stringify(previousChart));
+  expect(chart.isError).toBe(false);
+  expect(new Date(chart.data!.calculation.instantUtc).toISOString())
+    .toBe('2000-01-01T12:00:00.000Z');
+
+  await act(async () => { await request; });
+  await act(async () => { resolve(lateChart as NatalChartResponse); });
+  expect(JSON.stringify(chart.data)).toBe(JSON.stringify(previousChart));
+  expect(new Date(chart.data!.calculation.instantUtc).toISOString())
+    .toBe('2000-01-01T12:00:00.000Z');
+  const cachedAfter = await profile.loadNatalChartCache(profileKey);
+  expect(cachedAfter?.data).toEqual(cachedBefore?.data);
+  expect(new Date(cachedAfter!.data.calculation.instantUtc).toISOString())
+    .toBe('2000-01-01T12:00:00.000Z');
+  await act(async () => chart.calculate(null));
+  expect(state.calculate).toHaveBeenCalledTimes(2);
 });
 test('network failure is visible and is not automatically retried after state changes', async () => {
   await mount(true);

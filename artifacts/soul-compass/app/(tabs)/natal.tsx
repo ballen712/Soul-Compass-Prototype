@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { SettingsButton } from '@/components/SettingsButton';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 import { useColors } from '@/hooks/useColors';
@@ -344,6 +345,10 @@ export default function NatalScreen() {
         statusBarTranslucent
         onRequestClose={() => setActiveExplanation(null)}
       >
+        <EdgeSwipeBack
+          testID="natal-explanation-edge-swipe-back"
+          onBack={() => setActiveExplanation(null)}
+        >
         <SafeAreaView edges={['top', 'bottom']} style={styles.explanationSafeArea} testID="natal-explanation-stage">
           <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: c.background }]} />
           {activeExplanation ? (
@@ -377,6 +382,7 @@ export default function NatalScreen() {
             </View>
           ) : null}
         </SafeAreaView>
+        </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
   );

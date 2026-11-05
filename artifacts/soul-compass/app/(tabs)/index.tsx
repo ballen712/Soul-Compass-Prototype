@@ -5,6 +5,7 @@ import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { SettingsButton } from '@/components/SettingsButton';
 import { dailyReading } from '@/constants/content';
 import { getDailyRituals } from '@/constants/daily-rituals';
@@ -370,6 +371,10 @@ export default function CosmosScreen() {
         animationType="fade"
         onRequestClose={() => setActiveDetail(null)}
       >
+        <EdgeSwipeBack
+          testID="cosmos-explanation-edge-swipe-back"
+          onBack={() => setActiveDetail(null)}
+        >
         <SafeAreaView
           edges={['top', 'bottom']}
           style={styles.modalSafeArea}
@@ -432,6 +437,7 @@ export default function CosmosScreen() {
             </View>
           ) : null}
         </SafeAreaView>
+        </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
   );

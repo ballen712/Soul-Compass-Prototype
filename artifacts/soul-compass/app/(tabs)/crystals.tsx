@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { SettingsButton } from '@/components/SettingsButton';
 import {
   crystalCatalog,
@@ -147,6 +148,9 @@ export default function CrystalsScreen() {
   const [collectionSearch, setCollectionSearch] = useState('');
   const [selectedCollectionStone, setSelectedCollectionStone] = useState<Crystal | null>(null);
   const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
+  const collectionListRef = useRef<FlatList<Crystal> | null>(null);
+  const collectionScrollOffsetRef = useRef(0);
+  const restoreCollectionScrollRef = useRef(false);
   const guideScrollRef = useRef<ScrollViewInstance | null>(null);
   const guideScrollOffsetRef = useRef(0);
   const restoreGuideScrollRef = useRef(false);
@@ -206,6 +210,26 @@ export default function CrystalsScreen() {
     : profile
       ? 'A daily transit match is not available, and your feeling did not give a clear match. We will leave the choice open.'
       : 'Save your birth details or choose how you feel today to get a personal suggestion.';
+
+  const returnToCollection = () => {
+    restoreCollectionScrollRef.current = true;
+    setSelectedCollectionStone(null);
+  };
+  const closeCollection = () => {
+    restoreCollectionScrollRef.current = false;
+    collectionScrollOffsetRef.current = 0;
+    setSelectedCollectionStone(null);
+    setCollectionOpen(false);
+  };
+  const returnToStoneGuide = () => {
+    restoreGuideScrollRef.current = true;
+    setSelectedNatalStone(null);
+  };
+  const closeStoneGuide = () => {
+    restoreGuideScrollRef.current = false;
+    setSelectedNatalStone(null);
+    setGuideOpen(false);
+  };
 
   return (
     <SafeAreaView
@@ -432,6 +456,8 @@ export default function CrystalsScreen() {
             onPress={() => {
               setCollectionSearch('');
               setSelectedCollectionStone(null);
+              collectionScrollOffsetRef.current = 0;
+              restoreCollectionScrollRef.current = false;
               setCollectionOpen(true);
             }}
             style={[
@@ -464,10 +490,17 @@ export default function CrystalsScreen() {
         animationType="fade"
         statusBarTranslucent
         onRequestClose={() => {
-          if (selectedNatalStone) setSelectedNatalStone(null);
-          else setGuideOpen(false);
+          if (selectedNatalStone) returnToStoneGuide();
+          else closeStoneGuide();
         }}
       >
+        <EdgeSwipeBack
+          testID="stone-guide-edge-swipe-back"
+          onBack={() => {
+            if (selectedNatalStone) returnToStoneGuide();
+            else closeStoneGuide();
+          }}
+        >
         <SafeAreaView edges={['top', 'bottom']} style={styles.guideModalStage}>
           <View
             pointerEvents="none"
@@ -493,10 +526,7 @@ export default function CrystalsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Back to the Stone Guide"
                   testID="back-to-stone-guide"
-                  onPress={() => {
-                    restoreGuideScrollRef.current = true;
-                    setSelectedNatalStone(null);
-                  }}
+                  onPress={returnToStoneGuide}
                   style={styles.guideBackButton}
                 >
                   <Feather name="arrow-left" size={17} color={colors.cosmos.secondary} />
@@ -512,10 +542,7 @@ export default function CrystalsScreen() {
                 accessibilityLabel="Close Stone Guide explanation"
                 testID="close-stone-guide"
                 hitSlop={10}
-                onPress={() => {
-                  setSelectedNatalStone(null);
-                  setGuideOpen(false);
-                }}
+                onPress={closeStoneGuide}
                 style={styles.guideCloseButton}
               >
                 <Feather name="x" size={19} color={colors.cosmos.secondary} />
@@ -639,16 +666,24 @@ export default function CrystalsScreen() {
             </ScrollView>
           </View>
         </SafeAreaView>
+        </EdgeSwipeBack>
       </Modal>
       <Modal
         visible={collectionOpen}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => {
-          if (selectedCollectionStone) setSelectedCollectionStone(null);
-          else setCollectionOpen(false);
+          if (selectedCollectionStone) returnToCollection();
+          else closeCollection();
         }}
       >
+        <EdgeSwipeBack
+          testID="crystal-catalog-edge-swipe-back"
+          onBack={() => {
+            if (selectedCollectionStone) returnToCollection();
+            else closeCollection();
+          }}
+        >
         <View
           testID="crystal-collection-stage"
           style={[
@@ -666,7 +701,7 @@ export default function CrystalsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Back to all stones"
                 testID="back-to-crystal-catalog"
-                onPress={() => setSelectedCollectionStone(null)}
+                onPress={returnToCollection}
                 style={styles.collectionBackButton}
               >
                   <Feather name="arrow-left" size={15} color={colors.crystals.secondary} />
@@ -694,10 +729,7 @@ export default function CrystalsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Close the full collection"
               testID="close-crystal-catalog"
-              onPress={() => {
-                setSelectedCollectionStone(null);
-                setCollectionOpen(false);
-              }}
+              onPress={closeCollection}
               style={styles.collectionCloseButton}
             >
                 <Feather name="x" size={18} color={colors.crystals.foreground} />
@@ -723,7 +755,7 @@ export default function CrystalsScreen() {
                 {selectedCollectionStone.note}
               </Text>
               <Text style={[styles.collectionDisclaimer, { color: colors.crystals.mutedForeground }]}>
-                These pictures are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern. The guide’s crystal meanings are symbolic reflection prompts, not proven effects.
+                The guide’s crystal meanings are symbolic reflection prompts, not proven effects.
               </Text>
               <CollectionToggle name={selectedCollectionStone.name} />
             </ScrollView>
@@ -757,10 +789,24 @@ export default function CrystalsScreen() {
                 {catalogMatches.length} {catalogMatches.length === 1 ? 'stone' : 'stones'}
               </Text>
               <FlatList
+                ref={collectionListRef}
+                testID="full-crystal-catalog-list"
                 data={catalogMatches}
                 keyExtractor={(stone) => stone.name}
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.collectionList}
+                onScroll={(event) => {
+                  collectionScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+                }}
+                scrollEventThrottle={16}
+                onContentSizeChange={() => {
+                  if (!restoreCollectionScrollRef.current) return;
+                  restoreCollectionScrollRef.current = false;
+                  collectionListRef.current?.scrollToOffset({
+                    offset: collectionScrollOffsetRef.current,
+                    animated: false,
+                  });
+                }}
                 renderItem={({ item: stone }) => (
                   <Pressable
                     accessibilityRole="button"
@@ -803,6 +849,7 @@ export default function CrystalsScreen() {
             </KeyboardAvoidingView>
           ) : null}
         </View>
+        </EdgeSwipeBack>
       </Modal>
     </SafeAreaView>
   );

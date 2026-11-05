@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   push: vi.fn(),
   guideScrollTo: vi.fn(),
+  collectionScrollToOffset: vi.fn(),
   suggestions: [] as Array<{ crystal: Record<string, unknown>; reason: string; basis: string; matchedIntentions: string[] }>,
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
@@ -63,21 +64,30 @@ vi.mock('react-native-safe-area-context', () => ({
 }));
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
-  FlatList: ({ data, renderItem, ListEmptyComponent }: any) => React.createElement(
-    'FlatList',
-    null,
-    data.length
-      ? data.map((item: any, index: number) => React.createElement(
-        React.Fragment,
-        { key: item.name },
-        renderItem({ item, index }),
-      ))
-      : ListEmptyComponent
-        ? React.createElement(ListEmptyComponent)
-        : null,
-  ),
+  FlatList: React.forwardRef(({ data, renderItem, ListEmptyComponent, ...props }: any, ref: any) => {
+    React.useImperativeHandle(ref, () => ({
+      scrollToOffset: (options: unknown) => state.collectionScrollToOffset(options),
+    }), []);
+    return React.createElement(
+      'FlatList',
+      props,
+      data.length
+        ? data.map((item: any, index: number) => React.createElement(
+          React.Fragment,
+          { key: item.name },
+          renderItem({ item, index }),
+        ))
+        : ListEmptyComponent
+          ? React.createElement(ListEmptyComponent)
+          : null,
+    );
+  }),
   Image: 'Image',
   Modal: 'Modal',
+  PanResponder: { create: (handlers: any) => ({ panHandlers: {
+    onMoveShouldSetResponderCapture: handlers.onMoveShouldSetPanResponderCapture,
+    onResponderRelease: handlers.onPanResponderRelease,
+  } }) },
   Platform: { OS: 'ios' },
   Pressable: 'Pressable',
   ScrollView: React.forwardRef(({ children, ...props }: any, ref: any) => {
@@ -154,6 +164,7 @@ afterEach(async () => {
   renderer = undefined;
   state.push.mockReset();
   state.guideScrollTo.mockReset();
+  state.collectionScrollToOffset.mockReset();
   state.profileContext.toggleCrystal.mockReset();
   state.profileContext.profile = null;
   state.suggestions = [];
@@ -216,19 +227,55 @@ test('the full collection can be searched, opened, and added to a local collecti
 
   const detailText = root.findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(detailText).toContain('pale pink quartz');
-  expect(detailText).toContain('AI-generated illustrations');
+  expect(detailText).not.toContain('AI-generated illustrations');
+  expect(detailText).not.toContain('Real stones vary');
+  expect(detailText).toContain('symbolic reflection prompts, not proven effects');
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   await act(async () => { addStone.props.onPress(); });
   expect(state.profileContext.toggleCrystal).toHaveBeenCalledWith('rose-quartz');
 
   await act(async () => {
-    root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress();
+    const edge = root.findByProps({ testID: 'crystal-catalog-edge-swipe-back' }).props;
+    edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
   });
   expect(root.findByProps({ testID: 'crystal-catalog-search' })).toBeDefined();
   await act(async () => {
     root.findByProps({ testID: 'close-crystal-catalog' }).props.onPress();
   });
   expect(root.findByProps({ testID: 'open-crystal-collection' })).toBeDefined();
+});
+
+test('the full collection restores its scroll position after returning from stone details', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'open-crystal-collection' }).props.onPress();
+  });
+
+  let list = root.findByProps({ testID: 'full-crystal-catalog-list' });
+  await act(async () => {
+    list.props.onScroll({ nativeEvent: { contentOffset: { y: 840 } } });
+    root.findByProps({ testID: 'catalog-stone-rose-quartz' }).props.onPress();
+  });
+  await act(async () => {
+    const edge = root.findByProps({ testID: 'crystal-catalog-edge-swipe-back' }).props;
+    edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
+  });
+  list = root.findByProps({ testID: 'full-crystal-catalog-list' });
+  await act(async () => { list.props.onContentSizeChange(400, 2400); });
+  expect(state.collectionScrollToOffset).toHaveBeenNthCalledWith(1, { offset: 840, animated: false });
+
+  await act(async () => {
+    list.props.onScroll({ nativeEvent: { contentOffset: { y: 1260 } } });
+    root.findByProps({ testID: 'catalog-stone-labradorite' }).props.onPress();
+  });
+  await act(async () => {
+    root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress();
+  });
+  list = root.findByProps({ testID: 'full-crystal-catalog-list' });
+  await act(async () => { list.props.onContentSizeChange(400, 2400); });
+  expect(state.collectionScrollToOffset).toHaveBeenNthCalledWith(2, { offset: 1260, animated: false });
 });
 
 test('catalog detail artwork stays uncropped and controls respect iPhone safe areas', async () => {

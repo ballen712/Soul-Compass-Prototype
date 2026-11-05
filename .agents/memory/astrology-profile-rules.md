@@ -22,3 +22,9 @@ Default houses must be Placidus; if unsuitable, warn without silently substituti
 **Why:** the user requires honest precision and no fabricated birth moment or hidden house-system fallback.
 
 **How to apply:** retain these distinctions in future calculation APIs, chart displays and interpretations; never treat reference-noon placements as a known birth instant.
+
+When saved birth date, time, or birthplace changes, invalidate the old chart by its natal-input identity, allow a fresh request for the new identity even if an older request is still finishing, and never let a stale response replace the new chart. Current residence affects local daily readings but is not a natal-chart input.
+
+**Why:** an automatic refresh can start its asynchronous cache lookup before the profile-change effect runs; otherwise it may capture the prior request revision and discard the new chart request.
+
+**How to apply:** keep chart refreshes keyed to birth date, time, and birthplace; refresh after a valid local save only while consent remains active, and test changes while a previous chart request is still in flight.

@@ -20,6 +20,10 @@ vi.mock('react-native-safe-area-context', () => ({
 vi.mock('react-native', () => ({
   Image: 'Image',
   Modal: 'Modal',
+  PanResponder: { create: (handlers: any) => ({ panHandlers: {
+    onMoveShouldSetResponderCapture: handlers.onMoveShouldSetPanResponderCapture,
+    onResponderRelease: handlers.onPanResponderRelease,
+  } }) },
   Platform: { OS: 'ios' },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',

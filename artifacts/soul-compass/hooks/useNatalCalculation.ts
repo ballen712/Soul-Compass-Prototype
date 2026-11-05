@@ -50,6 +50,7 @@ function useNatalCalculationState(): NatalCalculationState {
   ) {
     automaticRefreshAttempted.current = false;
     attemptScope.current = scope;
+    revision.current++;
   }
   const [state, setState] = useState<{
     data?: NatalChartResponse;
@@ -75,7 +76,6 @@ function useNatalCalculationState(): NatalCalculationState {
       consentVersion: context.privacy.consentVersion,
     };
     if (profileChanged || revoked) {
-      revision.current++;
       setState(previous => profileChanged
         ? { disambiguation: null, isPending: false, isError: false }
         : { ...previous, error: undefined, cacheWarning: undefined, isPending: false, isError: false });
@@ -112,8 +112,7 @@ function useNatalCalculationState(): NatalCalculationState {
         }
       }
     } catch (error) {
-      // Revocation aborts the transport synchronously, before the React effect
-      // that advances the revision can run. Keep any earlier chart intact.
+      // A profile or consent scope change invalidates stale request results.
       if (
         alive.current
         && revision.current === requestRevision

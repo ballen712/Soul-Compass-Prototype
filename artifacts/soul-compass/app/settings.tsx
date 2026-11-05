@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileForm, type ProfileFormHandle } from '@/components/ProfileForm';
+import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useProfile } from '@/profile/ProfileContext';
 import { CONSENT_VERSION } from '@/profile/local';
@@ -125,23 +126,31 @@ export default function SettingsScreen() {
     { key: 'about', label: 'About', description: 'Support and provider licenses' },
   ];
 
+  function handleBack() {
+    if (tab === 'profile') {
+      void profileFormRef.current?.save();
+      return;
+    }
+    if (tab) {
+      setTab(null);
+      setMessage(null);
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
+  }
+
   return (
+    <>
+    <Stack.Screen options={{ headerShown: false, gestureEnabled: Platform.OS === 'ios' && tab === null }} />
+    <EdgeSwipeBack
+      testID="settings-edge-swipe-back"
+      enabled={tab !== null}
+      onBack={handleBack}
+    >
     <SafeAreaView edges={['top']} style={[styles.safeArea, Platform.OS === 'web' && { paddingTop: 67 }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={() => {
-          if (tab === 'profile') {
-            void profileFormRef.current?.save();
-            return;
-          }
-          if (tab) {
-            setTab(null);
-            setMessage(null);
-          } else if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace('/(tabs)');
-          }
-        }} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={handleBack} hitSlop={10}>
           <Text style={styles.back}>Back</Text>
         </Pressable>
         <Text style={styles.heading}>Settings</Text>
@@ -304,6 +313,7 @@ export default function SettingsScreen() {
                 </Pressable>
               </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
+              <Section title="Crystal images" description="Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern." />
               <Section title="Privacy" description="No account is needed. Your profile, collection, and saved Natal Chart stay on this device. Daily readings and rituals are worked out here. With your permission, birth details are sent to calculate a chart. The same saved chart is not requested again, and you can withdraw permission in Privacy." />
               <Section title="Licenses" description="Astrology calculations use Astronomy Engine (MIT), not a paid ephemeris. City search uses Geoapify and OpenStreetMap data; attribution and provider privacy links appear beside each search. Geoapify’s Free plan allows commercial use within its credit, rate, and feature limits. The app is built with Expo and React Native (MIT). Feather icons are MIT-licensed; Inter uses the SIL Open Font License 1.1. Readings and stone notes use traditional symbolism for reflection, not medical or scientific advice. The app is currently in English." />
             </>
@@ -311,6 +321,8 @@ export default function SettingsScreen() {
         </KeyboardAwareScrollViewCompat>
       )}
     </SafeAreaView>
+    </EdgeSwipeBack>
+    </>
   );
 }
 

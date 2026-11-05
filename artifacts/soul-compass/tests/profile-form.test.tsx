@@ -8,6 +8,7 @@ import type { HomeLocation, UserProfile } from '../profile/profile';
 const state = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   search: vi.fn(),
+  platformOS: 'web',
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -20,7 +21,11 @@ vi.mock('react-native', () => ({
   AppState: { addEventListener: () => ({ remove: () => {} }) },
   ActivityIndicator: 'ActivityIndicator',
   Linking: { openURL: vi.fn() },
-  Platform: { OS: 'web' },
+  PanResponder: { create: (handlers: any) => ({ panHandlers: {
+    onMoveShouldSetResponderCapture: handlers.onMoveShouldSetPanResponderCapture,
+    onResponderRelease: handlers.onPanResponderRelease,
+  } }) },
+  Platform: { get OS() { return state.platformOS; } },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
   StyleSheet: { create: (styles: unknown) => styles },
@@ -39,6 +44,7 @@ vi.mock('@/services/geocoding', () => ({
   searchHomeCities: (...args: unknown[]) => state.search(...args),
 }));
 vi.mock('expo-router', () => ({
+  Stack: { Screen: 'StackScreen' },
   useRouter: () => ({ canGoBack: () => false, back: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock('@/constants/content', () => ({
@@ -169,6 +175,7 @@ function alertText(root: ReactTestInstance) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.storage.clear();
+  state.platformOS = 'web';
   state.search.mockReset();
   state.search.mockImplementation(async (query: string) => [
     query.toLowerCase() === 'prague'
@@ -407,6 +414,38 @@ test('Back keeps profile editing open when the draft is invalid', async () => {
   expect(profileState.profile).toEqual(existingProfile);
   expect(alertText(root)).toContain('Enter your birth date as YYYY-MM-DD.');
   expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(0);
+});
+
+test('an iOS edge swipe returns from a Settings section to the Settings menu', async () => {
+  state.platformOS = 'ios';
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+  const stackOptions = () => root.findAll((node) => node.type === 'StackScreen')[0].props.options;
+
+  await act(async () => { root.findByProps({ testID: 'settings-tab-about' }).props.onPress(); });
+  expect(stackOptions().gestureEnabled).toBe(false);
+  const edge = root.findByProps({ testID: 'settings-edge-swipe-back' }).props;
+  expect(edge.onMoveShouldSetResponderCapture({}, { x0: 12, dx: 28, dy: 2 })).toBe(true);
+  await act(async () => {
+    edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
+  });
+
+  expect(findTextNode(root, 'A few things you can shape on this device.')).toBeDefined();
+  expect(stackOptions().gestureEnabled).toBe(true);
+});
+
+test('About contains the single crystal-image disclosure', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => { await pressText(root, 'About'); });
+
+  expect(findTextNode(
+    root,
+    'Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern.',
+  )).toBeDefined();
 });
 
 test('catalog search keeps collection and hidden-stone changes saved locally', async () => {

@@ -42,6 +42,10 @@ vi.mock('react-native', () => ({
     get OS() { return state.platformOS; },
     select: (options: Record<string, unknown>) => options.web ?? options.default,
   },
+  PanResponder: { create: (handlers: any) => ({ panHandlers: {
+    onMoveShouldSetResponderCapture: handlers.onMoveShouldSetPanResponderCapture,
+    onResponderRelease: handlers.onPanResponderRelease,
+  } }) },
   ActivityIndicator: 'ActivityIndicator',
   Image: 'Image',
   Modal: 'Modal',

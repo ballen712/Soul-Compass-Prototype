@@ -27,14 +27,14 @@ Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosm
 
 **How to apply:** use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
 
-The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and fading into a near-black navy background. Its daily reading should explain the theme in plain language, then offer a useful focus and a gentle caution.
+The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and continuing across the full near-black background. Keep the blue reading cards distinct and readable. Move “A Daily Pause” closer to the Soul Compass brand.
 
 **Why:** the user asked for a centered, full-bleed cosmic header and concise daily guidance that is easy to understand.
 
-**How to apply:** keep the artwork calm and dark enough for text contrast, and phrase focus/caution as reflective suggestions rather than predictions.
+**How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
-Keep a sparse scattering of tiny stars visible through the Cosmos page. Use the same circled information symbol for expandable explanations, and let explanatory dialogs begin with the plain-language copy instead of a redundant heading or repeated question.
+Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions.
 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.
 
-**How to apply:** keep the stars subtle around text, and reserve other icons for navigation or non-expandable decoration.
+**How to apply:** preserve the blue cards, keep the stars low-contrast, and end the content without a large blank area or decorative footer.

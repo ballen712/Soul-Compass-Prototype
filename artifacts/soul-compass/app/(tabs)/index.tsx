@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions } from 'react-native';
@@ -37,30 +37,12 @@ const dailyRituals = [
   'Pause to stretch your shoulders before your next task.',
 ];
 
-const backgroundStars = [
-  { x: 0.08, y: 0.48, size: 1.5, opacity: 0.2 },
-  { x: 0.28, y: 0.53, size: 2, opacity: 0.23 },
-  { x: 0.77, y: 0.56, size: 1.5, opacity: 0.19 },
-  { x: 0.93, y: 0.61, size: 2, opacity: 0.2 },
-  { x: 0.15, y: 0.69, size: 1.5, opacity: 0.23 },
-  { x: 0.56, y: 0.73, size: 2, opacity: 0.18 },
-  { x: 0.87, y: 0.81, size: 1.5, opacity: 0.22 },
-  { x: 0.38, y: 0.9, size: 2, opacity: 0.18 },
-  { x: 0.06, y: 1.01, size: 1.5, opacity: 0.21 },
-  { x: 0.7, y: 1.08, size: 2, opacity: 0.2 },
-  { x: 0.22, y: 1.17, size: 1.5, opacity: 0.2 },
-  { x: 0.96, y: 1.24, size: 1.5, opacity: 0.22 },
-  { x: 0.48, y: 1.31, size: 2, opacity: 0.18 },
-  { x: 0.11, y: 1.43, size: 1.5, opacity: 0.2 },
-  { x: 0.83, y: 1.51, size: 2, opacity: 0.19 },
-  { x: 0.34, y: 1.62, size: 1.5, opacity: 0.22 },
-  { x: 0.64, y: 1.74, size: 2, opacity: 0.18 },
-  { x: 0.03, y: 1.83, size: 1.5, opacity: 0.2 },
-  { x: 0.9, y: 1.94, size: 2, opacity: 0.2 },
-  { x: 0.23, y: 2.04, size: 1.5, opacity: 0.19 },
-  { x: 0.55, y: 2.16, size: 2, opacity: 0.2 },
-  { x: 0.78, y: 2.27, size: 1.5, opacity: 0.2 },
-];
+const backgroundStars = Array.from({ length: 64 }, (_, index) => ({
+  x: ((index * 41 + 19) % 97) / 97,
+  y: 0.34 + (((index * 53 + 13) % 127) / 127) * 2.45,
+  size: index % 9 === 0 ? 2 : 1.25,
+  opacity: 0.25 + (index % 4) * 0.05,
+}));
 
 type Detail = {
   title?: string;
@@ -155,13 +137,14 @@ export default function CosmosScreen() {
           <View
             pointerEvents="none"
             accessible={false}
+            testID="cosmos-background-stars"
             style={[
               styles.starLayer,
               {
                 top: -(topInset + 18),
                 left: -heroBleed,
                 right: -heroBleed,
-                height: windowHeight * 2.5,
+                height: windowHeight * 2.85,
               },
             ]}
           >
@@ -367,12 +350,9 @@ export default function CosmosScreen() {
             ]}
           >
             <View style={styles.ritualCopy}>
-              <View style={styles.ritualHeadingRow}>
-                <Feather name="wind" size={15} color={colors.cosmos.secondary} />
-                <Text style={[styles.ritualTitle, { color: colors.cosmos.foreground }]}>
-                  A small daily ritual
-                </Text>
-              </View>
+              <Text style={[styles.ritualTitle, { color: colors.cosmos.foreground }]}>
+                A small daily ritual
+              </Text>
               <Text style={[styles.ritualAction, { color: colors.cosmos.foreground }]}>
                 {dailyRitual}
               </Text>
@@ -410,28 +390,7 @@ export default function CosmosScreen() {
               <Text style={[styles.natalLinkEyebrow, { color: colors.cosmos.secondary }]}>WHEN YOU’RE CURIOUS</Text>
               <Text style={[styles.natalLinkTitle, { color: colors.cosmos.foreground }]}>Explore your Natal Chart</Text>
             </View>
-            <Feather name="arrow-up-right" size={17} color={colors.cosmos.secondary} />
           </Pressable>
-
-          <View style={styles.footerMark}>
-            <View
-              style={[
-                styles.footerLine,
-                { backgroundColor: colors.cosmos.border },
-              ]}
-            />
-            <Ionicons
-              name="moon-outline"
-              size={14}
-              color={colors.cosmos.mutedForeground}
-            />
-            <View
-              style={[
-                styles.footerLine,
-                { backgroundColor: colors.cosmos.border },
-              ]}
-            />
-          </View>
         </View>
       </ScrollView>
       <Modal
@@ -514,7 +473,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 23,
-    paddingBottom: 48,
+    paddingBottom: 16,
   },
   page: {
     width: '100%',
@@ -553,9 +512,9 @@ const styles = StyleSheet.create({
     marginBottom: 23,
   },
   hero: {
-    height: 218,
+    height: 140,
     justifyContent: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 10,
     marginHorizontal: -23,
     position: 'relative',
   },
@@ -751,11 +710,6 @@ const styles = StyleSheet.create({
   ritualCopy: {
     flex: 1,
   },
-  ritualHeadingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
   ritualTitle: {
     fontFamily: 'Georgia',
     fontSize: 17,
@@ -858,19 +812,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  footerMark: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 14,
-    justifyContent: 'center',
-    marginTop: 23,
-  },
   natalLink: {
     alignItems: 'center',
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginTop: 14,
     minHeight: 70,
     paddingHorizontal: 17,
@@ -878,9 +825,4 @@ const styles = StyleSheet.create({
   natalLinkCopy: { gap: 5 },
   natalLinkEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.4 },
   natalLinkTitle: { fontFamily: 'Georgia', fontSize: 16 },
-  footerLine: {
-    height: 1,
-    maxWidth: 70,
-    width: '24%',
-  },
 });

@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({
   getDailyAstrology: vi.fn(),
 }));
 
-vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather', Ionicons: 'Ionicons' }));
+vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push }) }));
@@ -84,6 +84,11 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(screenCopy).toContain('WHAT TO LEAVE FOR LATER');
   expect(screenCopy).not.toContain('OPTIONAL');
   expect(root.findAllByProps({ name: 'info' })).toHaveLength(3);
+  expect(root.findAllByProps({ name: 'moon-outline' })).toHaveLength(0);
+  expect(root.findAllByProps({ name: 'wind' })).toHaveLength(0);
+  expect(root.findAllByProps({ name: 'arrow-up-right' })).toHaveLength(0);
+  const starLayer = root.findByProps({ testID: 'cosmos-background-stars' });
+  expect(starLayer.props.children).toHaveLength(64);
   const moment = root.findAllByType(Pressable).find(
     (button: ReactTestInstance) => button.props.accessibilityLabel === 'Read more about A moment to keep',
   );

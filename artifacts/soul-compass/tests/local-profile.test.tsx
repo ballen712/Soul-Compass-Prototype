@@ -4,10 +4,17 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { CalculateNatalChartResponse } from '@workspace/api-zod';
 import type { NatalChartResponse } from '@workspace/api-client-react';
 import { LocalProfileStore } from '../profile/storage';
-import { CONSENT_VERSION, LEGACY_KEY, LOCAL_KEY, ProfileSchema, emptyRecord } from '../profile/local';
+import { CONSENT_VERSION, LEGACY_KEY, LOCAL_KEY, ProfileSchema, emptyRecord, localDayKey } from '../profile/local';
 import type { UserProfile } from '../profile/profile';
 
 const state = vi.hoisted(() => ({ data: new Map<string, string>() }));
+const appEvents = vi.hoisted(() => ({ listener: undefined as undefined | ((state: string) => void) }));
+vi.mock('react-native', () => ({
+  AppState: { addEventListener: (_event: string, listener: (state: string) => void) => {
+    appEvents.listener = listener;
+    return { remove: () => { appEvents.listener = undefined; } };
+  } },
+}));
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: async (key: string) => state.data.get(key) ?? null,
@@ -40,7 +47,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.data.clear();
 });
-afterEach(async () => { await act(async () => renderer?.unmount()); renderer = undefined; });
+afterEach(async () => { await act(async () => renderer?.unmount()); renderer = undefined; vi.useRealTimers(); });
 
 test('fresh startup works without auth or any cloud request', async () => {
   const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('No network permitted'));
@@ -60,11 +67,98 @@ test('profile, residence and all preferences survive provider restart', async ()
   expect(view.profile).toEqual(profile);
   expect(view.preferences).toEqual({
     language: 'hu', crystalCollection: ['amethyst'],
-    crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'], feeling: 'tired' },
+    crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired', feelingDate: localDayKey() },
   });
   await act(async () => view.saveProfile({ ...profile, birthTime: { status: 'known', localTime: '00:01' } }));
   expect(view.preferences.language).toBe('hu');
   expect(view.profile?.birthTime).toEqual({ status: 'known', localTime: '00:01' });
+});
+test('feeling resets exactly at local midnight while open, not after 24 hours', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 11, 31, 23, 59, 30));
+  await render();
+  await act(async () => view.savePreferences({
+    ...view.preferences,
+    crystalPreferences: { ...view.preferences.crystalPreferences, feeling: 'energized' },
+  }));
+  expect(view.preferences.crystalPreferences.feelingDate).toBe('2026-12-31');
+  await act(async () => { await vi.advanceTimersByTimeAsync(29_999); });
+  expect(view.preferences.crystalPreferences.feeling).toBe('energized');
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(view.preferences.crystalPreferences.feeling).toBeNull();
+  expect(view.preferences.crystalPreferences.feelingDate).toBeNull();
+  await act(async () => renderer?.unmount()); renderer = undefined;
+  expect(vi.getTimerCount()).toBe(0);
+});
+test('returning from background clears yesterday’s feeling immediately', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 10, 5, 10));
+  await render();
+  await act(async () => view.savePreferences({
+    ...view.preferences,
+    crystalPreferences: { ...view.preferences.crystalPreferences, feeling: 'tired' },
+  }));
+  vi.setSystemTime(new Date(2026, 10, 7, 9));
+  await act(async () => appEvents.listener?.('active'));
+  expect(view.preferences.crystalPreferences.feeling).toBeNull();
+  await act(async () => view.savePreferences({
+    ...view.preferences,
+    crystalPreferences: { ...view.preferences.crystalPreferences, feeling: 'tired' },
+  }));
+  expect(view.preferences.crystalPreferences.feelingDate).toBe('2026-11-07');
+  await act(async () => view.savePreferences({
+    ...view.preferences,
+    crystalPreferences: { ...view.preferences.crystalPreferences, feeling: null },
+  }));
+  expect(view.preferences.crystalPreferences.feelingDate).toBeNull();
+});
+test('reopening on a later day expires only the feeling and removes retired intentions', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 10, 5, 10));
+  const { store, storage } = adapter();
+  await store.load(); await store.saveProfile(profile);
+  await store.savePreferences({
+    language: 'hu', crystalCollection: ['amethyst'],
+    crystalPreferences: { feeling: 'tired', intentions: ['Focus'], hiddenCrystals: ['moonstone'] },
+  });
+  vi.setSystemTime(new Date(2026, 10, 6, 8));
+  const reopened = new LocalProfileStore(storage); await reopened.load();
+  expect(reopened.getSnapshot().record.profile).toEqual(profile);
+  expect(reopened.getSnapshot().record.preferences).toEqual({
+    language: 'hu', crystalCollection: ['amethyst'],
+    crystalPreferences: { feeling: null, feelingDate: null, intentions: [], hiddenCrystals: ['moonstone'] },
+  });
+  // An unrelated save must not silently extend yesterday's mood.
+  await store.savePreferences({ ...store.getSnapshot().record.preferences, language: 'fr' });
+  expect(store.getSnapshot().record.preferences.crystalPreferences.feeling).toBeNull();
+});
+test('undated legacy moods and intentions are ignored without changing other local data', async () => {
+  const { store, data } = adapter();
+  const record = emptyRecord();
+  record.profile = profile;
+  record.preferences.crystalPreferences = { feeling: 'tired', intentions: ['Focus'], hiddenCrystals: ['moonstone'] };
+  const original = JSON.stringify(record);
+  data.set(LOCAL_KEY, original); await store.load();
+  expect(store.getSnapshot().record.preferences.crystalPreferences).toEqual({
+    feeling: null, feelingDate: null, intentions: [], hiddenCrystals: ['moonstone'],
+  });
+  expect(store.getSnapshot().record.profile).toEqual(profile);
+  expect(data.get(LOCAL_KEY)).toBe(original);
+});
+test('expiration needs no disk write and still applies when storage cannot write', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 10, 5, 10));
+  const { store, storage } = adapter(); await store.load();
+  await store.savePreferences({
+    ...store.getSnapshot().record.preferences,
+    crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: 'tired' },
+  });
+  storage.setItem.mockClear(); storage.setItem.mockRejectedValue(new Error('disk'));
+  vi.setSystemTime(new Date(2026, 10, 6));
+  store.refreshDailyPreferences();
+  expect(store.getSnapshot().record.preferences.crystalPreferences.feeling).toBeNull();
+  expect(store.getSnapshot().error).toBeNull();
+  expect(storage.setItem).not.toHaveBeenCalled();
 });
 test('concurrent profile edits and collection toggles do not lose unrelated data', async () => {
   const { store } = adapter(); await store.load(); await store.saveProfile(profile);

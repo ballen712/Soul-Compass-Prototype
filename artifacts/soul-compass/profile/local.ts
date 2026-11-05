@@ -35,12 +35,33 @@ export const PreferencesSchema = z.object({
     intentions: z.array(z.string().trim().min(1).max(40)).max(20),
     hiddenCrystals: ids,
     feeling: z.string().max(40).nullable().default(null),
+    feelingDate: DateSchema.nullable().optional(),
   }).strict(),
 }).strict();
 export type LocalPreferences = z.infer<typeof PreferencesSchema>;
 export const defaultPreferences = (): LocalPreferences => ({
   language: 'en', crystalCollection: [], crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
 });
+/** Device calendar days, not a rolling 24-hour lifetime or UTC dates. */
+export function localDayKey(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+export function dailyPreferences(preferences: LocalPreferences, now = new Date()): LocalPreferences {
+  const current = preferences.crystalPreferences;
+  const validFeeling = current.feeling !== null && current.feelingDate === localDayKey(now);
+  if (!current.intentions.length && (validFeeling || (current.feeling === null && !current.feelingDate))) {
+    return preferences;
+  }
+  return {
+    ...preferences,
+    crystalPreferences: {
+      ...current,
+      intentions: [],
+      feeling: validFeeling ? current.feeling : null,
+      feelingDate: validFeeling ? current.feelingDate : null,
+    },
+  };
+}
 const timestamp = z.string().datetime().nullable();
 export const PrivacySchema = z.object({
   astrologyApiConsent: z.boolean(),

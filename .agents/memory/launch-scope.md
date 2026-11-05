@@ -45,11 +45,23 @@ Cosmos overview, focus, caution, and reflection should offer complementary persp
 
 **How to apply:** separate the overview, practical opportunity, boundary, and reflective question. Keep a day's ritual choices stable across repeated openings rather than reshuffling on every tap.
 
-Crystal suggestions must draw from a broad catalog while remaining relevant to the chart theme, chosen feeling, and intentions. Daily rotation can distinguish similarly relevant choices; it should not replace relevance.
+Crystal suggestions must draw from a broad catalog while remaining relevant to the chart theme and today's chosen feeling. Daily rotation can distinguish similarly relevant choices; it should not replace relevance.
 
 **Why:** the user found that changing birth details still produced only the same small set of stones.
 
 **How to apply:** preserve meaningful contextual ranking and hidden-stone exclusions when expanding or rotating recommendations.
+
+Daily crystal recommendations are optional: show a main stone and only genuinely matching alternatives, or no stones when nothing fits. Never fill empty results with sample stones or force three cards. An empty day reflects missing relevance, not a claim that a stone is harmful or unsuitable medically.
+
+**Why:** the user explicitly requested days without stones rather than showing unrelated recommendations.
+
+**How to apply:** allow zero to three daily suggestions, preserve today's explicit feeling matches, exclude hidden stones, and keep the separate natal shortlist from becoming a daily fallback. Do not randomly suppress valid recommendations to manufacture empty days.
+
+The daily feeling is optional and resets at the next calendar day on the device, not after 24 hours. Without a choice, use ordinary chart-based guidance. Remove the separate Intentions experience and ignore previously saved intentions.
+
+**Why:** the user said yesterday's mood should not carry into a different day's energy and removed Intentions to avoid duplicating the feeling choice.
+
+**How to apply:** preserve today's mood across same-day restarts, expire it on startup, local midnight and foreground return, and leave birth details, collection, language and hidden stones unchanged. Undated legacy moods cannot be assumed to belong to today.
 
 Birth-chart stone pairings should use reliable natal planet-sign elements, remain a local calculation, and explain why each stone appears. The guide's stone-to-element links are Soul Compass's symbolic editorial system, not proven balancing effects or medical advice. Unknown birth times must omit sign placements the existing chart engine considers uncertain.
 
@@ -62,6 +74,12 @@ Never show one stone's photograph under another stone's name. Use clearly identi
 **Why:** the guide supports collecting and shopping, so misleading identification and unverified image rights would undermine its purpose.
 
 **How to apply:** distinguish symbolic illustration from a specimen photograph and verify both identity and usage rights before adding photos.
+
+Every catalog stone should have its own recognizable image in one consistent visual style. Daily explanations should name the actual natal/transit connection or today's chosen feeling behind that stone and explain a concrete everyday use in simple language, not repeat generic traditional-association boilerplate.
+
+**Why:** the user requested images across the whole catalog and explanations of why each stone was chosen for that person today.
+
+**How to apply:** trace each explanation to the candidate's own matching inputs; do not borrow the primary stone's reason for alternatives, invent chart aspects, or promise that a crystal itself increases energy or productivity. Present practical support as a personal reminder or ritual.
 
 Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions. The header should show only “SOUL COMPASS” and “Today’s reflection,” without the compass mark, “DAILY PRACTICE,” or “A DAILY PAUSE.” End the page at the Natal Chart card and prevent overscrolling into empty space.
 

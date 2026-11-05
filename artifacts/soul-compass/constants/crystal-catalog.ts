@@ -17,7 +17,9 @@ export type Crystal = {
   tone: StoneTone;
   image?: number;
   imageDescription?: string;
+  specimenDescription: string;
 };
+import specimenBriefs from '../scripts/crystal-image-briefs.json';
 
 const meanings = {
   calm: {
@@ -253,17 +255,104 @@ const entries: readonly StoneEntry[] = [
   ['Black Agate', 'boundaries'],
 ];
 
-const imageByName: Record<string, number> = {
-  Moonstone: require('../assets/images/moonstone.png'),
-  Amethyst: require('../assets/images/amethyst.png'),
-  Labradorite: require('../assets/images/labradorite.png'),
-};
-
-const imageDescriptionByName: Record<string, string> = {
-  Moonstone: 'Moonstone resting on warm ivory linen',
-  Amethyst: 'Violet amethyst crystal cluster on pale stone',
-  Labradorite: 'Labradorite stone with blue-green iridescence',
-};
+const generatedImageSources: number[] = [
+  require('../assets/crystals/amethyst.jpg'),
+  require('../assets/crystals/moonstone.jpg'),
+  require('../assets/crystals/labradorite.jpg'),
+  require('../assets/crystals/rose-quartz.jpg'),
+  require('../assets/crystals/clear-quartz.jpg'),
+  require('../assets/crystals/smoky-quartz.jpg'),
+  require('../assets/crystals/citrine.jpg'),
+  require('../assets/crystals/black-tourmaline.jpg'),
+  require('../assets/crystals/green-aventurine.jpg'),
+  require('../assets/crystals/carnelian.jpg'),
+  require('../assets/crystals/obsidian.jpg'),
+  require('../assets/crystals/tiger-s-eye.jpg'),
+  require('../assets/crystals/sodalite.jpg'),
+  require('../assets/crystals/lapis-lazuli.jpg'),
+  require('../assets/crystals/fluorite.jpg'),
+  require('../assets/crystals/hematite.jpg'),
+  require('../assets/crystals/red-jasper.jpg'),
+  require('../assets/crystals/moss-agate.jpg'),
+  require('../assets/crystals/blue-lace-agate.jpg'),
+  require('../assets/crystals/botswana-agate.jpg'),
+  require('../assets/crystals/crazy-lace-agate.jpg'),
+  require('../assets/crystals/amazonite.jpg'),
+  require('../assets/crystals/malachite.jpg'),
+  require('../assets/crystals/rhodonite.jpg'),
+  require('../assets/crystals/rhodochrosite.jpg'),
+  require('../assets/crystals/pyrite.jpg'),
+  require('../assets/crystals/garnet.jpg'),
+  require('../assets/crystals/aquamarine.jpg'),
+  require('../assets/crystals/peridot.jpg'),
+  require('../assets/crystals/sunstone.jpg'),
+  require('../assets/crystals/apatite.jpg'),
+  require('../assets/crystals/kyanite.jpg'),
+  require('../assets/crystals/lepidolite.jpg'),
+  require('../assets/crystals/celestite.jpg'),
+  require('../assets/crystals/selenite.jpg'),
+  require('../assets/crystals/angelite.jpg'),
+  require('../assets/crystals/howlite.jpg'),
+  require('../assets/crystals/magnesite.jpg'),
+  require('../assets/crystals/onyx.jpg'),
+  require('../assets/crystals/bloodstone.jpg'),
+  require('../assets/crystals/chrysoprase.jpg'),
+  require('../assets/crystals/chalcedony.jpg'),
+  require('../assets/crystals/chrysocolla.jpg'),
+  require('../assets/crystals/unakite.jpg'),
+  require('../assets/crystals/prehnite.jpg'),
+  require('../assets/crystals/serpentine.jpg'),
+  require('../assets/crystals/shungite.jpg'),
+  require('../assets/crystals/dalmatian-jasper.jpg'),
+  require('../assets/crystals/picture-jasper.jpg'),
+  require('../assets/crystals/ocean-jasper.jpg'),
+  require('../assets/crystals/red-tiger-s-eye.jpg'),
+  require('../assets/crystals/blue-tiger-s-eye.jpg'),
+  require('../assets/crystals/black-spinel.jpg'),
+  require('../assets/crystals/iolite.jpg'),
+  require('../assets/crystals/tanzanite.jpg'),
+  require('../assets/crystals/kunzite.jpg'),
+  require('../assets/crystals/morganite.jpg'),
+  require('../assets/crystals/topaz.jpg'),
+  require('../assets/crystals/blue-topaz.jpg'),
+  require('../assets/crystals/ruby.jpg'),
+  require('../assets/crystals/sapphire.jpg'),
+  require('../assets/crystals/emerald.jpg'),
+  require('../assets/crystals/chrysoberyl.jpg'),
+  require('../assets/crystals/alexandrite.jpg'),
+  require('../assets/crystals/opal.jpg'),
+  require('../assets/crystals/black-opal.jpg'),
+  require('../assets/crystals/fire-opal.jpg'),
+  require('../assets/crystals/spinel.jpg'),
+  require('../assets/crystals/zircon.jpg'),
+  require('../assets/crystals/diamond.jpg'),
+  require('../assets/crystals/jadeite.jpg'),
+  require('../assets/crystals/nephrite.jpg'),
+  require('../assets/crystals/larimar.jpg'),
+  require('../assets/crystals/seraphinite.jpg'),
+  require('../assets/crystals/nuummite.jpg'),
+  require('../assets/crystals/hypersthene.jpg'),
+  require('../assets/crystals/moldavite.jpg'),
+  require('../assets/crystals/dioptase.jpg'),
+  require('../assets/crystals/azurite.jpg'),
+  require('../assets/crystals/epidote.jpg'),
+  require('../assets/crystals/hessonite.jpg'),
+  require('../assets/crystals/spessartine.jpg'),
+  require('../assets/crystals/pyrope.jpg'),
+  require('../assets/crystals/sardonyx.jpg'),
+  require('../assets/crystals/dendritic-agate.jpg'),
+  require('../assets/crystals/fire-agate.jpg'),
+  require('../assets/crystals/tree-agate.jpg'),
+  require('../assets/crystals/pink-tourmaline.jpg'),
+  require('../assets/crystals/watermelon-tourmaline.jpg'),
+  require('../assets/crystals/goshenite.jpg'),
+  require('../assets/crystals/heliodor.jpg'),
+  require('../assets/crystals/boulder-opal.jpg'),
+  require('../assets/crystals/black-agate.jpg'),
+];
+const imageByName = Object.fromEntries(
+  entries.map(([name], index) => [name, generatedImageSources[index]]),
+);
 
 const toneByName: Partial<Record<string, StoneTone>> = {
   Carnelian: 'red',
@@ -316,9 +405,13 @@ export const crystalCatalog: Crystal[] = entries.map(([name, key]) => {
     description: meaning.description
       .replaceAll('{name}', name)
       .replaceAll('{note}', meaning.note.toLowerCase()),
+    specimenDescription: specimenBriefs[name as keyof typeof specimenBriefs],
     themes: meaning.themes,
     tone: toneByName[name] ?? meaning.tone,
-    ...(image !== undefined ? { image, imageDescription: imageDescriptionByName[name] } : {}),
+    ...(image !== undefined ? {
+      image,
+      imageDescription: `${name} mineral illustration, AI-generated`,
+    } : {}),
   };
 });
 

@@ -17,6 +17,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   },
 }));
 vi.mock('react-native', () => ({
+  AppState: { addEventListener: () => ({ remove: () => {} }) },
   ActivityIndicator: 'ActivityIndicator',
   Linking: { openURL: vi.fn() },
   Platform: { OS: 'web' },
@@ -372,6 +373,37 @@ test('catalog search keeps collection and hidden-stone changes saved locally', a
   await render(<ProfileProvider><ProfileProbe /></ProfileProvider>);
   expect(profileState.preferences.crystalCollection).toContain('rose-quartz');
   expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
+});
+
+test('preferences offers daily feelings without intentions and supports changing or clearing the choice', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+  await act(async () => { await pressText(root, 'Preferences'); });
+  expect(findTextNode(root, 'How are you feeling today?')).toBeDefined();
+  for (const label of ['Intentions', 'Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change', 'Save custom intentions']) {
+    expect(findTextNode(root, label)).toBeUndefined();
+  }
+  expect(root.findAllByType(TextInput).some(node =>
+    node.props.accessibilityLabel === 'Custom intentions, comma separated',
+  )).toBe(false);
+  expect(root.findAllByType(Text).some(node =>
+    textContent(node.props.children).includes('resets at midnight on your device'),
+  )).toBe(true);
+  const choices = root.findAllByType(Pressable).filter(node =>
+    node.props.testID?.startsWith('settings-feeling-'),
+  );
+  expect(choices).toHaveLength(12);
+  const first = choices[0].props.testID;
+  const second = choices[1].props.testID;
+  await act(async () => { root.findByProps({ testID: first }).props.onPress(); });
+  expect(root.findByProps({ testID: first }).props.accessibilityState.checked).toBe(true);
+  await act(async () => { root.findByProps({ testID: second }).props.onPress(); });
+  expect(root.findByProps({ testID: first }).props.accessibilityState.checked).toBe(false);
+  expect(root.findByProps({ testID: second }).props.accessibilityState.checked).toBe(true);
+  await act(async () => { root.findByProps({ testID: second }).props.onPress(); });
+  expect(profileState.preferences.crystalPreferences.feeling).toBeNull();
+  expect(profileState.profile).toEqual(existingProfile);
 });
 
 test('onboarding rejects impossible dates and a missing birthplace', async () => {

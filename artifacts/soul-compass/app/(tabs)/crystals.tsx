@@ -2,7 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsButton } from '@/components/SettingsButton';
 import {
@@ -18,7 +19,7 @@ import {
   getCrystalSuggestions,
   getNatalCrystalSuggestions,
 } from '@/profile/astrology';
-import { getCompanionReason, type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
+import { type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
@@ -38,13 +39,20 @@ const stoneToneColors: Record<StoneTone, { background: string; foreground: strin
   dark: { background: '#252C33', foreground: '#B5C1C8' },
 };
 
-function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' | 'alternative' }) {
+function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' | 'alternative' | 'catalog' | 'detail' }) {
   const tone = stoneToneColors[crystal.tone];
+  const imageStyle = size === 'feature'
+    ? styles.featureImage
+    : size === 'alternative'
+      ? styles.alternativeImage
+      : size === 'catalog'
+        ? styles.catalogImage
+        : styles.detailImage;
   if (crystal.image !== undefined) {
     return (
       <Image
         source={crystal.image}
-        style={size === 'feature' ? styles.featureImage : styles.alternativeImage}
+        style={imageStyle}
         resizeMode="cover"
         accessibilityLabel={crystal.imageDescription ?? `${crystal.name} stone`}
       />
@@ -61,7 +69,7 @@ function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' |
     >
       <Feather
         name="hexagon"
-        size={size === 'feature' ? 76 : 35}
+        size={size === 'feature' ? 76 : size === 'detail' ? 68 : 35}
         color={tone.foreground}
       />
       {size === 'feature' ? (
@@ -129,6 +137,9 @@ export default function CrystalsScreen() {
   const insets = useSafeAreaInsets();
   const { preferences, profile } = useProfile();
   const [guideOpen, setGuideOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const [collectionSearch, setCollectionSearch] = useState('');
+  const [selectedCollectionStone, setSelectedCollectionStone] = useState<Crystal | null>(null);
   const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
   const now = useLocalClock();
   const router = useRouter();
@@ -151,7 +162,8 @@ export default function CrystalsScreen() {
     () => getCrystalSuggestions(
       astrology?.status === 'calculated' ? astrology : undefined,
       {
-        ...preferences.crystalPreferences,
+        hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
+        feeling: preferences.crystalPreferences.feeling,
         dateKey: `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
       },
       3,
@@ -164,16 +176,27 @@ export default function CrystalsScreen() {
     ? crystalSuggestions.slice(1).map((suggestion) => suggestion.crystal)
     : [];
   const visibleAlternatives = alternativeCandidates
-    .filter((crystal) => !hidden.includes(slugOf(crystal.name)))
+    .filter((suggestion) =>
+      suggestion.crystal.name !== recommendation?.crystal.name
+      && !hidden.includes(slugOf(suggestion.crystal.name)),
+    )
     .slice(0, 2);
+  const catalogMatches = useMemo(() => {
+    const query = collectionSearch.trim().toLocaleLowerCase();
+    return query
+      ? catalog.filter((crystal) =>
+        `${crystal.name} ${crystal.note} ${crystal.specimenDescription}`.toLocaleLowerCase().includes(query),
+      )
+      : catalog;
+  }, [collectionSearch, catalog]);
   const hiddenCount = catalog.filter((crystal) =>
     hidden.includes(slugOf(crystal.name)),
   ).length;
   const noMatchCopy = astrology?.status === 'calculated'
     ? 'No stone is a clear fit for today’s chart and your saved choices. We would rather leave this space open than suggest one at random.'
     : profile
-      ? 'A daily transit match is not available, and none of your saved feelings or intentions matched a stone closely enough. We will leave the choice open.'
-      : 'Save your birth details or choose a feeling or intention to get a personal suggestion.';
+      ? 'A daily transit match is not available, and your feeling did not give a clear match. We will leave the choice open.'
+      : 'Save your birth details or choose how you feel today to get a personal suggestion.';
 
   return (
     <SafeAreaView
@@ -481,13 +504,13 @@ export default function CrystalsScreen() {
               ) : (
                 <>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    The guide includes {crystalCatalog.length} stones and gemstone varieties. Each day shows one main companion and up to two alternatives. Browse or search the full list in Settings under Your collection.
+                    The guide includes {crystalCatalog.length} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    With your saved birth chart and current city, the daily reading uses your chart and today’s planetary transits. Your city sets the local date; we do not use GPS. The suggested stone reflects the day’s chart theme, your selected feeling, and any intentions you have saved.
+                    With your saved birth chart and current city, the daily reading uses your chart and today’s planetary transits. Your city sets the reading’s local date; we do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    If there is no calculated chart, your selected feeling or an intention can still guide a suggestion. Without either, you will see a sample. Crystal meanings here are traditional symbols and prompts, not promises or health advice.
+                    If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples. Crystal meanings here are traditional symbols and prompts, not promises or health advice.
                   </Text>
                   <View style={styles.natalGuideSection} testID="natal-stone-recommendations">
                     <Text style={[styles.natalStoneSectionTitle, { color: colors.cosmos.foreground }]}>

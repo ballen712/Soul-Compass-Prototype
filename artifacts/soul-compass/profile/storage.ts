@@ -3,7 +3,7 @@ import type { NatalChartResponse } from '@workspace/api-client-react';
 import { CalculateNatalChartResponse } from '@workspace/api-zod';
 import {
   BirthTimeSchema, CONSENT_VERSION, DateSchema, DraftSchema, LEGACY_KEY, LOCAL_KEY,
-  LocalRecordSchema, LocationSchema, PreferencesSchema, ProfileSchema, emptyRecord,
+  LocalRecordSchema, LocationSchema, PreferencesSchema, ProfileSchema, emptyRecord, dailyPreferences, localDayKey,
   type LocalPreferences, type LocalRecord,
 } from './local';
 
@@ -74,6 +74,7 @@ export class LocalProfileStore {
           }
         }
         // An older consent explanation never authorizes the current policy.
+        record.preferences = dailyPreferences(record.preferences);
         if (record.privacy.consentVersion !== CONSENT_VERSION) record.privacy.astrologyApiConsent = false;
         this.denyRequests = !record.privacy.astrologyApiConsent;
         this.publish({ record, loaded: true, error: null });
@@ -90,8 +91,13 @@ export class LocalProfileStore {
     return this.enqueue(async () => {
       if (!this.snapshot.loaded || this.snapshot.error) throw new Error('Reload local data before saving.');
       try {
-        const next = LocalRecordSchema.parse(change(this.snapshot.record));
+        const next = LocalRecordSchema.parse(change({
+          ...this.snapshot.record,
+          preferences: dailyPreferences(this.snapshot.record.preferences),
+        }));
+        next.preferences = dailyPreferences(next.preferences);
         await this.storage.setItem(LOCAL_KEY, JSON.stringify(next));
+        next.preferences = dailyPreferences(next.preferences);
         // A concurrent revocation takes effect before any queued disk write completes.
         if (this.denyRequests) next.privacy = this.snapshot.record.privacy;
         this.publish({ record: next, loaded: true, error: null });
@@ -100,6 +106,14 @@ export class LocalProfileStore {
       }
     });
   }
+  // Expiration is a derived local state: no network or disk write is needed
+  // to stop using yesterday's mood, even when device storage is unavailable.
+  refreshDailyPreferences = () => {
+    if (!this.snapshot.loaded || this.snapshot.error) return;
+    const preferences = dailyPreferences(this.snapshot.record.preferences);
+    if (preferences === this.snapshot.record.preferences) return;
+    this.publish({ ...this.snapshot, record: { ...this.snapshot.record, preferences } });
+  };
   saveProfile = (profile: UserProfile) => this.update(record => ({
     ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
   }));
@@ -147,17 +161,20 @@ export class LocalProfileStore {
     const different = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
     const languageChanged = different(baseline.language, preferences.language);
     const collectionChanged = different(baseline.crystalCollection, preferences.crystalCollection);
-    const intentionsChanged = different(baseline.crystalPreferences.intentions, preferences.crystalPreferences.intentions);
     const hiddenChanged = different(baseline.crystalPreferences.hiddenCrystals, preferences.crystalPreferences.hiddenCrystals);
     const feelingChanged = different(baseline.crystalPreferences.feeling, preferences.crystalPreferences.feeling);
+    const selectedDay = localDayKey();
     return this.update(record => ({
       ...record, preferences: PreferencesSchema.parse({
         language: languageChanged ? preferences.language : record.preferences.language,
         crystalCollection: collectionChanged ? preferences.crystalCollection : record.preferences.crystalCollection,
         crystalPreferences: {
-          intentions: intentionsChanged ? preferences.crystalPreferences.intentions : record.preferences.crystalPreferences.intentions,
+          intentions: [],
           hiddenCrystals: hiddenChanged ? preferences.crystalPreferences.hiddenCrystals : record.preferences.crystalPreferences.hiddenCrystals,
           feeling: feelingChanged ? preferences.crystalPreferences.feeling : record.preferences.crystalPreferences.feeling,
+          feelingDate: feelingChanged
+            ? preferences.crystalPreferences.feeling ? selectedDay : null
+            : record.preferences.crystalPreferences.feelingDate,
         },
       }),
     }));

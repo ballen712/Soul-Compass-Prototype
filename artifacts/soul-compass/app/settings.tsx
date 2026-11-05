@@ -18,7 +18,6 @@ const slugOf = (name: string) =>
 const CATALOG = crystalCatalog
   .map((c) => ({ id: slugOf(c.name), name: c.name }))
   .sort((first, second) => first.name.localeCompare(second.name));
-const INTENTIONS = ['Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change'];
 const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'hu', label: 'Hungarian' },
@@ -82,7 +81,6 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [customIntentions, setCustomIntentions] = useState(() => preferences.crystalPreferences.intentions.join(', '));
   const [collectionSearch, setCollectionSearch] = useState('');
   const [hiddenSearch, setHiddenSearch] = useState('');
   const collectionMatches = CATALOG.filter((c) => c.name.toLowerCase().includes(collectionSearch.trim().toLowerCase()));
@@ -105,11 +103,6 @@ export default function SettingsScreen() {
     setMessage('Birth details saved on this device.');
   }
 
-  const toggleIntention = (i: string) => {
-    const cur = preferences.crystalPreferences.intentions;
-    const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i];
-    void run(() => savePreferences({ ...preferences, crystalPreferences: { ...preferences.crystalPreferences, intentions: next } }), 'Intentions saved.');
-  };
   const toggleFeeling = (id: string) => {
     const feeling = preferences.crystalPreferences.feeling === id ? null : id;
     void run(() => savePreferences({
@@ -126,7 +119,7 @@ export default function SettingsScreen() {
   const padBottom = { paddingBottom: Math.max(insets.bottom, 34) + 24 };
   const sections: { key: Tab; label: string; description: string }[] = [
     { key: 'profile', label: 'Profile', description: 'Birth details and places' },
-    { key: 'preferences', label: 'Preferences', description: 'Daily feeling, intentions, language and collection' },
+    { key: 'preferences', label: 'Preferences', description: 'Daily feeling, language and collection' },
     { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
     { key: 'about', label: 'About', description: 'Support and provider licenses' },
   ];
@@ -197,7 +190,7 @@ export default function SettingsScreen() {
               </Section>
                 <Section
                   title="How are you feeling today?"
-                  description="Choose one option that feels closest. Your feeling helps shape the stone suggestion alongside the day's transit theme when a personal chart is available. This is a reflection prompt, not a prediction."
+                  description="Choose how you feel today, or leave this blank for the usual chart-based suggestions. Your choice resets at midnight on your device. You can change or clear it at any time."
                 >
                   <View style={styles.feelingList}>
                     {FEELING_OPTIONS.map((option) => (
@@ -210,22 +203,6 @@ export default function SettingsScreen() {
                     ))}
                   </View>
                 </Section>
-                <Section
-                  title="Intentions"
-                  description="Choose what you would like to make space for. These intentions can further guide stone suggestions alongside your feeling and the day's chart theme. You can still get suggestions for stones you do not own. These are reflection prompts, not predictions or health advice."
-                >
-                <View style={styles.chips}>
-                  {Array.from(new Set([...INTENTIONS, ...preferences.crystalPreferences.intentions])).map((i) => (
-                    <Chip key={i} label={i} active={preferences.crystalPreferences.intentions.includes(i)} onPress={() => toggleIntention(i)} />
-                  ))}
-                </View>
-                <TextInput accessibilityLabel="Custom intentions, comma separated" value={customIntentions} onChangeText={setCustomIntentions}
-                  placeholder="calm, clarity, rest" style={styles.body} editable={!busy} />
-                <Pressable accessibilityRole="button" disabled={busy} onPress={() => void run(() => savePreferences({
-                  ...preferences, crystalPreferences: { ...preferences.crystalPreferences,
-                    intentions: Array.from(new Set(customIntentions.split(',').map(value => value.trim()).filter(Boolean))) },
-                }), 'Intentions saved.')}><Text style={styles.back}>Save custom intentions</Text></Pressable>
-              </Section>
                <Section
                  title="Your collection"
                  description={`This guide currently has ${CATALOG.length} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today's suggestion. Your collection does not limit recommendations.`}
@@ -281,12 +258,12 @@ export default function SettingsScreen() {
 
           {tab === 'privacy' ? (
             <>
-              <Section title="What runs on this device" description="Daily readings, simple rituals, and stone suggestions are worked out here using your saved profile, current home, feeling, and intentions. This information is not sent anywhere for these features." />
+              <Section title="What runs on this device" description="Daily readings, simple rituals, and stone suggestions are worked out here using your saved profile, current home, and today's feeling if you chose one. This information is not sent anywhere for these features." />
               <Section title="What uses the network" description="When you search for a city, only the words you type go through the Soul Compass server to Geoapify. Your saved birth profile is not sent. Geoapify sees the server’s normal connection details; we do not pass along your device IP address or headers. A search happens only when you tap Search." />
               <Section title="City search protection" description="Our server keeps short-lived counters to protect city search. They do not contain raw IP addresses, search terms, profiles, or birth details. The source hashes change each day, and expired records are removed when another search comes in." />
               <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
-                  If you agree, Soul Compass sends your birth date, your birth time if you know it, and your birthplace coordinates and time zone to calculate your Natal Chart. It does this the first time, or again if you change your birth details. Your name, current home, language, intentions, and collection are not sent. The chart is saved on this device, so opening the app does not send the same details again.
+                  If you agree, Soul Compass sends your birth date, your birth time if you know it, and your birthplace coordinates and time zone to calculate your Natal Chart. It does this the first time, or again if you change your birth details. Your name, current home, language, daily feeling, and collection are not sent. The chart is saved on this device, so opening the app does not send the same details again.
                 </Text>
                 <Text style={styles.body}>
                   You can withdraw permission at any time. This stops future requests and cancels or discards an active result when possible, but it cannot undo a request already sent. Your saved chart stays on this device. Requests are not saved for later when you are offline. If a calculation fails, retry it from the message on the Natal Chart screen.

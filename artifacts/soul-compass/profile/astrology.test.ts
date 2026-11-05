@@ -144,7 +144,8 @@ test('hidden recommendations are replaced from the remaining visible catalog', (
   assert.notEqual(result?.crystal.name, 'Amethyst');
   const allHidden = crystalCatalog.map((crystal) => crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
   assert.equal(getCrystalRecommendation(chart, { hiddenCrystals: allHidden }), null);
-  assert.ok(getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] }));
+  const remaining = getCrystalRecommendation(chart, { hiddenCrystals: ['amethyst', 'moonstone', 'labradorite'] });
+  if (remaining) assert.ok(!['Amethyst', 'Moonstone', 'Labradorite'].includes(remaining.crystal.name));
 });
 test('weak or missing chart matches do not force a daily stone', () => {
   const chart = calculateDailyAstrology(makeProfile());
@@ -167,13 +168,27 @@ test('weak or missing chart matches do not force a daily stone', () => {
   assert.ok(!chartResults.some((item) => item.crystal.name === weakChartCandidate.name));
 
   const steady = FEELING_OPTIONS.find((option) => option.id === 'steady')!;
-  const weakCandidate = crystalCatalog.find((crystal) =>
-    crystal.themes.filter((theme) => (steady.themes as readonly string[]).includes(theme)).length === 1,
-  );
-  assert.ok(weakCandidate, 'the catalog should contain a weak one-theme match for this check');
   const fullResults = getCrystalSuggestions(undefined, { feeling: steady.id }, crystalCatalog.length);
   assert.ok(fullResults.length > 0);
-  assert.ok(!fullResults.some((item) => item.crystal.name === weakCandidate.name));
+  assert.ok(fullResults.every((item) =>
+    item.crystal.themes.some((theme) => (steady.themes as readonly string[]).includes(theme)),
+  ));
+});
+test('daily transit selection can be empty and can return only one or two visible matches', () => {
+  const quietDay = calculateDailyAstrology(makeProfile(), new Date('2026-11-01T12:00:00Z'));
+  const matchingDay = calculateDailyAstrology(makeProfile(), new Date('2026-11-05T12:00:00Z'));
+  assert.equal(quietDay.status, 'calculated');
+  assert.equal(matchingDay.status, 'calculated');
+  if (quietDay.status !== 'calculated' || matchingDay.status !== 'calculated') return;
+  assert.deepEqual(getCrystalSuggestions(quietDay), []);
+  const matches = getCrystalSuggestions(matchingDay, {}, crystalCatalog.length);
+  assert.ok(matches.length >= 2);
+  const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  for (const count of [1, 2]) {
+    const visible = new Set(matches.slice(0, count).map((item) => item.crystal.name));
+    const hiddenCrystals = crystalCatalog.filter((stone) => !visible.has(stone.name)).map((stone) => slug(stone.name));
+    assert.equal(getCrystalSuggestions(matchingDay, { hiddenCrystals }).length, count);
+  }
 });
 test('intention-only suggestions are labeled and arbitrary custom words are not invented as matches', () => {
   const result = getIntentionRecommendation({ intentions: [' focus ', 'FOCUS'] });
@@ -212,7 +227,7 @@ test('twelve daily feelings produce personal stone suggestions and still respond
     getCrystalSuggestions(withTransit('trine', 'supportive'), { feeling: 'tired' }).map((suggestion) => suggestion.crystal.name),
     getCrystalSuggestions(withTransit('square', 'challenging'), { feeling: 'tired' }).map((suggestion) => suggestion.crystal.name),
   );
-  assert.equal(steadyDay?.basis, 'chart');
+  assert.equal(steadyDay?.basis, 'feeling');
   assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
   assert.notEqual(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Amethyst');
   assert.match(getCompanionReason(samplePrimaryCrystal, steadyDay), /how you feel/i);

@@ -3,6 +3,9 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { NatalChartResponse } from '@workspace/api-client-react';
 import { CalculateNatalChartResponse } from '@workspace/api-zod';
+vi.mock('react-native', () => ({
+  AppState: { addEventListener: () => ({ remove: () => {} }) },
+}));
 const state = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   calculate: vi.fn(),

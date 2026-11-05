@@ -1,5 +1,5 @@
 import { crystalCatalog, type Crystal } from '../constants/content';
-import type { DailyAstrology, NatalElementBalance, ZodiacElement } from './astrology';
+import type { DailyAstrology, NatalElementBalance, TransitAspect, ZodiacElement } from './astrology';
 
 type Calculated = Extract<DailyAstrology, { status: 'calculated' }>;
 type Options = {
@@ -159,6 +159,7 @@ const aspectThemes: Record<string, readonly string[]> = {
 const allThemes = new Set(
   crystalCatalog.flatMap((crystal) => crystal.themes),
 );
+const MINIMUM_DAILY_CHART_THEME_MATCHES = 4;
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -190,11 +191,6 @@ function getChartThemes(astrology: Calculated | undefined): Set<string> {
       ...(planetThemes[aspect.natalBody] ?? []),
     ]) themes.add(theme);
   }
-  if (themes.size === 0) {
-    for (const placement of astrology.natalPlacements) {
-      for (const theme of planetThemes[placement.body] ?? []) themes.add(theme);
-    }
-  }
   return themes;
 }
 
@@ -213,6 +209,90 @@ function dayContext(astrology: Calculated | undefined): string {
   if (aspect?.aspect === 'conjunction') return 'One theme may feel especially present today.';
   if (aspect) return 'Today’s theme suggests room to try a small, useful step.';
   return 'Your chart offers a broad theme for the day.';
+}
+
+const aspectWording: Record<string, string> = {
+  conjunction: 'meet around one shared focus',
+  sextile: 'offer a small opening to work with',
+  square: 'create a point of tension that may need patience',
+  trine: 'work together with relative ease',
+  opposition: 'highlight two different priorities to balance',
+};
+
+const plainTheme: Record<string, string> = {
+  energy: 'energy', initiative: 'taking a first step', confidence: 'trust in your choices',
+  courage: 'bravery', direction: 'clear priorities', rest: 'rest', reflection: 'reflection',
+  connection: 'connection', communication: 'honest conversation', focus: 'focus',
+  learning: 'learning', values: 'what matters to you', creativity: 'creative ideas',
+  grounding: 'steady, practical steps', patience: 'patience', balance: 'balance',
+  resilience: 'keeping going through difficulty', calm: 'a calmer pace', curiosity: 'curiosity',
+  change: 'adjusting to change', adaptability: 'flexibility', growth: 'growth',
+  perspective: 'another point of view', optimism: 'hope', structure: 'organization',
+  boundaries: 'personal limits', imagination: 'imagination', ease: 'ease',
+  opportunity: 'an opening to try', intuition: 'inner reflection', 'self-trust': 'self-trust',
+  expression: 'saying what you mean', joy: 'joy', comfort: 'comfort',
+  presence: 'being present', freedom: 'freedom', play: 'play',
+};
+
+const themeAction: Record<string, string> = {
+  energy: 'choose one useful task and make a small start',
+  initiative: 'begin with the first step instead of waiting for the perfect moment',
+  focus: 'give one task ten uninterrupted minutes',
+  clarity: 'write down what you know and the next decision',
+  confidence: 'take one small step you might otherwise put off',
+  courage: 'say one honest thing you have been postponing',
+  grounding: 'choose one practical next step and stay with it',
+  patience: 'finish one thing before taking on the next',
+  rest: 'take an unhurried break before deciding what comes next',
+  ease: 'give yourself permission to take the simpler route',
+  calm: 'pause for a few slow breaths before you respond',
+  connection: 'check in with someone without trying to fix everything',
+  communication: 'ask one clear question and listen to the answer',
+  empathy: 'make room for your own needs as well as someone else’s',
+  boundaries: 'decide one thing you can leave for another day',
+  resilience: 'pick a manageable next step instead of solving it all at once',
+  reflection: 'write one honest sentence about what you need',
+  intuition: 'notice your first response before rushing to act',
+  curiosity: 'ask one open question before settling on an answer',
+  change: 'leave a little room for your plan to shift',
+  adaptability: 'adjust one small part of the plan rather than starting over',
+  creativity: 'make a little room for a fresh idea',
+  joy: 'notice one small thing that brightens the day',
+  balance: 'check what needs attention and what can wait',
+  perspective: 'look at the situation from a different point of view',
+  structure: 'choose a simple order for the next two tasks',
+  learning: 'stay open to one thing you did not know before',
+  'self-trust': 'make one small decision and let it be enough',
+  presence: 'give the next few minutes your full attention',
+  optimism: 'look for one workable possibility',
+  direction: 'choose the one outcome that matters most today',
+  values: 'let what matters to you guide one practical choice',
+  expression: 'say what you mean in a kind, direct way',
+  opportunity: 'try one low-risk first step',
+  freedom: 'notice where you have a choice',
+  imagination: 'consider a different possibility',
+  play: 'make a little room for something enjoyable',
+  growth: 'focus on what you can learn from the next step',
+};
+
+function chartConnection(astrology: Calculated | undefined, crystal: Crystal) {
+  if (!astrology) return null;
+  const matches = astrology.aspects.slice(0, 3).map((aspect: TransitAspect) => {
+    const themes = [
+      ...(planetThemes[aspect.transitBody] ?? []),
+      ...(aspectThemes[aspect.aspect] ?? []),
+      ...(planetThemes[aspect.natalBody] ?? []),
+    ].filter((theme, index, all) =>
+      crystal.themes.includes(theme) && all.indexOf(theme) === index,
+    );
+    return { aspect, themes };
+  }).filter((item) => item.themes.length > 0)
+    .sort((a, b) => b.themes.length - a.themes.length);
+  return matches[0] ?? null;
+}
+
+function labelThemes(themes: readonly string[]) {
+  return themes.slice(0, 2).map((theme) => plainTheme[theme] ?? theme.replaceAll('-', ' ')).join(' and ');
 }
 
 function rank(
@@ -259,7 +339,10 @@ function rank(
         chartMatchCount,
         feelingMatchCount,
         intentionMatchCount,
-        suitable: chartMatchCount >= 2 || feelingMatchCount > 0 || intentionMatchCount > 0,
+        // Editorial fit rule, not a scientific compatibility score. A broad
+        // transit overlap alone is insufficient; explicit preferences can
+        // independently provide a direct personal connection.
+        suitable: chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES || feelingMatchCount > 0 || intentionMatchCount > 0,
       };
     })
     .filter((candidate) => candidate.suitable)
@@ -267,26 +350,38 @@ function rank(
     .slice(0, limit)
     .map(({ crystal, matched, chartMatchCount, feelingMatchCount }) => {
       const selectedMeaning = crystal.note.toLowerCase().replace(' · ', ' and ');
+      const natalLink = chartConnection(astrology, crystal);
+      const chartThemes = natalLink?.themes ?? [];
+      const feelingThemes = selectedFeeling
+        ? crystal.themes.filter((theme) => selectedFeeling.themes.includes(theme))
+        : [];
+      const relevantThemes = chartThemes.length ? chartThemes : feelingThemes;
+      const action = relevantThemes.map((theme) => themeAction[theme]).find(Boolean);
       const intentionCopy = matched.length
-        ? `It also fits your intention to ${matched.join(' and ')}.`
-        : null;
-      const chartCopy = astrology && chartMatchCount > 0 && chartMatchCount < 2
-        ? 'A related theme from today’s chart also informed this suggestion.'
+        ? `Your chosen intention to ${matched.join(' and ')} also guided this match.`
         : null;
       const feelingCopy = selectedFeeling && feelingMatchCount > 0
-        ? `Your selected feeling, “${selectedFeeling.label.toLowerCase()},” helped guide this suggestion.`
+        ? `You chose “${selectedFeeling.label.toLowerCase()},” which connects with ${labelThemes(feelingThemes)}.`
+        : null;
+      const chartCopy = natalLink
+        ? astrology?.preciseBirthMoment
+          ? `Today, transiting ${natalLink.aspect.transitBody} and your natal ${natalLink.aspect.natalBody} ${aspectWording[natalLink.aspect.aspect] ?? 'form a link'} in your chart, bringing ${labelThemes(chartThemes)} into focus.`
+          : `Today’s chart links ${natalLink.aspect.transitBody} with ${labelThemes(chartThemes)}.`
+        : null;
+      const intentionReason = intentionCopy
+        ? `${crystal.name} shares themes of ${selectedMeaning}. ${intentionCopy}`
         : null;
       const reason = [
-        astrology && chartMatchCount >= 2 ? dayContext(astrology) : null,
-        `${crystal.name} is traditionally associated with ${selectedMeaning}.`,
-        feelingCopy,
-        intentionCopy,
         chartCopy,
-        'Treat it as a reflection prompt, not a promise.',
+        !chartCopy && !feelingCopy ? intentionReason : null,
+        feelingCopy,
+        chartCopy && feelingCopy ? `This stone also connects with ${labelThemes(feelingThemes)}.` : null,
+        action ? `Use ${crystal.name} as a reminder to ${action}.` : `${crystal.name} connects with ${selectedMeaning}; you could use it as a prompt to choose one useful next step.`,
+        'This is a symbolic prompt, not a guaranteed effect.',
       ].filter(Boolean).join(' ');
       return {
         crystal,
-        basis: chartMatchCount >= 2 ? 'chart' : feelingMatchCount > 0 ? 'feeling' : 'intention',
+        basis: chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES ? 'chart' : feelingMatchCount > 0 ? 'feeling' : 'intention',
         matchedIntentions: matched,
         feelingLabel: selectedFeeling?.label,
         reason,

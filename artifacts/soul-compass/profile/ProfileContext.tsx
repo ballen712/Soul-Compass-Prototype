@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useContext, useEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
+import { AppState } from 'react-native';
 import { LocalProfileStore } from './storage';
 import { ProfileContext } from './context';
 
@@ -24,6 +25,21 @@ export function ProfileProvider({ children }: PropsWithChildren) {
   const store = useLocalStore();
   const value = useStoreValue(store);
   useEffect(() => { void store.load(); return store.dispose; }, [store]);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = () => {
+      store.refreshDailyPreferences();
+      clearTimeout(timer);
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      timer = setTimeout(refresh, Math.max(1, midnight.getTime() - now.getTime()));
+    };
+    refresh();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') refresh();
+    });
+    return () => { clearTimeout(timer); subscription.remove(); };
+  }, [store]);
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 export function useProfile() {

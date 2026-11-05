@@ -54,3 +54,5 @@ Thumbs.db
 .cache/
 .local/
 /artifacts/soul-compass/static-build/
+/attached_assets/generated_images/soul-compass-crystals/
+/generated-artifacts/

@@ -471,7 +471,8 @@ function updateBundleUrls(timestamp, baseUrl) {
         }
 
         const decodedPath = decodeURIComponent(unstablePath);
-        return `httpServerLocation:"${baseUrl}${basePath}/${timestamp}/_expo/static/js/${decodedPath}"`;
+        const staticDirectory = getStaticAssetDirectory(decodedPath);
+        return `httpServerLocation:"${baseUrl}${basePath}/${timestamp}/${staticDirectory}"`;
       },
     );
 
@@ -486,6 +487,16 @@ function updateBundleUrls(timestamp, baseUrl) {
   updateForPlatform('ios');
   updateForPlatform('android');
   console.log('Updated bundle URLs');
+}
+
+function getStaticAssetDirectory(relativePath) {
+  const normalized = path.posix.normalize(
+    path.posix.join('_expo', 'static', 'js', relativePath.replace(/^\/+/, '')),
+  );
+  if (normalized !== '_expo' && !normalized.startsWith('_expo/')) {
+    throw new Error(`Asset path escapes the static build: ${relativePath}`);
+  }
+  return normalized;
 }
 
 function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
@@ -515,7 +526,7 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
         const assetInfo = assetsByHash.get(hash);
         if (!assetInfo) return;
 
-        asset.url = `${baseUrl}${basePath}/${timestamp}/_expo/static/js/${assetInfo.relativePath}/${assetInfo.filename}`;
+        asset.url = `${baseUrl}${basePath}/${timestamp}/${getStaticAssetDirectory(assetInfo.relativePath)}/${assetInfo.filename}`;
       });
     }
 

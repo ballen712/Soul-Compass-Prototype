@@ -7,4 +7,4 @@ The workspace may contain package manifests and pnpm-store packages without the 
 
 **Why:** On 2026-11-04, the profile Vitest suite ran, but the separate TypeScript astrology test could not resolve `tsx`; typechecking could not resolve Node types or `astronomy-engine`. A filtered offline frozen install reported a catalog mismatch.
 
-**How to apply:** Before changing application code or updating the lockfile in response to missing-module errors, inspect the actual workspace links and compare the current pnpm catalog configuration with the lockfile. Do not use an unfrozen install during unrelated feature work.
+**How to apply:** Before changing application code or updating the lockfile in response to missing-module errors, inspect the actual workspace links and compare the current pnpm catalog configuration with the lockfile. Do not use an unfrozen install during unrelated feature work. For Expo compatibility validation, run `pnpm install --frozen-lockfile` first: `expo install --check` alone can pass when the manifest differs from the lockfile because it checks the installed dependency graph.

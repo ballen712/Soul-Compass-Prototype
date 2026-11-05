@@ -90,11 +90,19 @@ export default function SettingsScreen() {
 
   if (!profile) return null;
 
-  async function run(action: () => Promise<void>, ok: string) {
+  async function run(
+    action: () => Promise<void>,
+    ok?: string,
+    options: { clearMessage?: boolean } = {},
+  ) {
     if (busyRef.current) return;
     busyRef.current = true;
-    setBusy(true); setMessage(null);
-    try { await action(); setMessage(ok); }
+    setBusy(true);
+    if (options.clearMessage !== false) setMessage(null);
+    try {
+      await action();
+      if (ok) setMessage(ok);
+    }
     catch (error) { setMessage(error instanceof Error ? error.message : 'That change could not be saved on this device. Please try again.'); }
     finally { busyRef.current = false; setBusy(false); }
   }
@@ -236,7 +244,7 @@ export default function SettingsScreen() {
                     <View key={c.id} style={styles.row}>
                       <Text style={styles.rowLabel}>{c.name}</Text>
                       <Pressable testID={`settings-collect-${c.id}`} accessibilityRole="button" disabled={busy}
-                        onPress={() => void run(() => toggleCrystal(c.id), owned ? `${c.name} removed.` : `${c.name} added.`)}
+                        onPress={() => void run(() => toggleCrystal(c.id), undefined, { clearMessage: false })}
                         style={[styles.smallButton, owned && styles.smallButtonActive]}>
                         <Text style={[styles.smallButtonText, owned && styles.smallButtonTextActive]}>{owned ? 'Remove' : 'Add'}</Text>
                       </Pressable>
@@ -315,7 +323,7 @@ export default function SettingsScreen() {
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
               <Section title="Crystal images" description="Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern." />
               <Section title="Privacy" description="No account is needed. Your profile, collection, and saved Natal Chart stay on this device. Daily readings and rituals are worked out here. With your permission, birth details are sent to calculate a chart. The same saved chart is not requested again, and you can withdraw permission in Privacy." />
-              <Section title="Licenses" description="Astrology calculations use Astronomy Engine (MIT), not a paid ephemeris. City search uses Geoapify and OpenStreetMap data; attribution and provider privacy links appear beside each search. Geoapify’s Free plan allows commercial use within its credit, rate, and feature limits. The app is built with Expo and React Native (MIT). Feather icons are MIT-licensed; Inter uses the SIL Open Font License 1.1. Readings and stone notes use traditional symbolism for reflection, not medical or scientific advice. The app is currently in English." />
+              <Section title="Licenses" description="Astrology calculations use Astronomy Engine (MIT), not a paid ephemeris. City search uses Geoapify and OpenStreetMap data; attribution and provider privacy links appear beside each search. Geoapify’s Free plan allows commercial use within its credit, rate, and feature limits. The app is built with Expo and React Native (MIT). Feather icons are MIT-licensed; Inter uses the SIL Open Font License 1.1. The app is currently in English." />
             </>
           ) : null}
         </KeyboardAwareScrollViewCompat>

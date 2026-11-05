@@ -131,7 +131,8 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.match(focus!.reason, /today|theme/i);
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
   assert.match(focus!.reason, /birth-chart|Today’s sky links/i);
-  assert.match(focus!.reason, /symbolic prompt, not a guaranteed effect/i);
+  assert.match(focus!.reason, /good companion when you want to/i);
+  assert.doesNotMatch(focus!.reason, /symbolic prompt|not a guaranteed effect/i);
   assert.notEqual(focus!.reason, change!.reason);
 });
 test('hidden recommendations are replaced from the remaining visible catalog', () => {
@@ -172,12 +173,12 @@ test('weak or missing chart matches do not force a daily stone', () => {
   ));
 });
 test('daily transit selection can be empty and can return only one or two visible matches', () => {
-  const quietDay = calculateDailyAstrology(makeProfile(), new Date('2026-11-01T12:00:00Z'));
+  const chartWithNoTransitThemes = calculateDailyAstrology(makeProfile(), new Date('2026-11-01T12:00:00Z'));
   const matchingDay = calculateDailyAstrology(makeProfile(), new Date('2026-11-05T12:00:00Z'));
-  assert.equal(quietDay.status, 'calculated');
+  assert.equal(chartWithNoTransitThemes.status, 'calculated');
   assert.equal(matchingDay.status, 'calculated');
-  if (quietDay.status !== 'calculated' || matchingDay.status !== 'calculated') return;
-  assert.deepEqual(getCrystalSuggestions(quietDay), []);
+  if (chartWithNoTransitThemes.status !== 'calculated' || matchingDay.status !== 'calculated') return;
+  assert.deepEqual(getCrystalSuggestions({ ...chartWithNoTransitThemes, aspects: [] }), []);
   const matches = getCrystalSuggestions(matchingDay, {}, crystalCatalog.length);
   assert.ok(matches.length >= 2);
   const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -186,6 +187,19 @@ test('daily transit selection can be empty and can return only one or two visibl
     const hiddenCrystals = crystalCatalog.filter((stone) => !visible.has(stone.name)).map((stone) => slug(stone.name));
     assert.equal(getCrystalSuggestions(matchingDay, { hiddenCrystals }).length, count);
   }
+});
+test('two connected chart themes produce a main stone and two alternatives', () => {
+  const chart = calculateDailyAstrology(
+    makeProfile({ birthDate: '1964-07-17' }),
+    new Date('2026-11-05T12:00:00Z'),
+  );
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+
+  const suggestions = getCrystalSuggestions(chart, {}, 3);
+  assert.equal(suggestions.length, 3);
+  assert.equal(new Set(suggestions.map((item) => item.crystal.name)).size, 3);
+  assert.ok(suggestions.every((item) => item.basis === 'chart'));
 });
 test('intention-only suggestions are labeled and arbitrary custom words are not invented as matches', () => {
   const result = getIntentionRecommendation({ intentions: [' focus ', 'FOCUS'] });
@@ -228,7 +242,7 @@ test('twelve daily feelings produce personal stone suggestions and still respond
   assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
   assert.notEqual(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Amethyst');
   assert.match(steadyDay!.reason, /You chose “feeling tired,/i);
-  assert.match(steadyDay!.reason, /Use .* as a reminder to/i);
+  assert.match(steadyDay!.reason, /is a good companion when you want to/i);
   assert.doesNotMatch(steadyDay!.reason, /ease.*ease/i);
 });
 test('expanded catalog and daily suggestions use more than the original three stones', () => {
@@ -237,6 +251,10 @@ test('expanded catalog and daily suggestions use more than the original three st
   assert.ok(crystalCatalog.every((crystal) => crystal.specimenDescription.trim().length > 0));
   assert.equal(new Set(crystalCatalog.map((crystal) => crystal.name.toLowerCase())).size, crystalCatalog.length);
   assert.ok(crystalCatalog.every((crystal) => crystal.themes.length >= 2 && crystal.description.length > 40));
+  assert.ok(crystalCatalog.every((crystal) => /good fit/i.test(crystal.description)));
+  assert.ok(crystalCatalog.every((crystal) =>
+    !/symbolic|traditional|prompt|not proven|guaranteed effect/i.test(crystal.description),
+  ));
   const seen = new Set<string>();
   for (const feeling of FEELING_OPTIONS) {
     const suggestions = getCrystalSuggestions(undefined, { feeling: feeling.id, dateKey: '2026-11-05' });

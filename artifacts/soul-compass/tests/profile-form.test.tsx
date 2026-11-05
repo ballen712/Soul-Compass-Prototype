@@ -421,11 +421,12 @@ test('an iOS edge swipe returns from a Settings section to the Settings menu', a
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
-  const stackOptions = () => root.findAll((node) => node.type === 'StackScreen')[0].props.options;
+  const stackOptions = () => root.findAll((node) => String(node.type) === 'StackScreen')[0].props.options;
 
   await act(async () => { root.findByProps({ testID: 'settings-tab-about' }).props.onPress(); });
   expect(stackOptions().gestureEnabled).toBe(false);
-  const edge = root.findByProps({ testID: 'settings-edge-swipe-back' }).props;
+  const edge = root.findAllByProps({ testID: 'settings-edge-swipe-back' })
+    .find((node) => String(node.type) === 'View')!.props;
   expect(edge.onMoveShouldSetResponderCapture({}, { x0: 12, dx: 28, dy: 2 })).toBe(true);
   await act(async () => {
     edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });

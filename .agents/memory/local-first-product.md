@@ -3,11 +3,11 @@ name: Local-first product decisions
 description: Approved registration-free architecture and consent boundaries for Soul Compass.
 ---
 
-Soul Compass initially works without registration, Google sign-in, email OTP, Magic Links, passwords or mandatory Supabase sessions. Use the existing AsyncStorage dependency for a single versioned local profile, preferences, collection and privacy settings. Do not introduce paid services, analytics or payments.
+Soul Compass initially works without registration, Google sign-in, email OTP, Magic Links, passwords or mandatory Supabase sessions. Use the existing AsyncStorage dependency for a single versioned local profile, preferences, collection and privacy settings. The user has proposed optional Tarot readings as a future paid or rewarded-ad feature; this is a product direction, not permission to implement billing or ads now.
 
-**Why:** the user explicitly approved the complete local-first restructuring brief, superseding the earlier authentication-first and Google-only plans.
+**Why:** the user approved the local-first product and later proposed monetizing optional Tarot readings while keeping the rest of the app relatively free.
 
-**How to apply:** preserve existing local records and legacy residence/birthplace separation. Keep cloud-only records untouched; starting a new local profile is acceptable. Do not automatically recover, download or merge cloud profiles. Export/import and optional accounts/sync are future features, not current scope.
+**How to apply:** preserve existing local records and legacy residence/birthplace separation. Keep cloud-only records untouched; starting a new local profile is acceptable. Do not automatically recover, download or merge cloud profiles. Export/import and optional accounts/sync remain future features; do not add payment or ad SDKs until explicitly asked.
 
 Preserve server-side astronomy calculations, but send personal birth inputs only after explicit, locally saved and revocable consent. Once current-version consent is granted, refresh the natal chart automatically once per app launch. Do not queue or retry requests on reconnection. No automatic profile upload or cloud synchronization.
 

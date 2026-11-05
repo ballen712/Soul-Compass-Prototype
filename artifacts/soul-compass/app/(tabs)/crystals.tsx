@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
@@ -42,8 +42,15 @@ const stoneToneColors: Record<StoneTone, { background: string; foreground: strin
   dark: { background: '#252C33', foreground: '#B5C1C8' },
 };
 
-function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' | 'alternative' | 'catalog' | 'detail' }) {
+function CrystalArtwork({ crystal, size, detailSize }: {
+  crystal: Crystal;
+  size: 'feature' | 'alternative' | 'catalog' | 'detail';
+  detailSize?: number;
+}) {
   const tone = stoneToneColors[crystal.tone];
+  const responsiveDetailStyle = size === 'detail' && detailSize !== undefined
+    ? { width: detailSize, height: detailSize, alignSelf: 'center' as const }
+    : null;
   const imageStyle = size === 'feature'
     ? styles.featureImage
     : size === 'alternative'
@@ -55,7 +62,7 @@ function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' |
     return (
       <Image
         source={crystal.image}
-        style={imageStyle}
+        style={responsiveDetailStyle ? [imageStyle, responsiveDetailStyle] : imageStyle}
         resizeMode={size === 'detail' ? 'contain' : 'cover'}
         accessibilityLabel={crystal.imageDescription ?? `${crystal.name} stone`}
       />
@@ -72,6 +79,7 @@ function CrystalArtwork({ crystal, size }: { crystal: Crystal; size: 'feature' |
             : size === 'catalog'
               ? styles.catalogImage
               : styles.alternativeImage,
+        responsiveDetailStyle,
         styles.genericStoneArt,
         { backgroundColor: tone.background },
       ]}
@@ -134,16 +142,18 @@ function describeElementBalance(
   suggestionCount: number,
 ) {
   const join = (elements: string[]) => elements.map((element) => element.toLowerCase()).join(' and ');
-  const stoneCount = `${suggestionCount} symbolic stone ${suggestionCount === 1 ? 'pairing' : 'pairings'}`;
+  const stoneCount = `${suggestionCount} chart-matched stone ${suggestionCount === 1 ? 'match' : 'matches'}`;
   if (balance.dominant.length === 4) {
-    return `Across ${balance.total} reliable planetary sign placements, the four elements appear in a fairly even mix. Here are ${stoneCount} to explore.`;
+    return `Across ${balance.total} reliable planetary sign placements, the four elements appear in a fairly even mix. Here are ${stoneCount}.`;
   }
-  return `Across ${balance.total} reliable planetary sign placements, your chart has more ${join(balance.dominant)} placements and fewer ${join(balance.leastRepresented)}. These ${stoneCount} are reflection prompts, not guaranteed effects.`;
+  return `Across ${balance.total} reliable planetary sign placements, your chart has more ${join(balance.dominant)} placements and fewer ${join(balance.leastRepresented)}. These ${stoneCount} match qualities in your chart.`;
 }
 
 export default function CrystalsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const detailImageSize = Math.max(1, Math.min(320, windowWidth - 56, windowHeight * 0.34));
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const { preferences, profile } = useProfile();
   const [guideOpen, setGuideOpen] = useState(false);
@@ -209,7 +219,7 @@ export default function CrystalsScreen() {
     hidden.includes(slugOf(crystal.name)),
   ).length;
   const noMatchCopy = astrology?.status === 'calculated'
-    ? 'No stone is a clear fit for today’s chart and your saved choices. We would rather leave this space open than suggest one at random.'
+    ? 'Today’s chart did not give us a clear link to a stone. We will leave the choice open rather than pick one at random.'
     : profile
       ? 'A daily transit match is not available, and your feeling did not give a clear match. We will leave the choice open.'
       : 'Save your birth details or choose how you feel today to get a personal suggestion.';
@@ -244,9 +254,13 @@ export default function CrystalsScreen() {
     >
       <StatusBar style="dark" />
       <ScrollView
+        testID="crystals-main-scroll"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18 },
+          {
+            paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18,
+            paddingBottom: Math.max(insets.bottom, 0) + 60,
+          },
         ]}
         contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         showsVerticalScrollIndicator={false}
@@ -577,7 +591,7 @@ export default function CrystalsScreen() {
                     {selectedNatalStone.crystal.description}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    This is a symbolic way to reflect on your chart, not a proven effect or a promise. If this stone feels meaningful, you could choose a loose stone or a piece of jewelry and add it to your collection.
+                    Add this stone to your collection to keep track of the ones you own.
                   </Text>
                   <CollectionToggle name={selectedNatalStone.crystal.name} />
                 </View>
@@ -590,7 +604,7 @@ export default function CrystalsScreen() {
                     With your saved birth chart and current city, the daily reading uses your chart and today’s planetary transits. Your city sets the reading’s local date; we do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples. Crystal meanings here are traditional symbols and prompts, not promises or health advice.
+                    If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.
                   </Text>
                   <View style={styles.natalGuideSection} testID="natal-stone-recommendations">
                     <Text style={[styles.natalStoneSectionTitle, { color: colors.cosmos.foreground }]}>
@@ -649,7 +663,7 @@ export default function CrystalsScreen() {
                       </Text>
                     )}
                     <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                      This birth-chart summary is calculated on your device. Soul Compass uses its own symbolic pairings between chart elements and stone themes; they are reflection prompts, not medical advice or proven effects.
+                      These stones are matched to the qualities that stand out in your chart.
                     </Text>
                   </View>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
@@ -735,7 +749,7 @@ export default function CrystalsScreen() {
               contentContainerStyle={styles.collectionDetailContent}
               showsVerticalScrollIndicator={false}
             >
-              <CrystalArtwork crystal={selectedCollectionStone} size="detail" />
+              <CrystalArtwork crystal={selectedCollectionStone} size="detail" detailSize={detailImageSize} />
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
                 WHAT TO NOTICE
               </Text>
@@ -743,13 +757,16 @@ export default function CrystalsScreen() {
                 {selectedCollectionStone.specimenDescription}
               </Text>
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
+                GOOD FOR
+              </Text>
+              <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
+                {selectedCollectionStone.description}
+              </Text>
+              <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
                 GUIDE THEMES
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
                 {selectedCollectionStone.note}
-              </Text>
-              <Text style={[styles.collectionDisclaimer, { color: colors.crystals.mutedForeground }]}>
-                The guide’s crystal meanings are symbolic reflection prompts, not proven effects.
               </Text>
               <CollectionToggle name={selectedCollectionStone.name} />
             </ScrollView>

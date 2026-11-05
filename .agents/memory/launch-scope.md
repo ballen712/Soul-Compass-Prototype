@@ -21,11 +21,17 @@ Soul Compass is a spiritual self-exploration app for everyday users, including p
 
 **How to apply:** explain symbolic readings in grounded language; avoid assuming spiritual beliefs or presenting astrology and rituals as predictions or guaranteed effects.
 
-Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosmos. Explain its terms in everyday language for people with no astrology background, while keeping each interpretation personal and clear.
+Crystal descriptions should directly say what qualities a stone is good for. Do not add visible caveats that crystal meanings are symbolic prompts or unproven effects.
 
-**Why:** the user wants the daily reflection to remain the main entry point and explicitly asked that Natal Chart make sense to ordinary readers unfamiliar with astrology.
+**Why:** the user explicitly asked for direct, benefit-oriented crystal descriptions without that disclaimer.
 
-**How to apply:** define planets, signs, houses, angles, aspects and chart methods plainly; use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
+**How to apply:** use simple language tied to the stone’s guide themes and chart context; keep the copy out of clinical or guaranteed-result claims.
+
+Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosmos. Explain its terms in everyday language for people with no astrology background. Planet interpretations must connect the actual planet, sign, and reliable house placement using authored, plain-language copy rather than generic filler.
+
+**Why:** the user wants the daily reflection to remain the main entry point, asked for accessible chart explanations, and specifically rejected machine-like generic descriptions of planet placements.
+
+**How to apply:** define planets, signs, houses, angles, aspects and chart methods plainly; tailor a planet's explanation to its actual sign and house when the house is reliable; use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
 
 The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and continuing across the full near-black background. Keep the blue reading cards distinct and readable. Move “A Daily Pause” closer to the Soul Compass brand.
 

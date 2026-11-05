@@ -35,6 +35,24 @@ const planetThemes: Record<string, string> = {
   saturn: 'responsibility and routines', uranus: 'change and doing things your own way',
   neptune: 'imagination and ideals', pluto: 'deep change and personal boundaries',
 };
+const signPersonalities: Record<string, string> = {
+  aries: 'direct and ready to take initiative',
+  taurus: 'steady and practical',
+  gemini: 'curious and open to conversation',
+  cancer: 'caring and attentive to emotional security',
+  leo: 'warm and expressive',
+  virgo: 'observant and focused on practical details',
+  libra: 'fair-minded and attentive to other people',
+  scorpio: 'private, intense, and interested in what lies beneath the surface',
+  sagittarius: 'open to exploration and the bigger picture',
+  capricorn: 'patient and focused on steady progress',
+  aquarius: 'independent and drawn to original ideas',
+  pisces: 'sensitive to moods and guided by imagination',
+};
+const houseOrdinals: Record<number, string> = {
+  1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 5: 'fifth', 6: 'sixth',
+  7: 'seventh', 8: 'eighth', 9: 'ninth', 10: 'tenth', 11: 'eleventh', 12: 'twelfth',
+};
 const signTones: Record<string, string> = {
   aries: 'taking initiative', taurus: 'steadily and practically',
   gemini: 'with curiosity', cancer: 'with care and a need for security',
@@ -61,17 +79,33 @@ export function explainPlanet(
   if (planet.toLowerCase() === 'moon' && uncertainMoonRange && uncertainMoonRange.length > 1) {
     return {
       title: 'Moon sign range',
-      body: `The Moon changed signs during your birth date: ${uncertainMoonRange.join(' or ')}. Without a birth time, we cannot tell which sign applies, so this chart leaves it open. In astrology, the Moon is linked with feelings and what helps you feel safe.`,
+      body: `The Moon was in ${uncertainMoonRange.join(' or ')} during your birth date. Without a birth time, we cannot tell which sign was in place when you were born, so this chart does not guess. The Moon describes feelings and what helps you feel safe.`,
       question: 'What helps you feel settled when things change?',
     };
   }
-  const theme = planetThemes[planet.toLowerCase()];
-  const tone = signTones[sign.toLowerCase()];
-  const placement = `${name} is in ${cap(sign)}${house ? `, House ${house} (${houseThemes[house] ?? 'part of everyday life'})` : ''}.`;
+  const key = planet.toLowerCase();
+  const theme = planetThemes[key] ?? 'a personal theme in your life';
+  const signPersonality = signPersonalities[sign.toLowerCase()];
+  const houseIsKnown = typeof house === 'number' && houseThemes[house] !== undefined;
+  const ordinal = houseIsKnown ? houseOrdinals[house!] : undefined;
+  const body = [
+    `Your ${name} is connected with ${theme}.`,
+    signPersonality
+      ? `In ${cap(sign)}, this side of you may be ${signPersonality}.`
+      : `${cap(sign)} gives this part of your chart its own style.`,
+    ...(houseIsKnown
+      ? [
+          `In your ${ordinal} house, this connects with ${houseThemes[house!]}.`,
+          houseApplications[house!],
+        ]
+      : []),
+  ].join(' ');
   return {
-    title: `${name} in ${cap(sign)}${house ? ` · House ${house}` : ''}`,
-    body: `In astrology, ${name.toLowerCase()} is linked with ${theme ?? 'a personal theme'}. ${placement}${tone ? ` Astrologers often describe ${cap(sign)} as ${tone}.` : ''} Use this as a way to reflect, not as a label.`,
-    question: `Where do you notice ${theme ?? 'this theme'} in your life?`,
+    title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
+    body,
+    question: houseIsKnown
+      ? planetQuestions[key] ?? 'Does this feel familiar in this part of your life?'
+      : `Which part of ${theme} feels most familiar to you?`,
   };
 }
 
@@ -80,6 +114,32 @@ const houseThemes: Record<number, string> = {
   4: 'home and roots', 5: 'creativity and play', 6: 'routines and practical care',
   7: 'close partnerships', 8: 'shared resources and change', 9: 'learning and wider horizons',
   10: 'work and public life', 11: 'friendships and shared aims', 12: 'rest and inner life',
+};
+const houseApplications: Record<number, string> = {
+  1: 'You may notice this in how you introduce yourself or begin something new; being comfortable in your own skin matters here.',
+  2: 'This can shape what helps you feel secure and how you decide what is worth your time and money.',
+  3: 'You may notice it in everyday conversations and learning; talking things through can help you sort out your thoughts.',
+  4: 'Home and family may bring this theme close to the surface, especially around where you feel you belong.',
+  5: 'You may notice it in creativity, play, romance, and what lets you enjoy expressing yourself.',
+  6: 'You may feel most engaged when your work is useful and leaves room to improve how things get done.',
+  7: 'Close relationships may affect how settled you feel; it helps to care for others without losing track of your own needs.',
+  8: 'Trust and shared resources may feel important here; honesty can help when life is changing.',
+  9: 'Learning, travel, or new ideas may help you see this part of life from a wider angle.',
+  10: 'You may care about work and long-term goals that reflect what matters to you.',
+  11: 'Friends and groups may help you explore shared hopes and choose connections that feel mutual.',
+  12: 'Quiet time may help you process this part of life; you do not have to understand every feeling right away.',
+};
+const planetQuestions: Record<string, string> = {
+  sun: 'Where in this part of life do you feel most like yourself?',
+  moon: 'What helps you feel safe and understood here?',
+  mercury: 'What might become clearer if you talk or write it through?',
+  venus: 'What would make this part of life more balanced or enjoyable?',
+  mars: 'What is one direct step you could take without rushing?',
+  jupiter: 'What would you like to learn or explore here?',
+  saturn: 'What steady step would make this feel more manageable?',
+  uranus: 'Where could you try a more original approach?',
+  neptune: 'How can you follow your imagination while keeping expectations clear?',
+  pluto: 'What are you ready to understand or change more deeply?',
 };
 
 export function explainAspect(first: string, second: string, type: string): ChartExplanation {

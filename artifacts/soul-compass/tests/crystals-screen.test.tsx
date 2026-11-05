@@ -48,7 +48,7 @@ const state = vi.hoisted(() => ({
   roseQuartz: {
     name: 'Rose Quartz',
     note: 'Connection · care',
-    description: 'A small prompt for care.',
+    description: 'A good fit for care and connection.',
     specimenDescription: 'A pale pink quartz with a cloudy, translucent finish.',
     themes: ['connection', 'empathy'],
     tone: 'pink',
@@ -103,6 +103,7 @@ vi.mock('react-native', () => ({
   Text: 'Text',
   TextInput: 'TextInput',
   View: 'View',
+  useWindowDimensions: () => ({ width: 402, height: 874 }),
 }));
 vi.mock('react-native-keyboard-controller', () => ({
   KeyboardAvoidingView: 'KeyboardAvoidingView',
@@ -194,7 +195,7 @@ test('the Stone Guide explains daily companions and opens from its info button',
   expect(copy).toContain('we do not use GPS');
   expect(copy).toContain('pendant, ring, or bracelet');
   expect(copy).toContain('Add to Collection');
-  expect(copy).toContain('not promises or health advice');
+  expect(copy).not.toMatch(/symbolic|not proven|not a proven effect|guaranteed effect|health advice/i);
 
   const close = root.findByProps({ testID: 'close-stone-guide' });
   expect(close.type).toBe(Pressable);
@@ -229,13 +230,16 @@ test('the full collection can be searched, opened, and added to a local collecti
   expect(detailText).toContain('pale pink quartz');
   expect(detailText).not.toContain('AI-generated illustrations');
   expect(detailText).not.toContain('Real stones vary');
-  expect(detailText).toContain('symbolic reflection prompts, not proven effects');
+  expect(detailText).toContain('GOOD FOR');
+  expect(detailText).toContain('A good fit for care and connection.');
+  expect(detailText).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   await act(async () => { addStone.props.onPress(); });
   expect(state.profileContext.toggleCrystal).toHaveBeenCalledWith('rose-quartz');
 
   await act(async () => {
-    const edge = root.findByProps({ testID: 'crystal-catalog-edge-swipe-back' }).props;
+    const edge = root.findAllByProps({ testID: 'crystal-catalog-edge-swipe-back' })
+      .find((node) => String(node.type) === 'View')!.props;
     edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
   });
   expect(root.findByProps({ testID: 'crystal-catalog-search' })).toBeDefined();
@@ -259,7 +263,8 @@ test('the full collection restores its scroll position after returning from ston
     root.findByProps({ testID: 'catalog-stone-rose-quartz' }).props.onPress();
   });
   await act(async () => {
-    const edge = root.findByProps({ testID: 'crystal-catalog-edge-swipe-back' }).props;
+    const edge = root.findAllByProps({ testID: 'crystal-catalog-edge-swipe-back' })
+      .find((node) => String(node.type) === 'View')!.props;
     edge.onResponderRelease({}, { x0: 12, dx: 100, dy: 8 });
   });
   list = root.findByProps({ testID: 'full-crystal-catalog-list' });
@@ -278,10 +283,12 @@ test('the full collection restores its scroll position after returning from ston
   expect(state.collectionScrollToOffset).toHaveBeenNthCalledWith(2, { offset: 1260, animated: false });
 });
 
-test('catalog detail artwork stays uncropped and controls respect iPhone safe areas', async () => {
+test('the collection button clears the tab bar and detail artwork scales to the screen', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   await act(async () => { renderer = create(<CrystalsScreen />); });
   const root = renderer!.root;
+  const mainScroll = root.findByProps({ testID: 'crystals-main-scroll' });
+  expect(mainScroll.props.contentContainerStyle[1].paddingBottom).toBeGreaterThanOrEqual(94);
   await act(async () => {
     root.findByProps({ testID: 'open-crystal-collection' }).props.onPress();
   });
@@ -296,7 +303,10 @@ test('catalog detail artwork stays uncropped and controls respect iPhone safe ar
     (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone on linen',
   );
   expect(detailImage.props.resizeMode).toBe('contain');
-  expect(detailImage.props.style).toMatchObject({ aspectRatio: 1 });
+  const detailStyle = Object.assign({}, ...detailImage.props.style);
+  expect(detailStyle).toMatchObject({ aspectRatio: 1 });
+  expect(detailStyle.width).toBeCloseTo(297.16, 1);
+  expect(detailStyle.height).toBe(detailStyle.width);
 
   const backButton = root.findByProps({ testID: 'back-to-crystal-catalog' });
   const closeButton = root.findByProps({ testID: 'close-crystal-catalog' });
@@ -308,7 +318,7 @@ test('a new catalog stone without a photo renders and daily cards stay limited t
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.suggestions = [state.roseQuartz, state.amethyst, state.labradorite].map((crystal) => ({
     crystal,
-    reason: 'A personal symbolic prompt.',
+    reason: 'A personal match for these chart themes.',
     basis: 'feeling',
     matchedIntentions: [],
   }));
@@ -323,7 +333,7 @@ test('one clear match is shown without inventing extra companions', async () => 
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.suggestions = [{
     crystal: state.roseQuartz,
-    reason: 'A close symbolic match for today.',
+    reason: 'A close match for today.',
     basis: 'chart',
     matchedIntentions: [],
   }];
@@ -335,6 +345,26 @@ test('one clear match is shown without inventing extra companions', async () => 
   expect(root.findAll((node) =>
     node.type === Text && ['Another companion', 'Two other companions'].includes(node.props.children),
   )).toHaveLength(0);
+});
+
+test('three daily matches show one main stone, two companions, and the full collection link', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.suggestions = [state.roseQuartz, state.amethyst, state.labradorite].map((crystal) => ({
+    crystal,
+    reason: 'A personal match for today.',
+    basis: 'chart',
+    matchedIntentions: [],
+  }));
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+
+  expect(root.findByProps({ testID: 'collect-rose-quartz' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collect-amethyst' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collect-labradorite' })).toBeDefined();
+  expect(root.findAll((node) =>
+    node.type === Text && node.props.children === 'Two other companions',
+  )).toHaveLength(1);
+  expect(root.findByProps({ testID: 'open-crystal-collection' })).toBeDefined();
 });
 
 test('birth-chart stones open individual explanations and can be added to the collection', async () => {
@@ -352,12 +382,12 @@ test('birth-chart stones open individual explanations and can be added to the co
     crystal: {
       name: index === 0 ? 'Rose Quartz' : `Chart Stone ${index + 1}`,
       note: 'Connection · care',
-      description: 'A small reminder to make room for kindness.',
+      description: 'A good fit for care and connection.',
     },
     element: index === 0 ? 'Air' : 'Fire',
     reason: index === 0
-      ? 'Your chart has fewer air placements. This guide pairs the stone’s care themes with air as a reflection prompt.'
-      : 'This stone offers a separate symbolic prompt for your chart.',
+      ? 'Your chart has fewer air placements. Rose Quartz is a good fit for care and connection in your chart.'
+      : 'This stone is a good fit for a different part of your chart.',
   }));
 
   await act(async () => { renderer = create(<CrystalsScreen />); });
@@ -371,7 +401,8 @@ test('birth-chart stones open individual explanations and can be added to the co
   const detailCopy = root.findByProps({ testID: 'stone-guide-modal' })
     .findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(detailCopy).toContain('fewer air placements');
-  expect(detailCopy).toContain('not a proven effect');
+  expect(detailCopy).toContain('A good fit for care and connection.');
+  expect(detailCopy).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   expect(addStone).toBeDefined();
   await act(async () => { addStone.props.onPress(); });

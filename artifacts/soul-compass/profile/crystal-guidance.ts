@@ -38,24 +38,23 @@ function getNatalStoneReason(
   balance: NatalElementBalance,
 ): string {
   const themes = crystal.themes.filter((theme) => elementalThemes[element].includes(theme));
-  const themeCopy = themes.slice(0, 2).join(' and ') || 'its traditional associations';
+  const themeCopy = themes.slice(0, 2).join(' and ') || 'its guide themes';
   const balanced = balance.dominant.length === zodiacElements.length;
 
   if (balanced) {
-    return `Your chart has a fairly even mix of elements. In this guide, ${crystal.name}'s ${themeCopy} themes are one symbolic angle to explore.`;
+    return `Your chart has a fairly even mix of elements. ${crystal.name} is a good fit for the ${themeCopy} qualities in your chart.`;
   }
   if (balance.leastRepresented.includes(element) && !balance.dominant.includes(element)) {
-    return `Your chart has fewer ${element.toLowerCase()} placements. In this guide, we pair ${crystal.name}'s ${themeCopy} themes with ${element.toLowerCase()} as a prompt to explore that side of your chart.`;
+    return `Your chart has fewer ${element.toLowerCase()} placements. We chose ${crystal.name} for its ${themeCopy} qualities to bring attention to that part of your chart.`;
   }
   if (balance.dominant.includes(element)) {
-    return `Your chart has more ${element.toLowerCase()} placements. In this guide, we pair ${crystal.name}'s ${themeCopy} themes with ${element.toLowerCase()} as a prompt to reflect on that part of your chart.`;
+    return `Your chart has more ${element.toLowerCase()} placements. ${crystal.name} matches the ${themeCopy} qualities already strong in your chart.`;
   }
-  return `In this guide, ${crystal.name}'s ${themeCopy} themes are paired with ${element.toLowerCase()} as one symbolic angle on your chart.`;
+  return `We chose ${crystal.name} for its ${themeCopy} qualities, which connect with ${element.toLowerCase()} in your chart.`;
 }
 
 /**
- * Creates a birth-chart-only set of stone prompts. These are editorial symbolic
- * associations, not a claim that crystals change elemental balance or outcomes.
+ * Creates the birth-chart-only stone list from the chart's reliable element balance.
  */
 export function getNatalCrystalSuggestions(
   balance: NatalElementBalance,
@@ -166,7 +165,9 @@ const aspectThemes: Record<string, readonly string[]> = {
 const allThemes = new Set(
   crystalCatalog.flatMap((crystal) => crystal.themes),
 );
-const MINIMUM_DAILY_CHART_THEME_MATCHES = 4;
+// Two shared themes create a clear chart link; requiring all four themes
+// made many otherwise relevant chart days return no suggestions.
+const MINIMUM_DAILY_CHART_THEME_MATCHES = 2;
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -398,12 +399,15 @@ function rank(
         chartCopy && feelingCopy && additionalFeelingThemes.length
           ? `This stone also connects with ${labelThemes(additionalFeelingThemes)}.`
           : null,
-        action ? `Use ${crystal.name} as a reminder to ${action}.` : `${crystal.name} connects with ${selectedMeaning}; you could use it as a prompt to choose one useful next step.`,
-        'This is a symbolic prompt, not a guaranteed effect.',
+        action
+          ? `${crystal.name} is a good companion when you want to ${action}.`
+          : `${crystal.name} is a good companion for ${selectedMeaning.toLowerCase()} and choosing one useful next step.`,
       ].filter(Boolean).join(' ');
       return {
         crystal,
-        basis: chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES ? 'chart' : feelingMatchCount > 0 ? 'feeling' : 'intention',
+        basis: feelingMatchCount > 0
+          ? 'feeling'
+          : chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES ? 'chart' : 'intention',
         matchedIntentions: matched,
         feelingLabel: selectedFeeling?.label,
         reason,

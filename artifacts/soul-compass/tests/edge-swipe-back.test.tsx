@@ -33,7 +33,9 @@ test('only a deliberate rightward swipe from the left edge triggers back', () =>
       </EdgeSwipeBack>,
     );
   });
-  const handlers = renderer!.root.findByProps({ testID: 'edge-swipe-back' }).props;
+  const handlers = renderer!.root
+    .findAllByProps({ testID: 'edge-swipe-back' })
+    .find((node) => String(node.type) === 'View')!.props;
   const shouldCapture = handlers.onMoveShouldSetResponderCapture;
 
   expect(shouldCapture({}, { x0: 22, dx: 30, dy: 5 })).toBe(true);

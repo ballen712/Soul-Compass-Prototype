@@ -76,7 +76,7 @@ vi.mock('@/hooks/useColors', () => ({
   }),
 }));
 
-import NatalScreen from '../app/(tabs)/natal';
+import NatalScreen, { explainPlanet } from '../app/(tabs)/natal';
 import { FirstChartConsentPrompt } from '../components/FirstChartConsentPrompt';
 
 let renderer: ReactTestRenderer | undefined;
@@ -105,6 +105,31 @@ function findText(root: ReactTestInstance, text: string) {
 function resumeApp() {
   state.appStateListeners.forEach(listener => listener('active'));
 }
+
+test('planet explanations connect the planet, sign, and house in plain personal language', () => {
+  const sun = explainPlanet('Sun', 'Aquarius', 6);
+  expect(sun.title).toBe('Sun in Aquarius · House 6');
+  expect(sun.body).toContain('sense of self');
+  expect(sun.body).toContain('independent and drawn to original ideas');
+  expect(sun.body).toContain('your sixth house');
+  expect(sun.body).toContain('routines and practical care');
+  expect(sun.body).toContain('room to improve how things get done');
+  expect(sun.body).not.toMatch(/In astrology|Astrologers often describe/);
+
+  const moon = explainPlanet('Moon', 'Pisces', 7);
+  expect(moon.title).toBe('Moon in Pisces · House 7');
+  expect(moon.body).toContain('feelings and what helps you feel safe');
+  expect(moon.body).toContain('sensitive to moods and guided by imagination');
+  expect(moon.body).toContain('your seventh house');
+  expect(moon.body).toContain('close partnerships');
+  expect(moon.body).toContain('without losing track of your own needs');
+});
+
+test('unknown birth time does not add a house interpretation', () => {
+  const sun = explainPlanet('Sun', 'Aquarius');
+  expect(sun.title).toBe('Sun in Aquarius');
+  expect(sun.body).not.toContain('house');
+});
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

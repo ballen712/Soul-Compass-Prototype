@@ -26,135 +26,135 @@ const meanings = {
     note: 'Stillness · perspective',
     themes: ['calm', 'rest', 'ease', 'reflection'],
     tone: 'violet',
-    description: 'Often linked with {note}, {name} can be a reminder to slow down and notice what you need.',
+    description: '{name} is a good fit when you want more calm, rest, and room to think.',
   },
   focus: {
     note: 'Focus · clarity',
     themes: ['focus', 'clarity', 'attention', 'structure'],
     tone: 'blue',
-    description: 'In crystal traditions, {name} is associated with {note}. Use it as a cue to give one thing your attention.',
+    description: '{name} is a good fit for clear thinking, steady attention, and sorting out your next step.',
   },
   grounding: {
     note: 'Steadiness · patience',
     themes: ['grounding', 'patience', 'balance', 'resilience'],
     tone: 'earth',
-    description: 'Many people choose {name} as a symbol of {note}. Let it remind you to take the next step at your own pace.',
+    description: '{name} is a good fit when you want to feel steady, patient, and balanced.',
   },
   connection: {
     note: 'Connection · care',
     themes: ['connection', 'communication', 'empathy', 'values'],
     tone: 'pink',
-    description: 'Traditionally associated with {note}, {name} can prompt a moment of care for yourself or someone else.',
+    description: '{name} is a good fit for care, empathy, and closer communication.',
   },
   courage: {
     note: 'Courage · self-trust',
     themes: ['courage', 'confidence', 'initiative', 'expression'],
     tone: 'red',
-    description: '{name} is often used as a symbol of {note}. Keep it as a small prompt to meet one thing honestly.',
+    description: '{name} is a good fit when you want to trust yourself and take a first step.',
   },
   curiosity: {
     note: 'Curiosity · change',
     themes: ['curiosity', 'change', 'learning', 'adaptability'],
     tone: 'green',
-    description: 'Crystal guides often connect {name} with {note}. It can be a reminder to stay open when plans shift.',
+    description: '{name} is a good fit when you want to stay curious and adjust as plans change.',
   },
   creativity: {
     note: 'Imagination · expression',
     themes: ['creativity', 'imagination', 'expression', 'play'],
     tone: 'violet',
-    description: 'Linked in traditional symbolism with {note}, {name} can invite you to make room for a fresh idea.',
+    description: '{name} is a good fit for imagination, self-expression, and playful ideas.',
   },
   renewal: {
     note: 'Renewal · possibility',
     themes: ['renewal', 'change', 'hope', 'adaptability'],
     tone: 'green',
-    description: '{name} is traditionally connected with {note}. Treat that meaning as an invitation, not a prediction.',
+    description: '{name} is a good fit when you want a fresh start or a new point of view.',
   },
   clarity: {
     note: 'Perspective · discernment',
     themes: ['clarity', 'perspective', 'learning', 'communication'],
     tone: 'clear',
-    description: 'Often chosen for its links with {note}, {name} can be a cue to pause and look at a situation from another angle.',
+    description: '{name} is a good fit for perspective, clear choices, and thoughtful communication.',
   },
   energy: {
     note: 'Vitality · initiative',
     themes: ['energy', 'initiative', 'confidence', 'courage'],
     tone: 'gold',
-    description: 'In crystal traditions, {name} represents {note}. Use it as a prompt to choose where your effort matters most.',
+    description: '{name} is a good fit when you want more initiative and confidence to get started.',
   },
   boundaries: {
     note: 'Boundaries · resilience',
     themes: ['boundaries', 'resilience', 'grounding', 'self-trust'],
     tone: 'dark',
-    description: 'Many crystal guides associate {name} with {note}. Let it remind you that a pause or a clear limit is a choice.',
+    description: '{name} is a good fit for resilience, steadiness, and protecting your time.',
   },
   joy: {
     note: 'Warmth · optimism',
     themes: ['joy', 'optimism', 'confidence', 'connection'],
     tone: 'gold',
-    description: 'Traditionally linked with {note}, {name} can be a small reminder to notice what brings a little brightness.',
+    description: '{name} is a good fit when you want more warmth, optimism, and connection.',
   },
   intuition: {
     note: 'Reflection · inner listening',
     themes: ['reflection', 'intuition', 'calm', 'self-trust'],
     tone: 'blue',
-    description: '{name} is often chosen as a symbol of {note}. Use it as a prompt to listen before you rush to answer.',
+    description: '{name} is a good fit for reflection, calm, and trusting your own judgment.',
   },
   change: {
     note: 'Change · new perspective',
     themes: ['change', 'adaptability', 'renewal', 'curiosity'],
     tone: 'green',
-    description: 'Crystal guides often connect {name} with {note}. It can be a reminder to meet an unfamiliar moment with curiosity.',
+    description: '{name} is a good fit when you want flexibility and a fresh perspective.',
   },
   resilience: {
     note: 'Resilience · steadiness',
     themes: ['resilience', 'grounding', 'courage', 'self-trust'],
     tone: 'earth',
-    description: 'Traditionally linked with {note}, {name} can remind you that progress can be quiet and gradual.',
+    description: '{name} is a good fit for steadiness, courage, and self-trust during a challenge.',
   },
   expression: {
     note: 'Expression · clear words',
     themes: ['expression', 'communication', 'creativity', 'clarity'],
     tone: 'blue',
-    description: 'Many people associate {name} with {note}. Use it as a cue to say what you mean with care.',
+    description: '{name} is a good fit when you want to express yourself clearly and creatively.',
   },
   balance: {
     note: 'Balance · perspective',
     themes: ['balance', 'perspective', 'connection', 'ease'],
     tone: 'green',
-    description: 'In traditional crystal symbolism, {name} represents {note}. Let it be a prompt to make room for more than one need.',
+    description: '{name} is a good fit for seeing more than one side and making room for different needs.',
   },
   perspective: {
     note: 'Perspective · inner listening',
     themes: ['perspective', 'reflection', 'intuition', 'clarity'],
     tone: 'violet',
-    description: '{name} is often chosen for its link with {note}. Pause and ask what else might be true.',
+    description: '{name} is a good fit for inner listening, clear thinking, and considering another view.',
   },
   confidence: {
     note: 'Confidence · optimism',
     themes: ['confidence', 'optimism', 'courage', 'direction'],
     tone: 'gold',
-    description: 'Traditionally associated with {note}, {name} can be a small reminder to trust your next considered step.',
+    description: '{name} is a good fit when you want to act with optimism and trust your next step.',
   },
   growth: {
     note: 'Growth · possibility',
     themes: ['growth', 'renewal', 'curiosity', 'learning'],
     tone: 'green',
-    description: 'Crystal traditions connect {name} with {note}. Let it invite a question about what you would like to learn next.',
+    description: '{name} is a good fit for learning, curiosity, and exploring new possibilities.',
   },
   patience: {
     note: 'Patience · steady effort',
     themes: ['patience', 'grounding', 'focus', 'resilience'],
     tone: 'earth',
-    description: 'Often used as a symbol of {note}, {name} can remind you that not every answer needs to arrive today.',
+    description: '{name} is a good fit when you want to slow down, stay grounded, and focus on steady progress.',
   },
 } as const;
 
 type MeaningKey = keyof typeof meanings;
 type StoneEntry = readonly [name: string, meaning: MeaningKey];
 
-// Names are drawn from common gem and mineral reference lists; meanings are
-// presented only as traditional symbols for reflection, not as proven effects.
+// Names are drawn from common gem and mineral reference lists. Guide themes
+// connect each stone with the qualities used in daily and chart-based picks.
 // Name references:
 // https://www.ganoksin.com/article/gemstone-name-reference-list/
 // https://gem-a.com/gem-hub/different-types-of-chalcedony

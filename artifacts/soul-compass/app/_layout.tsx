@@ -16,7 +16,9 @@ import { Stack } from 'expo-router';
 import { usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ProfileProvider, useProfile } from '@/profile/ProfileContext';
+import { NatalAutoRefresh, NatalCalculationProvider } from '@/hooks/useNatalCalculation';
 import { setBaseUrl } from '@workspace/api-client-react';
+import { FirstChartConsentPrompt } from '@/components/FirstChartConsentPrompt';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -43,11 +45,13 @@ function RootLayoutNav() {
 
   return (
     <>
+    <NatalAutoRefresh />
     <Stack screenOptions={{ headerBackTitle: 'Back', headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
+    <FirstChartConsentPrompt />
     {overlay}
     </>
   );
@@ -73,13 +77,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
       <ProfileProvider>
-        <ErrorBoundary>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-        </ErrorBoundary>
+        <NatalCalculationProvider>
+          <ErrorBoundary>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+          </ErrorBoundary>
+        </NatalCalculationProvider>
       </ProfileProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

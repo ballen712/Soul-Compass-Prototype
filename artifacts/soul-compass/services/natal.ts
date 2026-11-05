@@ -17,6 +17,10 @@ export function natalRequest(profile: UserProfile, choice: Disambiguation | null
     houseSystem: 'placidus', zodiac: 'tropical',
   };
 }
+/** Local cache identity: excludes residence, names and the selected repeated-hour occurrence. */
+export function natalChartCacheKey(profile: UserProfile): string {
+  return JSON.stringify(natalRequest(profile, null));
+}
 export function requestNatal(
   permission: Pick<LocalProfileStore, 'withCalculationConsent'>,
   profile: UserProfile, choice: Disambiguation | null,

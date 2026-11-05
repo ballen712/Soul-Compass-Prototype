@@ -84,3 +84,17 @@ mtime_ms = 1793816708348
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/2174e862-3cac-41d4-96b5-739d06e86a0d/bb96c3ed-8241-42d3-a9ca-478cf66df007"
 storage_version_token = "1793816808483402"
 content_type = "text/html"
+
+[[outputs]]
+id = "n5eNssRzTIEbN6s4Ixwpw"
+uri = "file://.cache/exports/soul-compass-source.zip"
+type = "unspecified"
+title = "Soul Compass source code"
+description = "Complete source snapshot for the Soul Compass Expo app, supporting API, shared workspace packages, tests, and a README with product constraints. Dependencies, build caches, attachments, Git history, and secrets are excluded."
+logical_id = "e7061936-270c-42f0-8d3e-2f0e5fdfd910"
+content_hash = "sha256:ea208eccd005685a45bd70f89f088170b282e453d6be34b5a8253e3e387229b4"
+size = 8972638
+mtime_ms = 1793869942466
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/e7061936-270c-42f0-8d3e-2f0e5fdfd910/7eab8abe-6b6d-4adc-98bd-322794798537"
+storage_version_token = "1793869952334608"
+content_type = "application/octet-stream"

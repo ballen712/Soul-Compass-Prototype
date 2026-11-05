@@ -3,7 +3,9 @@ import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileForm } from '@/components/ProfileForm';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useProfile } from '@/profile/ProfileContext';
+import { CONSENT_VERSION } from '@/profile/local';
 import type { UserProfile } from '@/profile/profile';
 import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
 import { PRODUCT } from '@/constants/product';
@@ -38,8 +40,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { profile, saveProfile, preferences, savePreferences, toggleCrystal, privacy, setConsent } = useProfile();
-  const [tab, setTab] = useState<Tab>('profile');
-  const [reviewingConsent, setReviewingConsent] = useState(false);
+  const [tab, setTab] = useState<Tab | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export default function SettingsScreen() {
 
   async function submit(nextProfile: UserProfile) {
     await saveProfile(nextProfile);
+    setTab(null);
     setMessage('Birth details saved on this device.');
   }
 
@@ -73,29 +75,65 @@ export default function SettingsScreen() {
   };
 
   const padBottom = { paddingBottom: Math.max(insets.bottom, 34) + 24 };
+  const sections: { key: Tab; label: string; description: string }[] = [
+    { key: 'profile', label: 'Profile', description: 'Birth details and places' },
+    { key: 'preferences', label: 'Preferences', description: 'Intentions, language and collection' },
+    { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
+    { key: 'about', label: 'About', description: 'Support and provider licenses' },
+  ];
 
   return (
     <SafeAreaView edges={['top']} style={[styles.safeArea, Platform.OS === 'web' && { paddingTop: 67 }]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={() => {
+          if (tab) {
+            setTab(null);
+            setMessage(null);
+          } else if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/(tabs)');
+          }
+        }} hitSlop={10}>
           <Text style={styles.back}>Back</Text>
         </Pressable>
         <Text style={styles.heading}>Settings</Text>
         <View style={styles.spacer} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabs}>
-        {(['profile', 'preferences', 'privacy', 'about'] as Tab[]).map((t) => (
-          <Chip key={t} testID={`settings-tab-${t}`} label={t[0].toUpperCase() + t.slice(1)} active={tab === t} onPress={() => { setTab(t); setMessage(null); }} />
-        ))}
-      </ScrollView>
 
-      {tab === 'profile' ? (
+      {tab === null ? (
+        <ScrollView contentContainerStyle={[styles.menuContent, padBottom]} showsVerticalScrollIndicator={false}>
+          {message ? <Text accessibilityRole="alert" style={styles.message}>{message}</Text> : null}
+          <Text style={styles.menuIntro}>A few things you can shape on this device.</Text>
+          <View style={styles.menuList}>
+            {sections.map((section) => (
+              <Pressable
+                key={section.key}
+                testID={`settings-tab-${section.key}`}
+                accessibilityRole="button"
+                onPress={() => { setTab(section.key); setMessage(null); }}
+                style={styles.menuButton}
+              >
+                <View style={styles.menuCopy}>
+                  <Text style={styles.menuLabel}>{section.label}</Text>
+                  <Text style={styles.menuDescription}>{section.description}</Text>
+                </View>
+                <Text style={styles.menuArrow}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      ) : tab === 'profile' ? (
         <>
-          {message ? <Text accessibilityRole="alert" style={[styles.message, { paddingHorizontal: 24 }]}>{message}</Text> : null}
-          <ProfileForm initialProfile={profile} submitLabel="Save changes" onSubmit={submit} />
+          <ProfileForm initialProfile={profile} submitLabel="Save Changes" onSubmit={submit} />
         </>
       ) : (
-        <ScrollView contentContainerStyle={[styles.content, padBottom]}>
+        <KeyboardAwareScrollViewCompat
+          style={styles.scroll}
+          bottomOffset={48}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.content, padBottom]}
+        >
           {message ? <Text accessibilityRole="alert" style={styles.message}>{message}</Text> : null}
 
           {tab === 'preferences' ? (
@@ -155,18 +193,18 @@ export default function SettingsScreen() {
 
           {tab === 'privacy' ? (
             <>
-              <Section title="What runs on this device" description="Daily reflections and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
-              <Section title="What uses the network" description="City search sends only your typed query through the Soul Compass server to Geoapify, not your saved birth profile. Geoapify receives normal server connection metadata; we do not forward your device IP or headers. The current-sky snapshot sends only the current time to the Soul Compass server. Search runs only when you tap Search." />
+              <Section title="What runs on this device" description="Daily reflections, practical rituals and crystal suggestions are calculated on this device with Astronomy Engine, using your saved profile, current residence and intentions. Nothing from these is sent anywhere." />
+              <Section title="What uses the network" description="City search sends only your typed query through the Soul Compass server to Geoapify, not your saved birth profile. Geoapify receives normal server connection metadata; we do not forward your device IP or headers. Search runs only when you tap Search." />
               <Section title="City search protection" description="To protect city search, our server keeps daily keyed source hashes and usage counters. These counters contain no raw IPs, search queries, profiles or birth data. Source hashes change daily; expired entries are removed when search traffic resumes." />
               <Section title="Full natal chart (server)">
                 <Text style={styles.body}>
-                  The full natal chart is calculated on the Soul Compass server. It is only requested after you allow it here or on the Natal tab and then tap Calculate; opening a screen never sends it. The request contains your birth date, birth time if known, and your birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included.
+                  After you agree once, Soul Compass calculates your Natal Chart when no matching saved chart exists, such as the first calculation or after you change your birth details. The request contains your birth date, birth time if known, and birthplace coordinates and time zone. Your name, residence, language, intentions and collection are not included. A matching chart is stored on this device, so ordinary app openings do not send another request.
                 </Text>
                 <Text style={styles.body}>
-                  You can withdraw permission at any time. Withdrawing stops future requests but cannot undo a request already sent. This calculation needs an internet connection.
+                  You can withdraw permission at any time. Withdrawing blocks future requests and cancels or discards an active result where possible, but cannot undo a request already sent. A saved chart remains on this device. Requests are not queued while offline or retried when you reconnect; if a calculation fails, retry it from the error shown on Natal Chart.
                 </Text>
                 <Text style={styles.status}>
-                  Status: {privacy.astrologyApiConsent ? 'Allowed' : privacy.revokedAt ? 'Withdrawn' : 'Not allowed'}
+                  Status: {privacy.astrologyApiConsent ? 'Allowed' : privacy.revokedAt && privacy.consentTimestamp ? 'Withdrawn' : privacy.consentVersion && privacy.consentVersion !== CONSENT_VERSION ? 'Renewal needed' : 'Not allowed'}
                   {privacy.astrologyApiConsent && privacy.consentTimestamp ? ` since ${new Date(privacy.consentTimestamp).toLocaleDateString()}` : ''}
                   {privacy.consentVersion ? ` (terms ${privacy.consentVersion})` : ''}
                 </Text>
@@ -175,24 +213,9 @@ export default function SettingsScreen() {
                     onPress={() => void run(() => setConsent(false), 'Permission withdrawn. No further natal chart requests will be sent.')} style={styles.secondaryButton}>
                     <Text style={styles.secondaryText}>Withdraw consent</Text>
                   </Pressable>
-                ) : reviewingConsent ? (
-                  <View style={styles.consentBox}>
-                    <Text style={styles.body}>
-                      By choosing I Agree, you allow Soul Compass to send the birth details listed above to its calculation server when you tap Calculate on the Natal tab. Nothing else from your profile is sent.
-                    </Text>
-                    <View style={styles.buttonRow}>
-                      <Pressable testID="consent-agree" accessibilityRole="button" disabled={busy}
-                        onPress={() => void run(async () => { await setConsent(true); setReviewingConsent(false); }, 'Consent granted.')} style={styles.primaryButton}>
-                        <Text style={styles.primaryText}>I Agree</Text>
-                      </Pressable>
-                      <Pressable testID="consent-not-now" accessibilityRole="button" onPress={() => setReviewingConsent(false)} style={styles.secondaryButton}>
-                        <Text style={styles.secondaryText}>Not Now</Text>
-                      </Pressable>
-                    </View>
-                  </View>
                 ) : (
-                  <Pressable testID="consent-review" accessibilityRole="button" onPress={() => setReviewingConsent(true)} style={styles.secondaryButton}>
-                    <Text style={styles.secondaryText}>Review and allow</Text>
+                  <Pressable testID="consent-review" accessibilityRole="button" onPress={() => router.push('/natal')} style={styles.secondaryButton}>
+                    <Text style={styles.secondaryText}>Review on Natal Chart</Text>
                   </Pressable>
                 )}
               </Section>
@@ -211,11 +234,11 @@ export default function SettingsScreen() {
                 </Pressable>
               </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
-              <Section title="Privacy" description="No account. Profile and collection are stored on this device. Daily reflections are calculated on-device. Birth details go to the server only for a natal chart you request after giving permission, which you can withdraw in Privacy." />
+              <Section title="Privacy" description="No account. Profile, collection and a calculated Natal Chart are stored on this device. Daily reflections and rituals are calculated on-device. Birth details go to the server only to calculate a chart after you give permission; an unchanged saved chart is not requested again, and permission can be withdrawn in Privacy." />
               <Section title="Licenses" description="Astronomical calculations use Astronomy Engine (MIT), not a paid ephemeris. City lookup is powered by Geoapify with © OpenStreetMap contributors; attribution and provider privacy links appear beside each city search. The Free plan permits commercial use within its credits, request-rate and feature limits. Built with Expo and React Native (MIT). Feather icons (MIT); Inter (SIL Open Font License 1.1). Readings and stone notes draw on traditional symbolism for reflection; they are not medical or scientific advice. The app is in English only." />
             </>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScrollViewCompat>
       )}
     </SafeAreaView>
   );
@@ -223,12 +246,19 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F5F1E8' },
+  scroll: { flex: 1 },
   header: { height: 52, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   back: { color: '#58664F', fontSize: 14 },
   heading: { color: '#22241F', fontSize: 16, fontWeight: '600' },
   spacer: { width: 34 },
-  tabsScroll: { flexGrow: 0 },
-  tabs: { paddingHorizontal: 24, gap: 8, paddingBottom: 8 },
+  menuContent: { paddingHorizontal: 24, paddingTop: 18, gap: 20 },
+  menuIntro: { color: '#77756F', fontSize: 14, lineHeight: 20 },
+  menuList: { gap: 10 },
+  menuButton: { minHeight: 72, borderWidth: 1, borderColor: '#D9D3C7', borderRadius: 16, backgroundColor: '#FFFEFB', paddingHorizontal: 17, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  menuCopy: { flex: 1, gap: 4 },
+  menuLabel: { color: '#30352D', fontSize: 15, fontWeight: '600' },
+  menuDescription: { color: '#77756F', fontSize: 12, lineHeight: 16 },
+  menuArrow: { color: '#58664F', fontSize: 24, marginLeft: 12 },
   content: { paddingHorizontal: 24, paddingTop: 12, gap: 22 },
   section: { gap: 10 },
   sectionTitle: { color: '#30352D', fontSize: 18, fontWeight: '600' },
@@ -246,10 +276,6 @@ const styles = StyleSheet.create({
   smallButtonActive: { backgroundColor: '#58664F', borderColor: '#58664F' },
   smallButtonText: { color: '#58664F', fontSize: 13, fontWeight: '600' },
   smallButtonTextActive: { color: '#F5F1E8' },
-  consentBox: { gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#D9D3C7', backgroundColor: '#FBF8F1' },
-  buttonRow: { flexDirection: 'row', gap: 10 },
-  primaryButton: { minHeight: 46, borderRadius: 12, backgroundColor: '#25344D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  primaryText: { color: '#F5F1E8', fontSize: 14, fontWeight: '600' },
   secondaryButton: { minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#D9D3C7', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, alignSelf: 'flex-start' },
   secondaryText: { color: '#58664F', fontSize: 14, fontWeight: '600' },
 });

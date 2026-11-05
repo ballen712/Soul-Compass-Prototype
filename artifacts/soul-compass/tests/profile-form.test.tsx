@@ -93,8 +93,11 @@ function textContent(value: unknown): string {
 function pressText(root: ReactTestInstance, label: string) {
   const text = findTextNode(root, label);
   if (!text) throw new Error(`Could not find text: ${label}`);
-  const pressable = text.parent;
-  if (!pressable || typeof pressable.props.onPress !== 'function') {
+  let pressable: ReactTestInstance | null = text;
+  while (pressable && typeof pressable.props.onPress !== 'function') {
+    pressable = pressable.parent;
+  }
+  if (!pressable) {
     throw new Error(`Text is not inside a pressable button: ${label}`);
   }
   return pressable.props.onPress();
@@ -173,7 +176,6 @@ test('onboarding accepts a known birth time', async () => {
   const root = renderer!.root;
 
   input(root, 'Date of birth', '2000-02-29');
-  setBirthTimeKnown(root);
   input(root, 'Birth time', '00:01');
   await chooseCity(root, 'Place of birth', selectedBirthPlace);
   await act(async () => { await pressText(root, 'Continue'); });
@@ -237,13 +239,16 @@ test('pasting digits or separated dates formats them, and replacing middle digit
   expect(selectionOf(root, 'Birth time')).toEqual({ start: 4, end: 4 });
 });
 
-test('onboarding explicitly accepts an unknown time and selected location survives provider reload', async () => {
+test('unknown birth time is opt-in and selected location survives provider reload', async () => {
   await render(<ProfileProvider><OnboardingForm /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
 
   const unknownChoice = root.findAllByType(Pressable).find(node => node.props.accessibilityRole === 'checkbox');
-  expect(unknownChoice?.props.accessibilityState.checked).toBe(true);
-  input(root, 'Date of birth', '1991-06-20');
+  expect(unknownChoice?.props.accessibilityState.checked).toBe(false);
+  input(root, 'Date of birth', '19910620');
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Date of birth')?.props.value).toBe('1991-06-20');
+  setBirthTimeKnown(root);
+  expect(root.findAllByType(Pressable).find(node => node.props.accessibilityRole === 'checkbox')?.props.accessibilityState.checked).toBe(true);
   await chooseCity(root, 'Place of birth', selectedBirthPlace);
   await act(async () => { await pressText(root, 'Enter Soul Compass'); });
 
@@ -263,15 +268,35 @@ test('onboarding explicitly accepts an unknown time and selected location surviv
   });
 });
 
+test('date and time fields format digit input, preserve edits, and retain validation-ready values', async () => {
+  const saved = vi.fn(async () => {});
+  await render(<ProfileForm submitLabel="Continue" onSubmit={saved} />);
+  const root = renderer!.root;
+
+  input(root, 'Date of birth', '20000229');
+  input(root, 'Birth time', '1951');
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Date of birth')?.props.value).toBe('2000-02-29');
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Birth time')?.props.value).toBe('19:51');
+  const unknownChoice = root.findAllByType(Pressable).find(node => node.props.accessibilityRole === 'checkbox');
+  expect(unknownChoice?.props.accessibilityState.checked).toBe(false);
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Birth time')?.props.editable).toBe(true);
+  act(() => unknownChoice?.props.onPress());
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Birth time')?.props.editable).toBe(false);
+  act(() => unknownChoice?.props.onPress());
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Birth time')?.props.editable).toBe(true);
+  expect(root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Birth time')?.props.value).toBe('19:51');
+});
+
 test('settings can update the birthplace city and time without changing other profile values', async () => {
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
 
+  await act(async () => { await pressText(root, 'Profile'); });
   setBirthTimeKnown(root);
   input(root, 'Birth time', '08:45');
   await chooseCity(root, 'Place of birth', selectedBirthPlace);
-  await act(async () => { await pressText(root, 'Save changes'); });
+  await act(async () => { await pressText(root, 'Save Changes'); });
 
   expect(profileState.profile).toEqual({
     ...existingProfile,
@@ -287,11 +312,38 @@ test('editing a city without selecting a search result cannot save the old locat
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
 
+  await act(async () => { await pressText(root, 'Profile'); });
   input(root, 'Place of birth', 'Vienna');
-  await act(async () => { await pressText(root, 'Save changes'); });
+  await act(async () => { await pressText(root, 'Save Changes'); });
 
   expect(profileState.profile).toEqual(existingProfile);
   expect(alertText(root)).toContain('Search for and select your place of birth.');
+});
+
+test('saving an unchanged profile succeeds locally and leaves the user on Settings', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => { await pressText(root, 'Profile'); });
+  await act(async () => { await pressText(root, 'Save Changes'); });
+
+  expect(profileState.profile).toEqual(existingProfile);
+  expect(textContent(findTextNode(root, 'Birth details saved on this device.')?.props.children)).toBe('Birth details saved on this device.');
+  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
+});
+
+test('Back leaves profile edits unsaved and returns to the Settings menu', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => { await pressText(root, 'Profile'); });
+  input(root, 'Date of birth', '1990-01-15');
+  await act(async () => { await pressText(root, 'Back'); });
+
+  expect(profileState.profile).toEqual(existingProfile);
+  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(1);
 });
 
 test('onboarding rejects impossible dates and a missing birthplace', async () => {
@@ -305,6 +357,7 @@ test('onboarding rejects impossible dates and a missing birthplace', async () =>
   expect(alertText(root)).toContain('birth date');
 
   input(root, 'Date of birth', '2024-02-29');
+  setBirthTimeKnown(root);
   await act(async () => { await pressText(root, 'Continue'); });
   expect(saved).not.toHaveBeenCalled();
   expect(alertText(root)).toContain('place of birth');

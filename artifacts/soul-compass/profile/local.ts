@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const CONSENT_VERSION = '2026-11-04-v1';
+export const CONSENT_VERSION = '2026-11-04-v3';
 export const LOCAL_KEY = 'soul-compass.local.v2';
 export const LEGACY_KEY = 'soul-compass.profile.v1';
 export const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {

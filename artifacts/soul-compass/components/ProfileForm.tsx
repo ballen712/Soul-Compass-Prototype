@@ -50,7 +50,9 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
     'date',
   );
   const birthDate = birthDateInput.value;
-  const [birthTimeKnown, setBirthTimeKnown] = useState(initialBirthTime?.status === 'known');
+  const [birthTimeKnown, setBirthTimeKnown] = useState(
+    initialBirthTime ? initialBirthTime.status === 'known' : true,
+  );
   const birthTimeInput = useFormattedBirthInput(
     initialBirthTime?.status === 'known' ? initialBirthTime.localTime : '',
     'time',
@@ -68,8 +70,10 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const savingRef = useRef(false);
 
   async function save() {
+    if (savingRef.current) return;
     const dateParts = birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     const validDate = dateParts
       ? new Date(Date.UTC(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3])))
@@ -108,6 +112,7 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
     setError('');
     try {
@@ -115,17 +120,18 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
     } catch {
       setError('Your profile could not be saved. Please try again.');
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
   return (
     <KeyboardAwareScrollViewCompat
-      bottomOffset={24}
+      style={styles.scroll}
+      bottomOffset={72}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 34) + 48 }]}
     >
-      <Text style={styles.eyebrow}>YOUR PERSONAL COMPASS</Text>
       <Text style={styles.title}>A little about you.</Text>
       <Text style={styles.description}>
         Your birthplace is essential for a future natal chart. Birth time is optional.
@@ -224,8 +230,8 @@ export function ProfileForm({ initialProfile, initialDraft, submitLabel, onSubmi
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48, gap: 12 },
-  eyebrow: { color: '#8A815F', fontSize: 11, letterSpacing: 2, marginTop: 8 },
   title: { color: '#22241F', fontSize: 32, lineHeight: 40, fontWeight: '400', marginTop: 6 },
   description: { color: '#77756F', fontSize: 15, lineHeight: 23, marginBottom: 12 },
   label: { color: '#55574F', fontSize: 11, letterSpacing: 1.4, marginTop: 12 },

@@ -10,3 +10,9 @@ Keep authentication and cloud profiles compatible with Supabase Free for early d
 **Why:** the user explicitly required these limits in the security remediation and Phase 3 authentication briefs.
 
 **How to apply:** preserve these constraints in future security changes; distinguish a clean automated scan from actual production-ready account security.
+
+Do not unnecessarily reproduce personal birth details in reports, logs or messages.
+
+**Why:** the user explicitly required this privacy boundary in the consolidated testing brief.
+
+**How to apply:** report only the minimum request metadata needed for verification; never include profile values or request bodies.

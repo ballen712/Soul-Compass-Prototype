@@ -13,13 +13,13 @@ export default function OnboardingScreen() {
       <View style={styles.welcome}>
         <Text style={styles.welcomeEyebrow}>WELCOME</Text>
         <Text style={styles.welcomeText}>
-          Soul Compass turns today's sky and your birth details into a short daily reflection and a stone to sit with. Don't know your birth time? Leave it unknown; a few chart details will be skipped.
+          Soul Compass offers a short daily reflection, a practical pause, and a stone to sit with. The language stays grounded and understandable. Don't know your birth time? Leave it unknown; some chart details will be skipped.
         </Text>
         <Text style={styles.welcomeText}>
           Current residence is optional and separate from birthplace. It is used only to work out your local date for daily readings; your birthplace is never used for that.
         </Text>
         <Text style={styles.welcomeNote}>
-          No account. Your profile stays on this device. City search uses the network. A full natal chart is sent to our server only if you allow it later and tap Calculate.
+          No account. Your profile, preferences and collection stay on this device. Daily reflections and rituals are calculated here. City search uses the network. Natal Chart is optional: after you agree once, the chart is saved on this device and is recalculated only if your birth details change.
         </Text>
       </View>
       <ProfileForm initialDraft={onboardingDraft} submitLabel="Enter Soul Compass" onSubmit={submit} />

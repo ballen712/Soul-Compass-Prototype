@@ -13,7 +13,8 @@ function useStoreValue(store: LocalProfileStore) {
   return {
     profile: record.profile, onboardingDraft: record.onboardingDraft, loaded, error,
     preferences: record.preferences, privacy: record.privacy,
-    saveProfile: store.saveProfile, savePreferences: store.savePreferences,
+    saveProfile: store.saveProfile, loadNatalChartCache: store.loadNatalChartCache,
+    saveNatalChartCache: store.saveNatalChartCache, savePreferences: store.savePreferences,
     toggleCrystal: store.toggleCrystal, setConsent: store.setConsent,
     reloadLocal: store.load, canCalculate: store.canCalculate,
     withCalculationConsent: store.withCalculationConsent.bind(store),

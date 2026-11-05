@@ -5,17 +5,16 @@ import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProfileReadingNote } from '@/components/ProfileReadingNote';
 import { SettingsButton } from '@/components/SettingsButton';
 import { alternativeCrystals, samplePrimaryCrystal } from '@/constants/content';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import {
-  EPHEMERIS_SOURCE,
   getCrystalRecommendation,
   getIntentionRecommendation,
   getSampleCrystal,
 } from '@/profile/astrology';
+import { getCompanionReason } from '@/profile/crystal-guidance';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
@@ -35,7 +34,7 @@ function CollectionToggle({ name }: { name: string }) {
     catch { setError('Could not update your collection on this device.'); }
     finally { setBusy(false); }
   }
-  const label = inCollection ? 'In your collection' : 'Add to collection';
+  const label = inCollection ? 'In Your Collection' : 'Add to Collection';
   return (
     <View style={styles.collectWrap}>
       <Pressable testID={`collect-${slug}`} accessibilityRole="switch" accessibilityLabel={`${name}: ${label}`} accessibilityState={{ checked: inCollection, disabled: busy, busy }} disabled={busy} onPress={toggle}
@@ -142,54 +141,15 @@ export default function CrystalsScreen() {
             </Text>
             <SettingsButton />
           </View>
-          <ProfileReadingNote tone="light" />
 
           <View style={styles.intro}>
-            <View style={styles.eyebrowRow}>
-              <View
-                style={[
-                  styles.eyebrowLine,
-                  { backgroundColor: colors.crystals.secondary },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.eyebrow,
-                  { color: colors.crystals.secondary },
-                ]}
-              >
-                A MOMENT WITH MINERAL
-              </Text>
-            </View>
             <Text
               style={[
                 styles.title,
                 { color: colors.crystals.foreground },
               ]}
             >
-              Find a stone{"\n"}to meet you here.
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                { color: colors.crystals.mutedForeground },
-              ]}
-            >
-              Natural forms, chosen for the feeling they evoke.
-            </Text>
-            <Text
-              style={[
-                styles.calculationNote,
-                { color: colors.crystals.mutedForeground },
-              ]}
-            >
-              {recommendation
-                ? recommendation.basis === 'chart'
-                  ? `Planetary themes calculated on your device using ${EPHEMERIS_SOURCE.name}; the stone pairing uses traditional symbolism and your recognized intentions.`
-                  : 'An intention-based suggestion, not a chart calculation. Traditional symbolism is not a scientific or medical claim.'
-                : astrology?.status === 'unavailable'
-                  ? astrology.message
-                  : 'Sample crystal suggestions — not calculated from your chart.'}
+              Find a stone to meet you here.
             </Text>
           </View>
 
@@ -236,7 +196,7 @@ export default function CrystalsScreen() {
                     { color: colors.crystals.badgeForeground },
                   ]}
                 >
-                  {recommendation ? recommendation.basis === 'intention' ? 'INTENTION PICK' : 'SYMBOLIC CHART PAIRING' : 'SAMPLE ONLY'}
+                  {recommendation ? recommendation.basis === 'intention' ? 'INTENTION COMPANION' : 'TODAY’S COMPANION' : 'SAMPLE ONLY'}
                 </Text>
               </View>
             </View>
@@ -279,19 +239,9 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                {recommendation?.reason ?? featuredCrystal.description}
+                {recommendation?.reason ?? 'As a sample reflection, Moonstone can be a prompt to pause and listen inward. Add an intention in Settings for a personal stone pairing.'}
               </Text>
               <CollectionToggle name={featuredCrystal.name} />
-              {recommendation ? (
-                <Text
-                  style={[
-                    styles.crystalDescription,
-                    { color: colors.crystals.mutedForeground },
-                  ]}
-                >
-                  {featuredCrystal.description}
-                </Text>
-              ) : null}
             </View>
           </View>
           ) : null}
@@ -306,7 +256,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                EXPLORE THE CATALOG · TRADITIONAL SYMBOLISM
+                MORE STONES TO CONSIDER
               </Text>
               <Text
                 style={[
@@ -359,14 +309,8 @@ export default function CrystalsScreen() {
                   >
                     {crystal.note}
                   </Text>
-                  <Text
-                    style={[
-                      styles.alternativeDescription,
-                      { color: colors.crystals.mutedForeground },
-                    ]}
-                    numberOfLines={2}
-                  >
-                    {crystal.description}
+                  <Text style={[styles.alternativeDescription, { color: colors.crystals.mutedForeground }]}>
+                    {getCompanionReason(crystal, recommendation)}
                   </Text>
                   <CollectionToggle name={crystal.name} />
                 </View>
@@ -447,39 +391,12 @@ const styles = StyleSheet.create({
     marginTop: 38,
     marginBottom: 22,
   },
-  eyebrowRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: 14,
-  },
-  eyebrowLine: {
-    height: 1,
-    marginRight: 9,
-    width: 22,
-  },
-  eyebrow: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 9,
-    letterSpacing: 1.7,
-  },
   title: {
     fontFamily: 'Georgia',
     fontSize: 35,
     fontWeight: '400',
     letterSpacing: -0.9,
     lineHeight: 41,
-  },
-  subtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    lineHeight: 21,
-    marginTop: 12,
-  },
-  calculationNote: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 10,
   },
   featureCard: {
     borderRadius: 25,

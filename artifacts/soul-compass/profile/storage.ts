@@ -1,4 +1,6 @@
 import type { UserProfile } from './profile';
+import type { NatalChartResponse } from '@workspace/api-client-react';
+import { CalculateNatalChartResponse } from '@workspace/api-zod';
 import {
   BirthTimeSchema, CONSENT_VERSION, DateSchema, DraftSchema, LEGACY_KEY, LOCAL_KEY,
   LocalRecordSchema, LocationSchema, PreferencesSchema, ProfileSchema, emptyRecord,
@@ -10,6 +12,12 @@ export interface StorageAdapter {
   setItem(key: string, value: string): Promise<void>;
 }
 type Snapshot = { record: LocalRecord; loaded: boolean; error: string | null };
+export type CachedNatalChart = {
+  profileKey: string;
+  data: NatalChartResponse;
+  disambiguation: 'earlier' | 'later' | null;
+};
+const NATAL_CHART_CACHE_KEY = 'soul-compass.natal-chart-cache.v1';
 
 /** One serialized writer. Legacy records are never deleted or overwritten. */
 export class LocalProfileStore {
@@ -95,6 +103,44 @@ export class LocalProfileStore {
   saveProfile = (profile: UserProfile) => this.update(record => ({
     ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
   }));
+  loadNatalChartCache = async (profileKey: string): Promise<CachedNatalChart | null> => {
+    const raw = await this.storage.getItem(NATAL_CHART_CACHE_KEY);
+    if (raw === null) return null;
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      throw new Error('The saved Natal Chart could not be read. Retry the calculation to replace it.');
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error('The saved Natal Chart is invalid. Retry the calculation to replace it.');
+    }
+    const entry = value as Record<string, unknown>;
+    if (entry.profileKey !== profileKey) return null;
+    if (entry.disambiguation !== null && entry.disambiguation !== 'earlier' && entry.disambiguation !== 'later') {
+      throw new Error('The saved Natal Chart is invalid. Retry the calculation to replace it.');
+    }
+    const parsed = CalculateNatalChartResponse.safeParse(entry.data);
+    if (!parsed.success) {
+      throw new Error('The saved Natal Chart is invalid. Retry the calculation to replace it.');
+    }
+    return {
+      profileKey,
+      data: JSON.parse(JSON.stringify(parsed.data)) as NatalChartResponse,
+      disambiguation: entry.disambiguation,
+    };
+  };
+  saveNatalChartCache = async (
+    profileKey: string,
+    data: NatalChartResponse,
+    disambiguation: 'earlier' | 'later' | null,
+  ): Promise<void> => {
+    const parsed = CalculateNatalChartResponse.safeParse(data);
+    if (!parsed.success) throw new Error('The chart response could not be validated for local storage.');
+    await this.storage.setItem(NATAL_CHART_CACHE_KEY, JSON.stringify({
+      profileKey, data: parsed.data, disambiguation,
+    }));
+  };
   savePreferences = (preferences: LocalPreferences) => {
     // Apply only fields changed by this action, preserving queued collection edits.
     const baseline = this.snapshot.record.preferences;
@@ -160,16 +206,28 @@ export class LocalProfileStore {
     if (!this.canCalculate()) throw new Error('Permission is required before sending birth details.');
     const revision = this.consentRevision;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20_000);
+    let timedOut = false;
+    let rejectAborted!: (error: Error) => void;
+    const aborted = new Promise<never>((_, reject) => { rejectAborted = reject; });
+    const onAbort = () => {
+      const error = timedOut
+        ? new Error('The chart request timed out. Check your connection and try again.')
+        : new Error('Calculation permission changed. Please try again.');
+      if (!timedOut) error.name = 'AbortError';
+      rejectAborted(error);
+    };
+    controller.signal.addEventListener('abort', onAbort, { once: true });
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 20_000);
     this.controllers.add(controller);
     try {
-      const result = await request(controller.signal);
+      const result = await Promise.race([request(controller.signal), aborted]);
       if (!this.canCalculate() || revision !== this.consentRevision || controller.signal.aborted) {
         throw new Error('Calculation permission changed. Please try again.');
       }
       return result;
     } finally {
       clearTimeout(timeout);
+      controller.signal.removeEventListener('abort', onAbort);
       this.controllers.delete(controller);
     }
   }

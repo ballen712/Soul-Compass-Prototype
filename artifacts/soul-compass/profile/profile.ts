@@ -29,7 +29,6 @@ export type ChartPrecision = {
   mayUseMidheaven: boolean;
   mayUseHouses: boolean;
   mayUseTimeSensitiveInterpretations: boolean;
-  precisionNote: string;
 };
 
 export function getChartPrecision(profile: UserProfile): ChartPrecision {
@@ -40,9 +39,6 @@ export function getChartPrecision(profile: UserProfile): ChartPrecision {
     mayUseMidheaven: false,
     mayUseHouses: false,
     mayUseTimeSensitiveInterpretations: birthTimeKnown,
-    precisionNote: birthTimeKnown
-      ? 'Daily reflections use your birth date, time and birth city. For Ascendant, Midheaven and houses, calculate your full chart in NATAL.'
-      : 'Birth time is unknown. Daily reflections use only planet signs stable across a conservative birth-time range; rising sign and houses are not assumed.',
   };
 }
 

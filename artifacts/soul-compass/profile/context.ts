@@ -11,6 +11,8 @@ export type ProfileContextValue = {
   preferences: LocalPreferences;
   privacy: LocalPrivacy;
   saveProfile: LocalProfileStore['saveProfile'];
+  loadNatalChartCache: LocalProfileStore['loadNatalChartCache'];
+  saveNatalChartCache: LocalProfileStore['saveNatalChartCache'];
   savePreferences: LocalProfileStore['savePreferences'];
   toggleCrystal: LocalProfileStore['toggleCrystal'];
   setConsent: LocalProfileStore['setConsent'];

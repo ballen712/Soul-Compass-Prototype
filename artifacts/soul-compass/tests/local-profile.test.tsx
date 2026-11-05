@@ -1,6 +1,8 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { CalculateNatalChartResponse } from '@workspace/api-zod';
+import type { NatalChartResponse } from '@workspace/api-client-react';
 import { LocalProfileStore } from '../profile/storage';
 import { CONSENT_VERSION, LEGACY_KEY, LOCAL_KEY, ProfileSchema, emptyRecord } from '../profile/local';
 import type { UserProfile } from '../profile/profile';
@@ -153,6 +155,42 @@ test('consent grants, persists, revokes and can voluntarily be granted again', a
   const afterRevoke = new LocalProfileStore(storage); await afterRevoke.load(); expect(afterRevoke.canCalculate()).toBe(false);
   await afterRevoke.setConsent(true); expect(await afterRevoke.withCalculationConsent(request)).toBe('chart');
 });
+test('a matching Natal Chart is cached locally and reused only for matching birth inputs', async () => {
+  const { store } = adapter(); await store.load();
+  const chart = CalculateNatalChartResponse.parse({
+    input: { birthTimeKnown: false },
+    calculation: {
+      instantUtc: '2000-01-01T12:00:00.000Z',
+      birthTimeResolution: 'unknown-reference-local-noon',
+      zodiac: 'tropical',
+      coordinateSystem: 'geocentric',
+      houseSystem: null,
+      houseStatus: 'unavailable',
+      houseCuspBoundary: 'test',
+      applyingRule: 'test',
+      provider: 'test',
+      providerVersion: '1',
+      timeZoneDatabase: 'test',
+      angleConvention: 'test',
+      exactnessThresholdDegrees: 0.01,
+      orbs: { luminary: 8, other: 6 },
+    },
+    planets: [],
+    angles: null,
+    houseCusps: [],
+    planetaryHouses: [],
+    aspects: [],
+    moonSignRange: [],
+    warnings: [],
+  }) as unknown as NatalChartResponse;
+
+  await store.saveNatalChartCache('synthetic-profile-key', chart, 'later');
+  expect(await store.loadNatalChartCache('different-profile-key')).toBeNull();
+  const saved = await store.loadNatalChartCache('synthetic-profile-key');
+  expect(saved?.disambiguation).toBe('later');
+  expect(saved?.data.planets).toEqual([]);
+  expect(new Date(saved!.data.calculation.instantUtc).toISOString()).toBe('2000-01-01T12:00:00.000Z');
+});
 test('revocation aborts an in-flight request and discards a late response', async () => {
   const { store } = adapter(); await store.load(); await store.setConsent(true);
   let resolve!: (value: string) => void; let signal!: AbortSignal;
@@ -160,6 +198,23 @@ test('revocation aborts an in-flight request and discards a late response', asyn
   const rejected = expect(response).rejects.toThrow('permission changed');
   const revocation = store.setConsent(false); expect(signal.aborted).toBe(true);
   resolve('late chart'); await rejected; await revocation;
+});
+test('a stalled request times out even when the transport ignores abort', async () => {
+  const { store } = adapter(); await store.load(); await store.setConsent(true);
+  vi.useFakeTimers();
+  try {
+    let signal!: AbortSignal;
+    const response = store.withCalculationConsent(s => {
+      signal = s;
+      return new Promise<string>(() => {});
+    });
+    const rejected = expect(response).rejects.toThrow('The chart request timed out');
+    await vi.advanceTimersByTimeAsync(20_000);
+    await rejected;
+    expect(signal.aborted).toBe(true);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 test('a failed grant never allows requests and a failed revocation fails closed in memory', async () => {
   const { store, storage } = adapter(); await store.load();
@@ -172,7 +227,7 @@ test('a failed grant never allows requests and a failed revocation fails closed 
 test('outdated consent version requires renewed permission', async () => {
   const { data, store } = adapter();
   data.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), privacy: {
-    astrologyApiConsent: true, consentTimestamp: new Date().toISOString(), consentVersion: 'old', revokedAt: null,
+    astrologyApiConsent: true, consentTimestamp: new Date().toISOString(), consentVersion: '2026-11-04-v2', revokedAt: null,
   } }));
   await store.load(); expect(store.canCalculate()).toBe(false);
 });

@@ -16,6 +16,14 @@ const associations: Record<string, { words: string[]; meaning: string }> = {
 };
 const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
+function dayContext(astrology: Calculated | undefined): string {
+  const aspect = astrology?.aspects[0];
+  if (aspect?.quality === 'challenging') return 'Today may ask for patience';
+  if (aspect?.aspect === 'conjunction') return 'A strong theme may call for clear focus today';
+  if (aspect) return 'Today may offer a small opening to notice';
+  return 'A steady day can make room for reflection';
+}
+
 function rank(astrology: Calculated | undefined, { intentions = [], hiddenCrystals = [] }: Options): CrystalRecommendation | null {
   const aspect = astrology?.aspects[0];
   const chartChoice = aspect?.quality === 'challenging' ? 'Labradorite'
@@ -30,21 +38,18 @@ function rank(astrology: Calculated | undefined, { intentions = [], hiddenCrysta
     .sort((a, b) => b.score - a.score);
   const winner = ranked[0];
   if (!winner || (!astrology && winner.matched.length === 0)) return null;
-  const natalSun = astrology?.natalPlacements.find(p => p.body === 'Sun');
-  const factor = aspect
-    ? `${aspect.transitBody} ${aspect.aspect} natal ${aspect.natalBody}`
-    : natalSun ? `natal Sun in ${natalSun.sign}` : 'an eligible natal factor';
+  const meaning = associations[winner.crystal.name].meaning;
   const intention = winner.matched.length > 0
-    ? ` It matches your ${winner.matched.join(', ')} intention${winner.matched.length === 1 ? '' : 's'}.`
+    ? ` It also reflects your intention to ${winner.matched.join(' and ')}.`
     : '';
+  const reason = astrology
+    ? `${dayContext(astrology)}. ${winner.crystal.name} can be a gentle reminder of ${meaning}.${intention}`
+    : `Your intention to ${winner.matched.join(' and ')} can be reflected in ${winner.crystal.name}'s traditional association with ${meaning}.`;
   return {
     crystal: winner.crystal,
     basis: astrology ? 'chart' : 'intention',
     matchedIntentions: winner.matched,
-    reason: `${winner.crystal.name} is traditionally associated with ${associations[winner.crystal.name].meaning}.${intention} ${
-      astrology ? `Today’s calculated chart theme is ${factor}. This is a symbolic pairing alongside that theme, not a measured crystal effect.`
-        : 'This pick uses your intention, not a calculated birth chart.'
-    } Recommendations use the visible three-stone catalog whether or not you own a stone. Crystal symbolism is reflective, not a scientific or medical claim.`,
+    reason,
   };
 }
 
@@ -53,4 +58,20 @@ export function getCrystalRecommendation(astrology: Calculated, options: Options
 }
 export function getIntentionRecommendation(options: Options) {
   return rank(undefined, options);
+}
+
+export function getCompanionReason(
+  crystal: Crystal,
+  recommendation: CrystalRecommendation | null,
+): string {
+  const companionMeaning = associations[crystal.name]?.meaning ?? 'a different perspective';
+  if (!recommendation) {
+    return `As a sample, ${crystal.name} is traditionally associated with ${companionMeaning}.`;
+  }
+  const context = recommendation.basis === 'chart'
+    ? 'today’s theme'
+    : recommendation.matchedIntentions.length > 0
+      ? `your intention to ${recommendation.matchedIntentions.join(' and ')}`
+      : 'your chosen stone';
+  return `Alongside ${recommendation.crystal.name}, ${crystal.name} offers another symbolic prompt for ${context}: ${companionMeaning}.`;
 }

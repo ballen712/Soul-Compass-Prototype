@@ -3,8 +3,9 @@ import test from 'node:test';
 import { calculateDailyAstrology, EPHEMERIS_SOURCE } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
+import { getCompanionReason, getCrystalRecommendation, getIntentionRecommendation } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
+import { alternativeCrystals, samplePrimaryCrystal } from '../constants/content';
 
 const currentResidence = {
   city: 'New York',
@@ -50,6 +51,9 @@ test('timed profile calculates geocentric tropical placements at birth time', ()
   assert.ok(Math.abs(sun.longitude - 280.37) < 0.1);
   assert.equal(result.preciseBirthMoment, true);
   assert.match(EPHEMERIS_SOURCE.models, /VSOP87/);
+  assert.match(result.reading.body, /\b(today|today’s)\b/i);
+  assert.doesNotMatch(result.reading.body, /calculated|natal|astrological tradition|ephemeris/i);
+  assert.ok(result.reading.body.length < 140);
 });
 
 test('unknown-time profile only includes planet signs stable across possible local birth times', () => {
@@ -122,8 +126,13 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.equal(focus?.crystal.name, 'Amethyst');
   assert.deepEqual(focus?.matchedIntentions, ['focus']);
   assert.equal(change?.crystal.name, 'Labradorite');
-  assert.match(focus!.reason, /not a measured crystal effect/);
-  assert.match(focus!.reason, /whether or not you own/);
+  assert.match(focus!.reason, /today|theme/i);
+  assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
+  const moonstoneReason = getCompanionReason(samplePrimaryCrystal, focus);
+  const labradoriteReason = getCompanionReason(alternativeCrystals[1], focus);
+  assert.match(moonstoneReason, /Alongside Amethyst/);
+  assert.notEqual(moonstoneReason, labradoriteReason);
+  assert.doesNotMatch(moonstoneReason, /calculated|natal|aspect|ephemeris/i);
 });
 test('hidden recommendations are replaced from the remaining visible catalog', () => {
   const chart = calculateDailyAstrology(makeProfile());
@@ -136,7 +145,7 @@ test('intention-only suggestions are labeled and arbitrary custom words are not 
   const result = getIntentionRecommendation({ intentions: [' focus ', 'FOCUS'] });
   assert.equal(result?.basis, 'intention'); assert.equal(result?.crystal.name, 'Amethyst');
   assert.deepEqual(result?.matchedIntentions, ['focus']);
-  assert.match(result!.reason, /not a calculated birth chart/);
+  assert.match(result!.reason, /intention to focus/i);
   assert.equal(getIntentionRecommendation({ intentions: ['unmapped custom word'] }), null);
   assert.equal(getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] }), null);
 });

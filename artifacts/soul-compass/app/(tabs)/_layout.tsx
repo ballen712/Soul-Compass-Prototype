@@ -25,7 +25,7 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'circle.circle', selected: 'circle.circle.fill' }}
         />
-        <NativeTabs.Trigger.Label>NATAL</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Natal Chart</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -92,7 +92,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="natal"
         options={{
-          title: 'NATAL',
+          title: 'Natal Chart',
           tabBarIcon: ({ focused }) => (
             <Feather
               name="target"

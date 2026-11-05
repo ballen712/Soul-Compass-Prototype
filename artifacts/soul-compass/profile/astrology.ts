@@ -76,7 +76,6 @@ export type CalculatedReading = {
   title: string;
   body: string;
   reflection: string;
-  focus: string;
   factorSummary: string;
 };
 
@@ -276,7 +275,6 @@ function getTransitAspects(
 
 function makeCalculatedReading(
   natalPlacements: NatalPlacement[],
-  transits: { body: Planet; longitude: number; sign: (typeof ZODIAC_SIGNS)[number] }[],
   aspects: TransitAspect[],
 ): CalculatedReading {
   const leadingAspect = aspects[0];
@@ -294,33 +292,29 @@ function makeCalculatedReading(
       Pluto: 'deep change and boundaries',
     };
     const aspectAdvice = {
-      conjunction: { title: 'Bring one strong theme into focus.', focus: 'Give one priority your attention', action: 'Choose one small action instead of trying to do everything at once', question: 'Where would a deliberate focus help' },
-      sextile: { title: 'Notice a small opening.', focus: 'Take a modest opportunity', action: 'Try a manageable step toward something you value', question: 'What small opportunity can I act on' },
-      square: { title: 'Make room for a different response.', focus: 'Work with a point of friction', action: 'Pause, name what feels difficult and adjust one expectation', question: 'What can I change about my response' },
-      trine: { title: 'Use what feels naturally available.', focus: 'Build on an existing strength', action: 'Use a familiar strength to support one practical task', question: 'Which existing strength can support me' },
-      opposition: { title: 'Consider both sides before deciding.', focus: 'Balance two competing needs', action: 'Listen to a different viewpoint before making a commitment', question: 'What other perspective deserves room' },
+      conjunction: { title: 'Bring one strong theme into focus.', action: 'Choose one small action instead of trying to do everything at once', question: 'Where would a deliberate focus help' },
+      sextile: { title: 'Notice a small opening.', action: 'Try a manageable step toward something you value', question: 'What small opportunity can I act on' },
+      square: { title: 'Make room for a different response.', action: 'Pause, name what feels difficult and adjust one expectation', question: 'What can I change about my response' },
+      trine: { title: 'Use what feels naturally available.', action: 'Use a familiar strength to support one practical task', question: 'Which existing strength can support me' },
+      opposition: { title: 'Consider both sides before deciding.', action: 'Listen to a different viewpoint before making a commitment', question: 'What other perspective deserves room' },
     }[leadingAspect.aspect];
     return {
-      label: 'CALCULATED TRANSIT · REFLECTIVE',
+      label: 'TODAY’S REFLECTION',
       title: aspectAdvice.title,
-      body: `The calculated ${leadingAspect.transitBody} in ${leadingAspect.transitSign} forms a ${leadingAspect.aspect} with your natal ${leadingAspect.natalBody} in ${leadingAspect.natalSign}. In astrological tradition this connects ${transitTheme[leadingAspect.transitBody]} with ${transitTheme[leadingAspect.natalBody]}. ${aspectAdvice.action}. Treat this as a reflective suggestion, not a prediction.`,
-      reflection: `${aspectAdvice.question} around ${transitTheme[leadingAspect.transitBody]} today?`,
-      focus: aspectAdvice.focus,
+      body: `Notice ${transitTheme[leadingAspect.transitBody]} today; ${aspectAdvice.action.charAt(0).toLowerCase()}${aspectAdvice.action.slice(1)}.`,
+      reflection: `${aspectAdvice.question} today?`,
       factorSummary: `${leadingAspect.transitBody} ${leadingAspect.aspect} natal ${leadingAspect.natalBody} · within ${leadingAspect.maxOrb.toFixed(1)}°`,
     };
   }
 
   const natalSun = natalPlacements.find((placement) => placement.body === Body.Sun);
-  const transitSun = transits.find((transit) => transit.body === Body.Sun);
   const anchor = natalSun ?? natalPlacements[0];
-  const currentSun = transitSun?.sign ?? 'today’s sky';
   return {
-    label: 'CALCULATED CHART FACTOR · REFLECTIVE',
-    title: `Begin with your ${anchor.sign} ${anchor.body}.`,
-    body: `The ephemeris places your natal ${anchor.body} in ${anchor.sign}; today’s Sun is in ${currentSun}. No close, reliable major transit to your birth chart is present, so this reading stays with that eligible chart factor rather than inventing an aspect.`,
-    reflection: `What part of my ${anchor.sign} ${anchor.body} nature would I like to bring to today?`,
-    focus: `${anchor.sign} ${anchor.body} reflection`,
-    factorSummary: `Natal ${anchor.body} in ${anchor.sign} · no close major transit`,
+    label: 'TODAY’S REFLECTION',
+    title: 'Return to a steady point.',
+    body: `Your ${anchor.sign} ${anchor.body.toLowerCase()} quality can be a guide today; let it support one choice at your own pace.`,
+    reflection: `Where could your ${anchor.sign} ${anchor.body.toLowerCase()} nature support you today?`,
+    factorSummary: `${anchor.sign} ${anchor.body} · no close major transit`,
   };
 }
 
@@ -375,7 +369,7 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
 
     return {
       status: 'calculated',
-      reading: makeCalculatedReading(natalPlacements, transits, aspects),
+      reading: makeCalculatedReading(natalPlacements, aspects),
       natalPlacements,
       transits,
       aspects,

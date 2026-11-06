@@ -142,7 +142,7 @@ export function explainPlanet(
     return {
       title: 'Moon sign range',
       body: `On your birthday, the Moon was in ${uncertainMoonRange.join(' or ')}. Since your birth time is unknown, we cannot tell which one was in place when you were born. The Moon describes what you feel and what helps you feel secure.`,
-      example: 'For example, after a demanding day, a quiet moment or a trusted conversation might help you feel settled again.',
+      example: 'After a demanding day, a quiet moment or a trusted conversation might help you feel settled again.',
     };
   }
   const key = planet.toLowerCase();
@@ -178,7 +178,7 @@ function makePlanetExample(
   houseGuide?: { exampleSituation: string },
 ): string {
   const situation = houseGuide?.exampleSituation ?? planetExampleSituations[planet] ?? 'making an everyday choice';
-  return `For example, imagine you're ${situation}; you might ${signAction}.`;
+  return `Imagine you're ${situation}; you might ${signAction}.`;
 }
 
 const houseGuides: Record<number, { meaning: string; area: string; moment: string; exampleSituation: string }> = {
@@ -308,12 +308,12 @@ export function explainAspect(
   const firstExampleSituation = firstSituation ?? planetExampleSituations[firstKey] ?? 'making an everyday choice';
   const secondExampleSituation = secondSituation ?? planetExampleSituations[secondKey] ?? 'responding to another need';
   const example = kind === 'opposition' || kind === 'square'
-    ? `For example, when you're ${firstExampleSituation}, you might want to ${firstAction}; in another situation, you may feel pulled to ${secondAction} when you're ${secondExampleSituation}.`
+    ? `When you're ${firstExampleSituation}, you might want to ${firstAction}; in another situation, you may feel pulled to ${secondAction} when you're ${secondExampleSituation}.`
     : kind === 'trine'
-      ? `For example, when you're ${firstExampleSituation}, you might ${firstAction}. That can make it easier to ${secondAction} when you're ${secondExampleSituation}.`
+      ? `When you're ${firstExampleSituation}, you might ${firstAction}. That can make it easier to ${secondAction} when you're ${secondExampleSituation}.`
       : kind === 'sextile'
-        ? `For example, while you're ${firstExampleSituation}, you might ${firstAction}; that could help you ${secondAction} when you're ${secondExampleSituation}.`
-        : `For example, while you're ${firstExampleSituation}, you might ${firstAction} and ${secondAction} in the same situation.`;
+        ? `While you're ${firstExampleSituation}, you might ${firstAction}; that could help you ${secondAction} when you're ${secondExampleSituation}.`
+        : `While you're ${firstExampleSituation}, you might ${firstAction} and ${secondAction} in the same situation.`;
   const referenceNote = context.referenceOnly
     ? ' Since your birth time is unknown, these aspects use local noon as a reference and may shift.'
     : '';
@@ -331,7 +331,7 @@ export function explainAngle(label: string, sign: string): ChartExplanation {
   return {
     title: `${label} in ${cap(sign)}`,
     body: `In astrology, the ${label} is linked with ${isAscendant ? 'how you approach new situations' : 'your long-term direction, work, and public life'}. ${cap(sign)} is often described as doing this ${signTones[sign.toLowerCase()] ?? 'in its own way'}. Treat it as a prompt, not a fixed description.`,
-    example: `For example, when ${isAscendant ? 'meeting someone new' : 'thinking about a long-term goal'}, you might ${signActions[sign.toLowerCase()] ?? 'approach it in your own way'}.`,
+    example: `When ${isAscendant ? 'meeting someone new' : 'thinking about a long-term goal'}, you might ${signActions[sign.toLowerCase()] ?? 'approach it in your own way'}.`,
   };
 }
 

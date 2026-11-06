@@ -45,7 +45,7 @@ Major-aspect explanations should connect both actual planetary placements to how
 
 **How to apply:** use each planet's calculated sign and available house, explain the type of connection in plain language, and include a concrete hypothetical example. For unknown birth times, label reference-time aspects as uncertain and omit unverified signs or houses.
 
-Planet explanations should end with one or two clearly hypothetical, everyday examples in place of a reflection question.
+Planet explanations should end with one or two clearly hypothetical, everyday examples in place of a reflection question. Use “A hypothetical example” as the heading and begin the next line directly with the scenario, without repeating “For example.”
 
 **Why:** the user wants readers to see how a planet-sign-house combination could show up in ordinary life, without presenting it as a fact about them.
 

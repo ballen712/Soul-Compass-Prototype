@@ -30,7 +30,7 @@ If cross-device protection becomes important, assess a user-controlled export/im
 
 ### Repository portability
 
-No user-owned external GitHub remote was verified; the configured origin is a Replit-internal remote. The working tree has 28 changed/new status entries, so a remote clone may not contain the current state. Before developing outside Replit, create or connect a **private** source repository, review and commit the intended project changes, keep secrets out of Git, provision a replacement/managed PostgreSQL database, configure the production API host, and replace Replit-only domain/workflow settings. The code is based on Expo, React Native, Express and pnpm, so it is portable, but the current project is not a drop-in external deployment.
+No user-owned external GitHub remote was verified; the configured origin is a Replit-internal remote. Before developing outside Replit, create or connect a **private** source repository, review and commit the intended current project files, keep secrets out of Git, provision a replacement/managed PostgreSQL database, configure the production API host, and replace Replit-only domain/workflow settings. The code is based on Expo, React Native, Express and pnpm, so it is portable, but the current project is not a drop-in external deployment.
 
 ### Known operational charges
 
@@ -84,6 +84,6 @@ Do not put a Replit external-access token in an Expo bundle. Anyone who extracts
 
 ## Go/no-go now
 
-**Go:** continue internal owner testing and finish drafts/checks that do not require a store account.  
-**No-go:** public sharing of the existing deployment, external friends beta via an unverified Expo Go QR, App Store submission, Google Play submission, paid Tarot or ads.  
+**Go:** continue internal owner testing and finish drafts/checks that do not require a store account.
+**No-go:** public sharing of the existing deployment, external friends beta via an unverified Expo Go QR, App Store submission, Google Play submission, paid Tarot or ads.
 **Membership decision:** wait until policy, API access, build configuration, store materials and internal tests are ready. Then choose iOS first and pay for only the Apple program needed for TestFlight/App Store.

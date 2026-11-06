@@ -1,6 +1,6 @@
 # Soul Compass: data map and store-disclosure worksheet
 
-**Prepared:** 6 November 2026  
+**Prepared:** 6 November 2026
 **Status:** implementation-based working document; verify against the final signed builds and provider terms before submitting store forms.
 
 ## 1. Data currently handled

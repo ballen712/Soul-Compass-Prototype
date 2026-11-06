@@ -31,7 +31,9 @@ Replit's August 2026 billing documentation describes Autoscale charges as a mont
 
 - `DATA_MAP_AND_STORE_DISCLOSURES.md` — implementation-based data map and unresolved Apple/Google disclosure questions.
 - `PRIVACY_POLICY_DRAFT.md` — English policy draft with publication blockers called out.
+- `PRIVACY_POLICY_DRAFT_RU.md` — Russian working translation to help review the English draft; not legal-reviewed.
 - `TERMS_OF_USE_DRAFT.md` — non-final terms outline for the current free, accountless app.
+- `TERMS_OF_USE_DRAFT_RU.md` — Russian working translation; not legal-reviewed.
 - `SUPPORT_PAGE_DRAFT.md` — support-page copy that avoids asking users to email birth details.
 - `LAUNCH_ROADMAP.md` — platform decision, cost notes and pre-release sequence.
 

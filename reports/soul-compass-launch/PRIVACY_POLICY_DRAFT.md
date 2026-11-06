@@ -2,11 +2,11 @@
 
 > **Not for publication.** This is a working draft based on code inspected on 6 November 2026. It contains unresolved facts and legal decisions. Do not add it to App Store Connect, Google Play, a public website or the app until every bracketed item is resolved and the policy has been reviewed for the operator's actual circumstances.
 
-**Last updated:** [PUBLICATION DATE]  
-**Effective date:** [EFFECTIVE DATE]  
-**Controller:** [LEGAL NAME OF THE PERSON OR LEGAL ENTITY OPERATING SOUL COMPASS]  
-**Postal/contact address:** [PUBLIC BUSINESS OR CONTROLLER ADDRESS]  
-**Privacy contact:** soulcompass.support@gmail.com  
+**Last updated:** [PUBLICATION DATE]
+**Effective date:** [EFFECTIVE DATE]
+**Controller:** [LEGAL NAME OF THE PERSON OR LEGAL ENTITY OPERATING SOUL COMPASS]
+**Postal/contact address:** [PUBLIC BUSINESS OR CONTROLLER ADDRESS]
+**Privacy contact:** soulcompass.support@gmail.com
 **Policy URL:** [STABLE PUBLIC HTTPS URL]
 
 ## 1. About this policy

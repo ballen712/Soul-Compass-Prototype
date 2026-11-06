@@ -98,3 +98,73 @@ mtime_ms = 1793869942466
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/e7061936-270c-42f0-8d3e-2f0e5fdfd910/7eab8abe-6b6d-4adc-98bd-322794798537"
 storage_version_token = "1793869952334608"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "zcPERyde0IMaRnZH5vIrS"
+uri = "file://reports/soul-compass-launch/README.md"
+type = "text"
+title = "Soul Compass launch-preparation package"
+description = "Index of the release plan, data map, policy drafts, support copy and unresolved launch checks."
+logical_id = "15d0f1ca-eb43-4945-97bc-609d1c688ed7"
+content_hash = "sha256:0f5d66ae6ccd4038d51eabb94bad9cff50ad27888f57259946f25b2d456da2ac"
+size = 7906
+mtime_ms = 1793986745208
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/15d0f1ca-eb43-4945-97bc-609d1c688ed7/26117597-43cd-451c-b241-428417110fc1"
+storage_version_token = "1793986771624930"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "p8f-y9BYBaDR0AJrxkPNK"
+uri = "file://reports/soul-compass-launch/PRIVACY_POLICY_DRAFT.md"
+type = "text"
+title = "Privacy Policy draft (English)"
+description = "Unapproved draft with explicit placeholders for operator identity, retention, providers and legal review."
+logical_id = "ec6180fc-8cfb-4a03-967d-c74810dd70a3"
+content_hash = "sha256:d844179418e3e057cc8949da87c3921b8825a1e13621d5d592cd383087add433"
+size = 8027
+mtime_ms = 1793986746884
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/ec6180fc-8cfb-4a03-967d-c74810dd70a3/a9c0bd92-c1a0-48ba-9589-8135a3c58fd6"
+storage_version_token = "1793986772321005"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "fPbHtdokz7nByjn872-MF"
+uri = "file://reports/soul-compass-launch/PRIVACY_POLICY_DRAFT_RU.md"
+type = "text"
+title = "Privacy Policy draft (Russian)"
+description = "Working Russian translation for owner review; not legal-reviewed or ready to publish."
+logical_id = "2782b8b3-ecf3-4baa-9ed1-52585092afa3"
+content_hash = "sha256:9473c2ca5096380a1d8d86a9140b0fb7c3f25f0501e112061a4c8db69941ae14"
+size = 13384
+mtime_ms = 1793986748256
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/2782b8b3-ecf3-4baa-9ed1-52585092afa3/b5cb7a29-5ea5-41db-92d1-c48429e37948"
+storage_version_token = "1793986773014069"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "8NB48dziak-PO8g-4vaNW"
+uri = "file://reports/soul-compass-launch/LAUNCH_ROADMAP.md"
+type = "text"
+title = "Launch roadmap and platform plan"
+description = "iOS-first recommendation, current access warning, costs and pre-launch sequence."
+logical_id = "7b9f1e97-8b56-47e6-a04f-416db7116210"
+content_hash = "sha256:b72801fa2f1eacaebd168ecbc1c8c6309d256a7cccba57f700e70b18c706b648"
+size = 11112
+mtime_ms = 1793986746804
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/7b9f1e97-8b56-47e6-a04f-416db7116210/daba2081-eae9-4edf-b0a9-394216fb704e"
+storage_version_token = "1793986774131961"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "59UEUczr3XyFHpBKXI4kG"
+uri = "file://reports/soul-compass-launch/DATA_MAP_AND_STORE_DISCLOSURES.md"
+type = "text"
+title = "Data map and store-disclosure worksheet"
+description = "Implementation-based data flows and unresolved Apple App Privacy / Google Play Data safety questions."
+logical_id = "10da09d1-354b-400a-9e8c-d4698f63b107"
+content_hash = "sha256:8f0cbe6c59e80ca8f8089977aa8fc15a255965ae9aa2881c9e01b46bd63166d2"
+size = 8806
+mtime_ms = 1793986745348
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/10da09d1-354b-400a-9e8c-d4698f63b107/12544140-61a4-4ad2-a291-48f1f553745d"
+storage_version_token = "1793986775721044"
+content_type = "text/markdown"

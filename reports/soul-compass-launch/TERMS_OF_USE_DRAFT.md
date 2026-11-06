@@ -2,10 +2,10 @@
 
 > **Working outline only; not for publication or acceptance in the app.** The operator identity, governing law, consumer rights and liability wording require review by a qualified adviser in the relevant jurisdiction.
 
-**Effective date:** [DATE]  
-**Operator:** [LEGAL NAME / BUSINESS NAME]  
-**Contact address:** [ADDRESS]  
-**Support:** soulcompass.support@gmail.com  
+**Effective date:** [DATE]
+**Operator:** [LEGAL NAME / BUSINESS NAME]
+**Contact address:** [ADDRESS]
+**Support:** soulcompass.support@gmail.com
 **Terms URL:** [PUBLIC HTTPS URL]
 
 ## 1. What Soul Compass provides

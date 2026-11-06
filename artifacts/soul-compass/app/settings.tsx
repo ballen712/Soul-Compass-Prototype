@@ -326,6 +326,31 @@ export default function SettingsScreen() {
                   <Text style={styles.secondaryText}>Contact support</Text>
                 </Pressable>
               </Section>
+              <Section
+                title="City search privacy"
+                description="City search runs only when you tap Search. Only the city words you enter go through the Soul Compass server to Geoapify. Your saved birth profile and device GPS are not sent. Geoapify receives the server’s normal connection details; we do not forward your device IP address or request headers."
+              >
+                <Pressable
+                  testID="about-geoapify-privacy"
+                  accessibilityRole="link"
+                  onPress={() => void run(async () => {
+                    await Linking.openURL('https://www.geoapify.com/privacy-policy/');
+                  }, 'Geoapify privacy policy opened.')}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryText}>Geoapify privacy policy</Text>
+                </Pressable>
+                <Pressable
+                  testID="about-osm-copyright"
+                  accessibilityRole="link"
+                  onPress={() => void run(async () => {
+                    await Linking.openURL('https://www.openstreetmap.org/copyright');
+                  }, 'OpenStreetMap copyright opened.')}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryText}>OpenStreetMap copyright</Text>
+                </Pressable>
+              </Section>
               <Section title="Soul Compass" description={`Version ${APP_VERSION}`} />
               <Section title="Crystal images" description="Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern." />
               <Section title="Privacy" description="No account is needed. Your profile, collection, and saved Natal Chart stay on this device. Daily readings and rituals are worked out here. With your permission, birth details are sent to calculate a chart. The same saved chart is not requested again, and you can withdraw permission in Privacy." />

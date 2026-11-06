@@ -344,19 +344,6 @@ export default function CosmosScreen() {
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Explore your optional Natal Chart"
-            accessibilityHint="Opens your birth chart"
-            testID="cosmos-natal-link"
-            onPress={() => router.push('/(tabs)/natal')}
-            style={({ pressed }) => [styles.natalLink, { borderColor: colors.cosmos.border, opacity: pressed ? 0.72 : 1 }]}
-          >
-            <View style={styles.natalLinkCopy}>
-              <Text style={[styles.natalLinkEyebrow, { color: colors.cosmos.secondary }]}>WHEN YOU’RE CURIOUS</Text>
-              <Text style={[styles.natalLinkTitle, { color: colors.cosmos.foreground }]}>Explore your Natal Chart</Text>
-            </View>
-          </Pressable>
         </View>
       </ScrollView>
       <Modal
@@ -722,17 +709,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  natalLink: {
-    alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginTop: 14,
-    minHeight: 70,
-    paddingHorizontal: 17,
-  },
-  natalLinkCopy: { gap: 5 },
-  natalLinkEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.4 },
-  natalLinkTitle: { fontFamily: 'Georgia', fontSize: 16 },
 });

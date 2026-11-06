@@ -27,7 +27,7 @@ const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
   opacity: 0.25 + (index % 4) * 0.05,
 }));
 const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-type ChartExplanation = { title: string; body: string; question?: string };
+type ChartExplanation = { title: string; body: string; example?: string };
 
 const planetThemes: Record<string, string> = {
   sun: 'what helps you feel like yourself and what gives you confidence',
@@ -81,6 +81,30 @@ const planetFocuses: Record<string, string> = {
   neptune: 'your imagination and sensitivity',
   pluto: 'how you handle trust and major changes',
 };
+const planetExampleSituations: Record<string, string> = {
+  sun: 'choosing how to spend time on something that matters to you',
+  moon: 'looking for comfort after a tiring day',
+  mercury: 'learning something new or having an important conversation',
+  venus: 'deciding how to spend time with someone you care about',
+  mars: 'facing a task you have been putting off',
+  jupiter: 'considering a new interest or direction',
+  saturn: 'working toward a goal that takes time',
+  uranus: 'looking for a solution that fits your own routine',
+  neptune: 'making room for creativity or compassion',
+  pluto: 'moving through a meaningful change',
+};
+const planetExampleActions: Record<string, string> = {
+  sun: 'express what matters to you',
+  moon: 'feel emotionally safe',
+  mercury: 'talk an idea through',
+  venus: 'keep a connection warm',
+  mars: 'take action',
+  jupiter: 'explore a new possibility',
+  saturn: 'take a careful, steady approach',
+  uranus: 'find your own way',
+  neptune: 'follow an ideal',
+  pluto: 'face a major change',
+};
 const signTones: Record<string, string> = {
   aries: 'taking initiative', taurus: 'steadily and practically',
   gemini: 'with curiosity', cancer: 'with care and a need for security',
@@ -90,11 +114,21 @@ const signTones: Record<string, string> = {
   aquarius: 'independently and with fresh ideas', pisces: 'with imagination and sensitivity',
 };
 const aspectMeanings: Record<string, string> = {
-  conjunction: 'brings the two themes together',
-  opposition: 'puts the two themes in tension and can bring balance into focus',
-  trine: 'shows an easier connection between the two themes',
-  square: 'points to tension that may call for a new approach',
-  sextile: 'can point to a chance for the themes to support each other',
+  conjunction: 'These two parts of your chart often work together and can bring each other into focus.',
+  opposition: 'You may sometimes feel pulled between these two needs; noticing both can help you find a balance.',
+  trine: 'These parts may work together naturally, so using one can make the other feel easier.',
+  square: 'These parts can pull in different directions, showing where you may need to adjust or choose a priority.',
+  sextile: 'These parts can support each other, especially when you take an opportunity to use them together.',
+};
+type AspectPlacementContext = {
+  sign?: string;
+  house?: number;
+  possibleSigns?: string[];
+};
+type AspectExplanationContext = {
+  first?: AspectPlacementContext;
+  second?: AspectPlacementContext;
+  referenceOnly?: boolean;
 };
 
 export function explainPlanet(
@@ -108,7 +142,7 @@ export function explainPlanet(
     return {
       title: 'Moon sign range',
       body: `On your birthday, the Moon was in ${uncertainMoonRange.join(' or ')}. Since your birth time is unknown, we cannot tell which one was in place when you were born. The Moon describes what you feel and what helps you feel secure.`,
-      question: 'What helps you feel settled when things change?',
+      example: 'For example, after a demanding day, a quiet moment or a trusted conversation might help you feel settled again.',
     };
   }
   const key = planet.toLowerCase();
@@ -134,72 +168,91 @@ export function explainPlanet(
   return {
     title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
     body,
-    question: houseIsKnown
-      ? planetQuestions[key] ?? 'Where do you notice this in everyday life?'
-      : 'Which part of this description feels most familiar to you?',
+    example: makePlanetExample(key, signAction, houseGuide),
   };
 }
 
-const houseGuides: Record<number, { meaning: string; area: string; moment: string }> = {
+function makePlanetExample(
+  planet: string,
+  signAction: string,
+  houseGuide?: { exampleSituation: string },
+): string {
+  const situation = houseGuide?.exampleSituation ?? planetExampleSituations[planet] ?? 'making an everyday choice';
+  return `For example, imagine you're ${situation}; you might ${signAction}.`;
+}
+
+const houseGuides: Record<number, { meaning: string; area: string; moment: string; exampleSituation: string }> = {
   1: {
     meaning: 'how you show up, the first impression you make, and how you begin new things',
     area: 'first impressions and new beginnings',
     moment: 'you meet someone new or begin something',
+    exampleSituation: 'meeting someone new or beginning a project',
   },
   2: {
     meaning: 'what you value, how you handle money, and what helps you feel secure',
     area: 'your values and sense of security',
     moment: 'you choose what to spend, save, or protect',
+    exampleSituation: 'deciding what to spend, save, or protect',
   },
   3: {
     meaning: 'everyday conversations, the questions you ask, and how you learn',
     area: 'everyday conversations and learning',
     moment: 'you ask questions, learn, or talk an idea through',
+    exampleSituation: 'learning a new skill or sharing news with someone',
   },
   4: {
     meaning: 'home, family, your roots, and where you feel you belong',
     area: 'home, family, and belonging',
     moment: 'you create a sense of home or connect with family',
+    exampleSituation: 'making your home more comfortable or connecting with family',
   },
   5: {
     meaning: 'creativity, romance, hobbies, and the things you enjoy',
     area: 'creativity, romance, and fun',
     moment: 'you make something, enjoy a hobby, or share what you love',
+    exampleSituation: 'sharing something creative or trying a hobby',
   },
   6: {
     meaning: 'your routines, daily work, and how you look after everyday needs',
     area: 'daily routines, work, and self-care',
     moment: 'you organize your day or take care of a practical task',
+    exampleSituation: 'organizing your day or handling a practical task',
   },
   7: {
     meaning: 'close relationships, shared decisions, and listening to each other',
     area: 'close relationships and shared decisions',
     moment: 'you make a shared decision or try to understand someone close to you',
+    exampleSituation: 'making a shared decision with someone close',
   },
   8: {
     meaning: 'trust, shared responsibilities, intimacy, and major changes',
     area: 'trust, shared responsibilities, and deep change',
     moment: 'you build trust or move through an important change',
+    exampleSituation: 'sharing a responsibility or rebuilding trust',
   },
   9: {
     meaning: 'learning, travel, the ideas you believe in, and questions that help you make sense of life',
     area: 'learning, travel, and the beliefs that guide you',
     moment: 'you explore a new idea, place, or point of view',
+    exampleSituation: 'exploring a new idea, place, or belief',
   },
   10: {
     meaning: 'your work, long-term goals, and what you want to be known for',
     area: 'work, long-term goals, and your public role',
     moment: 'you take responsibility or work toward an important goal',
+    exampleSituation: 'working toward a long-term goal or taking responsibility',
   },
   11: {
     meaning: 'friendships, communities, shared plans, and the future you want to build',
     area: 'friendships, communities, and future plans',
     moment: 'you collaborate with friends or take part in a community',
+    exampleSituation: 'planning something with friends or a group',
   },
   12: {
     meaning: 'quiet moments, rest, and feelings you work through privately',
     area: 'rest, private feelings, and time alone',
     moment: 'you rest or take time to process what you feel',
+    exampleSituation: 'taking quiet time or working through a private feeling',
   },
 };
 
@@ -210,27 +263,66 @@ function ordinalHouse(house: number): string {
   if (house % 10 === 3) return `${house}rd`;
   return `${house}th`;
 }
-const planetQuestions: Record<string, string> = {
-  sun: 'Where in this part of life do you feel most like yourself?',
-  moon: 'What helps you feel safe and understood here?',
-  mercury: 'What might feel clearer if you talk or write it through?',
-  venus: 'What would make this part of life more enjoyable or fair?',
-  mars: 'What is one small step you can take without rushing?',
-  jupiter: 'What would you like to learn, try, or understand better here?',
-  saturn: 'What steady routine or small commitment would help you keep going?',
-  uranus: 'Where would doing things your own way help?',
-  neptune: 'How can you make room for imagination while staying clear about what is realistic?',
-  pluto: 'What are you ready to face, change, or let go of in this area?',
-};
-
-export function explainAspect(first: string, second: string, type: string): ChartExplanation {
-  const firstTheme = planetThemes[first.toLowerCase()] ?? `${first.toLowerCase()} themes`;
-  const secondTheme = planetThemes[second.toLowerCase()] ?? `${second.toLowerCase()} themes`;
-  const link = aspectMeanings[type.toLowerCase()] ?? 'describes a relationship between the two themes';
+export function explainAspect(
+  first: string,
+  second: string,
+  type: string,
+  context: AspectExplanationContext = {},
+): ChartExplanation {
+  const kind = type.toLowerCase();
+  const firstKey = first.toLowerCase();
+  const secondKey = second.toLowerCase();
+  const firstPlacement = context.first ?? {};
+  const secondPlacement = context.second ?? {};
+  const describe = (planet: string, placement: AspectPlacementContext) => {
+    const key = planet.toLowerCase();
+    const name = cap(planet);
+    const focus = planetFocuses[key] ?? planetThemes[key] ?? 'this part of your life';
+    const houseGuide = typeof placement.house === 'number' ? houseGuides[placement.house] : undefined;
+    const signPersonality = placement.sign ? signPersonalities[placement.sign.toLowerCase()] : undefined;
+    const signText = placement.sign ? ` in ${cap(placement.sign)}` : '';
+    const houseText = houseGuide && placement.house
+      ? ` in your ${ordinalHouse(placement.house)} House`
+      : '';
+    const houseDetail = houseGuide ? ` This brings it into ${houseGuide.area}.` : '';
+    const signDetail = signPersonality
+      ? ` With ${cap(placement.sign!)} here, you may be ${signPersonality}.`
+      : '';
+    const uncertainMoonDetail = placement.possibleSigns && placement.possibleSigns.length > 1
+      ? ` Your Moon could be in ${placement.possibleSigns.join(' or ')}; without a birth time, we cannot tell which sign applies.`
+      : '';
+    return `Your ${name}${signText}${houseText} is about ${focus}.${houseDetail}${signDetail}${uncertainMoonDetail}`;
+  };
+  const firstSituation = firstPlacement.house
+    ? houseGuides[firstPlacement.house]?.exampleSituation
+    : undefined;
+  const secondSituation = secondPlacement.house
+    ? houseGuides[secondPlacement.house]?.exampleSituation
+    : undefined;
+  const firstAction = signActions[firstPlacement.sign?.toLowerCase() ?? '']
+    ?? planetExampleActions[firstKey]
+    ?? 'follow one of your priorities';
+  const secondAction = signActions[secondPlacement.sign?.toLowerCase() ?? '']
+    ?? planetExampleActions[secondKey]
+    ?? 'make room for another need';
+  const firstExampleSituation = firstSituation ?? planetExampleSituations[firstKey] ?? 'making an everyday choice';
+  const secondExampleSituation = secondSituation ?? planetExampleSituations[secondKey] ?? 'responding to another need';
+  const example = kind === 'opposition' || kind === 'square'
+    ? `For example, when you're ${firstExampleSituation}, you might want to ${firstAction}; in another situation, you may feel pulled to ${secondAction} when you're ${secondExampleSituation}.`
+    : kind === 'trine'
+      ? `For example, when you're ${firstExampleSituation}, you might ${firstAction}. That can make it easier to ${secondAction} when you're ${secondExampleSituation}.`
+      : kind === 'sextile'
+        ? `For example, while you're ${firstExampleSituation}, you might ${firstAction}; that could help you ${secondAction} when you're ${secondExampleSituation}.`
+        : `For example, while you're ${firstExampleSituation}, you might ${firstAction} and ${secondAction} in the same situation.`;
+  const referenceNote = context.referenceOnly
+    ? ' Since your birth time is unknown, these aspects use local noon as a reference and may shift.'
+    : '';
+  const personalLink = aspectMeanings[kind]
+    ?? 'These two parts of your chart are connected, and their balance may show up differently in everyday life.';
   return {
     title: `${cap(first)} ${type.toLowerCase()} ${cap(second)}`,
-    body: `In astrology, this aspect ${link}: ${firstTheme} and ${secondTheme}. You may experience these themes in your own way. Use this as a prompt to reflect, not a fixed answer.`,
-    question: `How do ${firstTheme} and ${secondTheme} show up for you?`,
+    body: `${describe(first, firstPlacement)}\n\n${describe(second, secondPlacement)}\n\n${personalLink}${referenceNote}`,
+    example,
   };
 }
 
@@ -239,7 +331,7 @@ export function explainAngle(label: string, sign: string): ChartExplanation {
   return {
     title: `${label} in ${cap(sign)}`,
     body: `In astrology, the ${label} is linked with ${isAscendant ? 'how you approach new situations' : 'your long-term direction, work, and public life'}. ${cap(sign)} is often described as doing this ${signTones[sign.toLowerCase()] ?? 'in its own way'}. Treat it as a prompt, not a fixed description.`,
-    question: `Does this way of approaching ${isAscendant ? 'new situations' : 'your direction'} feel familiar?`,
+    example: `For example, when ${isAscendant ? 'meeting someone new' : 'thinking about a long-term goal'}, you might ${signActions[sign.toLowerCase()] ?? 'approach it in your own way'}.`,
   };
 }
 
@@ -520,13 +612,13 @@ export default function NatalScreen() {
               </View>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.explanationBody}>
                 <Text style={[styles.body, { color: c.mutedForeground }]}>{activeExplanation.body}</Text>
-                {activeExplanation.question ? (
+                {activeExplanation.example ? (
                   <>
-                    <Text style={[styles.explanationQuestionLabel, { color: c.secondary }]}>
-                      A question to reflect on
+                    <Text style={[styles.explanationExampleLabel, { color: c.secondary }]}>
+                      A hypothetical example
                     </Text>
-                    <Text style={[styles.explanationQuestion, { color: c.foreground }]}>
-                      {activeExplanation.question}
+                    <Text style={[styles.explanationExample, { color: c.foreground }]}>
+                      {activeExplanation.example}
                     </Text>
                   </>
                 ) : null}
@@ -555,9 +647,25 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
     && data.calculation.houseStatus === 'available'
     && data.houseCusps.length > 0;
   const houses = useMemo(
-    () => new Map((housesAvailable ? data.planetaryHouses : []).map((h) => [h.planet, h.house])),
+    () => new Map((housesAvailable ? data.planetaryHouses : []).map((h) => [h.planet.toLowerCase(), h.house])),
     [data.planetaryHouses, housesAvailable],
   );
+  const planetsByName = useMemo(
+    () => new Map(data.planets.map((planet) => [planet.planet.toLowerCase(), planet])),
+    [data.planets],
+  );
+  const aspectPlacement = (planet: string): AspectPlacementContext => {
+    const key = planet.toLowerCase();
+    const position = planetsByName.get(key);
+    const uncertainMoon = key === 'moon'
+      && !hasKnownBirthMoment
+      && data.moonSignRange.length > 1;
+    return {
+      sign: uncertainMoon ? undefined : position?.sign,
+      house: housesAvailable ? houses.get(key) : undefined,
+      possibleSigns: uncertainMoon ? data.moonSignRange : undefined,
+    };
+  };
   const aspects = data.aspects.filter((a) => MAJOR.has(a.type.toLowerCase()));
   const angles = hasKnownBirthMoment ? data.angles : null;
 
@@ -618,7 +726,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       <Card c={c}>
         <Label c={c} icon="disc" text="PLANETS" />
         {data.planets.map((p, i) => {
-          const house = timeKnown ? houses.get(p.planet) : undefined;
+          const house = hasKnownBirthMoment ? houses.get(p.planet.toLowerCase()) : undefined;
           const uncertainMoon = !timeKnown && p.planet.toLowerCase() === 'moon' && data.moonSignRange.length > 1;
           return (
             <Pressable
@@ -654,9 +762,13 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
             key={`${a.first}-${a.second}-${a.type}`}
             accessibilityRole="button"
             accessibilityLabel={`Explain ${cap(a.first)} ${a.type.toLowerCase()} ${cap(a.second)}`}
-            accessibilityHint="Opens a short, reflective explanation"
+            accessibilityHint="Opens a plain-language explanation using your chart"
             testID={`natal-aspect-${a.first.toLowerCase()}-${a.type.toLowerCase()}-${a.second.toLowerCase()}`}
-            onPress={() => onExplain(explainAspect(a.first, a.second, a.type))}
+            onPress={() => onExplain(explainAspect(a.first, a.second, a.type, {
+              first: aspectPlacement(a.first),
+              second: aspectPlacement(a.second),
+              referenceOnly: !hasKnownBirthMoment,
+            }))}
             style={({ pressed }) => [styles.rowPressable, i > 0 && { borderTopWidth: 1, borderTopColor: c.border }, { opacity: pressed ? 0.72 : 1 }]}
           >
             <Text style={[styles.rowName, { color: c.foreground, flex: 1 }]}>{cap(a.first)} {a.type.toLowerCase()} {cap(a.second)}</Text>
@@ -895,12 +1007,12 @@ const styles = StyleSheet.create({
   explanationTitle: { flex: 1, fontFamily: 'Georgia', fontSize: 24, lineHeight: 31, paddingTop: 8 },
   explanationClose: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
   explanationBody: { paddingTop: 10, paddingBottom: 24 },
-  explanationQuestionLabel: {
+  explanationExampleLabel: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
     letterSpacing: 0.8,
     marginTop: 18,
     textTransform: 'uppercase',
   },
-  explanationQuestion: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 26, marginTop: 6 },
+  explanationExample: { fontFamily: 'Georgia', fontSize: 17, lineHeight: 25, marginTop: 6 },
 });

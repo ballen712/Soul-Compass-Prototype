@@ -82,7 +82,7 @@ vi.mock('@/hooks/useColors', () => ({
   }),
 }));
 
-import NatalScreen, { explainPlanet } from '../app/(tabs)/natal';
+import NatalScreen, { explainAspect, explainPlanet } from '../app/(tabs)/natal';
 import { FirstChartConsentPrompt } from '../components/FirstChartConsentPrompt';
 
 let renderer: ReactTestRenderer | undefined;
@@ -128,6 +128,8 @@ test('planet explanations translate sign and house placements into everyday pers
   expect(sun.body).toContain('Together, your Sun in Aquarius in your 6th House connects your confidence and sense of self with daily routines, work, and self-care.');
   expect(sun.body).toContain('especially when you think independently and try an original approach.');
   expect(sun.body).not.toMatch(/connected with|In astrology|Astrologers often describe/i);
+  expect(sun.example).toContain("For example, imagine you're organizing your day or handling a practical task");
+  expect(sun.example).toContain('think independently and try an original approach');
 
   const moon = explainPlanet('Moon', 'Pisces', 7);
   expect(moon.title).toBe('Moon in Pisces · House 7');
@@ -135,6 +137,11 @@ test('planet explanations translate sign and house placements into everyday pers
   expect(moon.body).toContain('With Pisces in your Moon, you may be imaginative, empathetic, and sensitive to the mood around you.');
   expect(moon.body).toContain('Your 7th House is about close relationships, shared decisions, and listening to each other.');
   expect(moon.body).toContain('Together, your Moon in Pisces in your 7th House connects your emotional comfort and sense of safety with close relationships and shared decisions.');
+
+  const taurusSun = explainPlanet('Sun', 'Taurus', 12);
+  expect(taurusSun.example).toBe(
+    "For example, imagine you're taking quiet time or working through a private feeling; you might stay patient and build something steadily.",
+  );
 
   const scorpioSun = explainPlanet('Sun', 'Scorpio', 9);
   expect(scorpioSun.body).toContain('keen to get to the bottom of things');
@@ -159,7 +166,7 @@ test('all planet, sign, and house combinations use plain-language explanations',
         expect(explanation.body).toContain(`Together, your ${planet} in ${sign} in your`);
         expect(explanation.body).toMatch(/You may notice this when/);
         expect(explanation.body).not.toMatch(/connected with|In astrology|Astrologers often describe/i);
-        expect(explanation.question).toBeTruthy();
+        expect(explanation.example).toMatch(/^For example,/);
       }
     }
   }
@@ -169,6 +176,30 @@ test('unknown birth time does not add a house interpretation', () => {
   const sun = explainPlanet('Sun', 'Aquarius');
   expect(sun.title).toBe('Sun in Aquarius');
   expect(sun.body).not.toContain('house');
+  expect(sun.example).toContain("imagine you're choosing how to spend time on something that matters to you");
+});
+
+test('major aspects explain both actual placements in everyday language', () => {
+  const sextile = explainAspect('Sun', 'Mars', 'sextile', {
+    first: { sign: 'Taurus', house: 12 },
+    second: { sign: 'Leo', house: 6 },
+  });
+
+  expect(sextile.title).toBe('Sun sextile Mars');
+  expect(sextile.body).toContain('Your Sun in Taurus in your 12th House is about your confidence and sense of self.');
+  expect(sextile.body).toContain('Your Mars in Leo in your 6th House is about the way you use energy and take action.');
+  expect(sextile.body).toContain('These parts can support each other');
+  expect(sextile.example).toContain('taking quiet time or working through a private feeling');
+  expect(sextile.example).toContain('organizing your day or handling a practical task');
+
+  const uncertain = explainAspect('Sun', 'Moon', 'square', {
+    first: { sign: 'Aquarius' },
+    second: { possibleSigns: ['Pisces', 'Aries'] },
+    referenceOnly: true,
+  });
+  expect(uncertain.body).toContain('Your Moon could be in Pisces or Aries');
+  expect(uncertain.body).toContain('use local noon as a reference');
+  expect(uncertain.body).not.toMatch(/House \d/);
 });
 
 beforeEach(() => {
@@ -355,7 +386,11 @@ test('planet, angle and aspect taps use chart placements and the centered explan
 
   await act(async () => { root.findByProps({ testID: 'natal-planet-sun' }).props.onPress(); });
   expect(findText(root, 'Sun in Aquarius · House 5')).toBeDefined();
-  expect(findText(root, 'A question to reflect on')).toBeDefined();
+  expect(findText(root, 'A hypothetical example')).toBeDefined();
+  expect(findText(root, 'A question to reflect on')).toBeUndefined();
+  expect(
+    findText(root, "For example, imagine you're sharing something creative or trying a hobby; you might think independently and try an original approach."),
+  ).toBeDefined();
   expect(root.findByProps({ testID: 'natal-explanation-stage' }).props.style.justifyContent).toBe('center');
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('House 5'))).toBe(true);
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
@@ -365,6 +400,12 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
   await act(async () => { root.findByProps({ testID: 'natal-aspect-sun-trine-moon' }).props.onPress(); });
   expect(findText(root, 'Sun trine Moon')).toBeDefined();
+  expect(findText(root, 'A hypothetical example')).toBeDefined();
+  expect(
+    root.findAllByType(Text).some((node) =>
+      String(node.props.children).includes('Your Sun in Aquarius in your 5th House is about your confidence and sense of self.'),
+    ),
+  ).toBe(true);
 });
 
 test('Natal Chart guide starts closed, centers its title, and closes again on re-entry', async () => {

@@ -450,6 +450,13 @@ test('About contains the single crystal-image disclosure', async () => {
     'Some crystal images are AI-generated illustrations, not photographs of verified specimens. Real stones vary in colour, shape, and pattern.',
   )).toBeDefined();
   expect(findTextNode(root, 'About Soul Compass')).toBeDefined();
+  expect(findTextNode(root, 'City search privacy')).toBeDefined();
+  expect(findTextNode(
+    root,
+    'City search runs only when you tap Search. Only the city words you enter go through the Soul Compass server to Geoapify. Your saved birth profile and device GPS are not sent. Geoapify receives the server’s normal connection details; we do not forward your device IP address or request headers.',
+  )).toBeDefined();
+  expect(root.findByProps({ testID: 'about-geoapify-privacy' })).toBeDefined();
+  expect(root.findByProps({ testID: 'about-osm-copyright' })).toBeDefined();
   expect(findTextNode(root, 'Cosmos')).toBeDefined();
   expect(findTextNode(root, 'Crystals')).toBeDefined();
   expect(findTextNode(root, 'Natal Chart')).toBeDefined();

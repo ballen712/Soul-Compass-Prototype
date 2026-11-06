@@ -3,7 +3,7 @@ name: Local-first product decisions
 description: Approved registration-free architecture and consent boundaries for Soul Compass.
 ---
 
-Soul Compass initially works without registration, Google sign-in, email OTP, Magic Links, passwords or mandatory Supabase sessions. Use the existing AsyncStorage dependency for a single versioned local profile, preferences, collection and privacy settings. The user has proposed optional Tarot readings as a future paid or rewarded-ad feature; this is a product direction, not permission to implement billing or ads now.
+Soul Compass initially works without registration, Google sign-in, email OTP, Magic Links, passwords or mandatory Supabase sessions. Use the existing AsyncStorage dependency for a single versioned local profile, preferences, collection and privacy settings. The user has proposed optional Tarot readings as a future paid or rewarded-ad feature and is considering a fourth Shop tab for Tarot or longer-term transit/period content; neither is approval to implement billing, ads, or a storefront.
 
 **Why:** the user approved the local-first product and later proposed monetizing optional Tarot readings while keeping the rest of the app relatively free.
 

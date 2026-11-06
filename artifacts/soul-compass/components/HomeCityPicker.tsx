@@ -116,20 +116,34 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
           </Pressable>
         );
       })}
-      <Text style={styles.attribution}>
+      <Text testID="city-search-attribution" style={styles.attribution}>
         Powered by{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geoapify.com/')} style={styles.attributionLink}>
+        <Text
+          accessibilityRole="link"
+          accessibilityLabel="Geoapify"
+          onPress={() => Linking.openURL('https://www.geoapify.com/')}
+          style={styles.attributionLink}
+        >
           Geoapify
         </Text>
         {' '}· ©{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.openstreetmap.org/copyright')} style={styles.attributionLink}>
+        <Text
+          accessibilityRole="link"
+          accessibilityLabel="OpenStreetMap contributors"
+          onPress={() => Linking.openURL('https://www.openstreetmap.org/copyright')}
+          style={styles.attributionLink}
+        >
           OpenStreetMap contributors
         </Text>
         {' '}·{' '}
-        <Text accessibilityRole="link" onPress={() => Linking.openURL('https://www.geoapify.com/privacy-policy/')} style={styles.attributionLink}>
-          Provider privacy
+        <Text
+          accessibilityRole="link"
+          accessibilityLabel="Geoapify privacy policy"
+          onPress={() => Linking.openURL('https://www.geoapify.com/privacy-policy/')}
+          style={styles.attributionLink}
+        >
+          Privacy
         </Text>
-        . Search sends only your typed city query through our server to Geoapify, not your birth profile. No GPS is used. Search only runs when you tap Search.
       </Text>
     </View>
   );
@@ -164,6 +178,6 @@ const styles = StyleSheet.create({
   result: { borderBottomWidth: 1, borderBottomColor: '#E5E0D7', paddingVertical: 10 },
   city: { color: '#242720', fontSize: 15, fontWeight: '600' },
   country: { color: '#77756F', fontSize: 12, marginTop: 3 },
-  attribution: { color: '#89867E', fontSize: 11, lineHeight: 16 },
-  attributionLink: { color: '#52604F', textDecorationLine: 'underline' },
+  attribution: { color: '#89867E', fontSize: 9, lineHeight: 13, marginTop: 2 },
+  attributionLink: { color: '#77756F', textDecorationLine: 'underline' },
 });

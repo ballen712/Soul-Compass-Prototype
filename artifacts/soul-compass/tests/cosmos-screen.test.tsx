@@ -114,9 +114,10 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
   expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(24);
   expect(scrollView.findAllByProps({ testID: 'cosmos-background-stars' })).toHaveLength(0);
-  const natalLink = scrollView.findByProps({ testID: 'cosmos-natal-link' });
-  const page = natalLink.parent!;
-  expect(page.children[page.children.length - 1]).toBe(natalLink);
+  expect(scrollView.findAllByProps({ testID: 'cosmos-natal-link' })).toHaveLength(0);
+  expect(screenCopy).not.toContain('WHEN YOU’RE CURIOUS');
+  expect(screenCopy).not.toContain('Explore your Natal Chart');
+  expect(screenCopy).toContain('A small daily ritual');
   const moment = root.findAllByType(Pressable).find(
     (button: ReactTestInstance) => button.props.accessibilityLabel === 'Read more about A moment to keep',
   );

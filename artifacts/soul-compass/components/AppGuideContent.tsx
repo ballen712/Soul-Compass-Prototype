@@ -17,10 +17,24 @@ export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 's
         <View
           key={item.title}
           testID={`app-guide-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-          style={[styles.card, { backgroundColor: card, borderColor: border }]}
+          style={[
+            styles.card,
+            isModal && styles.modalCard,
+            { backgroundColor: card, borderColor: border },
+          ]}
         >
-          <Text style={[styles.cardTitle, { color: foreground }]}>{item.title}</Text>
-          <Text style={[styles.cardDescription, { color: muted }]}>{item.description}</Text>
+          <Text style={[styles.cardTitle, isModal && styles.modalCardTitle, { color: foreground }]}>
+            {item.title}
+          </Text>
+          <Text
+            style={[
+              styles.cardDescription,
+              isModal && styles.modalCardDescription,
+              { color: muted },
+            ]}
+          >
+            {item.description}
+          </Text>
         </View>
       ))}
     </View>
@@ -30,6 +44,9 @@ export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 's
 const styles = StyleSheet.create({
   list: { gap: 10 },
   card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 5 },
+  modalCard: { padding: 10, gap: 3, borderRadius: 14 },
   cardTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  modalCardTitle: { fontSize: 14 },
   cardDescription: { fontSize: 13, lineHeight: 19, fontFamily: 'Inter_400Regular' },
+  modalCardDescription: { fontSize: 12, lineHeight: 16 },
 });

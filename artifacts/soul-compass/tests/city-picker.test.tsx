@@ -49,6 +49,8 @@ test('explicit searches select exact coordinates into independent birthplace and
   expect(select).toHaveBeenCalledTimes(1);
   const output = JSON.stringify(renderer.toJSON());
   expect(output).toContain('Geoapify'); expect(output).toContain('OpenStreetMap');
+  expect(output).toContain('Privacy');
+  expect(output).not.toContain('Search sends only your typed city query');
   expect(output).not.toContain('Open-Meteo');
 });
 test('late older search is ignored even if its fetch double ignores cancellation', async () => {

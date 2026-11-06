@@ -39,7 +39,7 @@ When you tap Search, the city name you enter is sent to the Soul Compass server 
 
 The Soul Compass API processes network requests and uses short-lived in-memory request limits. Its application request logger records request method, path without query parameters and response status; the inspected logger does not record request bodies.
 
-The city-search quota system uses operational counters and keyed daily digests to protect provider limits. Project documentation says these records do not contain raw city queries, birth details or raw IP addresses. [CONFIRM PRODUCTION DATABASE RETENTION/CLEANUP AND BACKUP POLICY.]
+City-search quota controls also store an operational counter and a keyed daily HMAC digest of the server-observed connection peer in PostgreSQL. The quota database does not store the raw city query or raw peer address; the peer may be a proxy rather than the end user's device. Previous-day digests are deleted when a later quota transaction runs after UTC midnight. Cleanup is request-triggered, not scheduled, so a digest may remain longer if no later request occurs. [CONFIRM DATABASE BACKUP RETENTION AND SET AN APPROVED MAXIMUM RETENTION PERIOD BEFORE PUBLICATION.]
 
 Replit hosts the app/API and operational database. Its infrastructure may process connection and service metadata. [DESCRIBE THE ACTUAL REPLIT DATA REGION, LOGGING, RETENTION, SUBPROCESSORS AND CONTRACTUAL TERMS AFTER VERIFICATION.]
 

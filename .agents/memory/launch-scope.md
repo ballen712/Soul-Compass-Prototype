@@ -37,19 +37,25 @@ Natal Chart is an optional, locally saved deep dive, not a prerequisite for Cosm
 
 **Why:** the user wants the daily reflection to remain the main entry point, asked for accessible chart explanations, and specifically rejected machine-like generic descriptions of planet placements.
 
-**How to apply:** define planets, signs, houses, angles, aspects and chart methods plainly. For each placement, explain the planet's everyday theme, the sign's style, the house's life area, then connect all three with a concrete everyday example. Use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
+**How to apply:** define planets, signs, houses, angles, aspects and chart methods plainly. For each placement, explain the planet's everyday theme, the sign's style, and the house's life area once; do not add a second summary that restates those points. Follow with one concrete, clearly hypothetical example. Use only calculated chart fields; never infer houses or angles for unknown birth times or choose a single Moon sign when the range is uncertain. Frame interpretations as reflection, not prediction or a fixed verdict.
 
 Major-aspect explanations should connect both actual planetary placements to how the aspect may feel or show up in everyday life.
 
 **Why:** the user asked for Sun–Mars and other aspect descriptions to feel specifically about the reader, not like general definitions followed by a reflection question.
 
-**How to apply:** use each planet's calculated sign and available house, explain the type of connection in plain language, and include a concrete hypothetical example. For unknown birth times, label reference-time aspects as uncertain and omit unverified signs or houses.
+**How to apply:** use each planet's calculated sign and available house, explain the type of connection in plain language without repeating the placement definitions, and include a concise hypothetical example. For unknown birth times, label reference-time aspects as uncertain and omit unverified signs or houses.
 
 Planet explanations should end with one or two clearly hypothetical, everyday examples in place of a reflection question. Use “A hypothetical example” as the heading and begin the next line directly with the scenario, without repeating “For example.”
 
 **Why:** the user wants readers to see how a planet-sign-house combination could show up in ordinary life, without presenting it as a fact about them.
 
 **How to apply:** label examples as hypothetical, use the actual known placement context, and preserve uncertainty when birth time or house placement is unavailable.
+
+Keep the technical Chart Details and House Cusps optional behind small information buttons, with short plain-language explanations in the existing Natal Chart modal style.
+
+**Why:** the user wants curious readers to understand the calculation numbers without adding jargon to the main reading.
+
+**How to apply:** explain longitude, latitude, daily speed, and house boundaries simply; make the explanations dismissible and keep them visually consistent with other Natal Chart info modals.
 
 The Cosmos tab should use a star-only night sky with no moon, extending to the top screen edge and continuing across the full near-black background. Keep the blue reading cards distinct and readable. Move “A Daily Pause” closer to the Soul Compass brand.
 

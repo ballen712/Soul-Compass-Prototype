@@ -30,80 +30,68 @@ const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
 type ChartExplanation = { title: string; body: string; example?: string };
 
 const planetThemes: Record<string, string> = {
-  sun: 'what helps you feel like yourself and what gives you confidence',
-  moon: 'what you feel and what helps you feel safe',
-  mercury: 'how you think things through, learn, and put ideas into words',
-  venus: 'what matters to you, what you enjoy, and who you feel close to',
-  mars: 'how you use your energy, stand up for yourself, and take action',
-  jupiter: 'what helps you grow, stay hopeful, and try new things',
-  saturn: 'where patience, practice, and responsibility help you make steady progress',
-  uranus: 'where you need freedom and prefer to find your own way',
-  neptune: 'your imagination, hopes, and the feelings you pick up from other people',
-  pluto: 'how you face big changes, build trust, and let go of what you cannot control',
+  sun: 'confidence and your sense of self',
+  moon: 'your emotional needs and what helps you feel safe',
+  mercury: 'how you think, learn, and communicate',
+  venus: 'what you value and how you connect with others',
+  mars: 'your energy and how you take action',
+  jupiter: 'growth, hope, and new possibilities',
+  saturn: 'responsibility, patience, and long-term effort',
+  uranus: 'independence and the changes you need',
+  neptune: 'imagination and sensitivity',
+  pluto: 'trust and deep personal change',
 };
-const signPersonalities: Record<string, string> = {
-  aries: 'direct and quick to act',
-  taurus: 'patient, steady, and drawn to what feels dependable',
-  gemini: 'curious, quick to ask questions, and likely to enjoy talking ideas through',
-  cancer: 'caring, protective, and quick to notice how others feel',
-  leo: 'warm, expressive, and eager to share what you care about',
-  virgo: 'practical, observant, and quick to notice what could work better',
-  libra: 'thoughtful about fairness and how your choices affect others',
-  scorpio: 'private, good at noticing what others miss, and keen to get to the bottom of things',
-  sagittarius: 'curious about new places, ideas, and ways of seeing life',
-  capricorn: 'patient, determined, and willing to work toward long-term goals',
-  aquarius: 'independent, open to unusual ideas, and comfortable doing things your own way',
-  pisces: 'imaginative, empathetic, and sensitive to the mood around you',
+const signStyles: Record<string, string> = {
+  aries: 'directly and with urgency',
+  taurus: 'at a measured, steady pace',
+  gemini: 'with curiosity',
+  cancer: 'with care for people close to you',
+  leo: 'with confidence and warmth',
+  virgo: 'practically and with attention to detail',
+  libra: 'with an eye for fairness',
+  scorpio: 'privately and with intensity',
+  sagittarius: 'with openness to new viewpoints',
+  capricorn: 'patiently, with long-term goals in mind',
+  aquarius: 'independently and in an unconventional way',
+  pisces: 'with imagination and sensitivity',
 };
 const signActions: Record<string, string> = {
-  aries: 'act quickly and take initiative',
-  taurus: 'stay patient and build something steadily',
-  gemini: 'ask questions and talk ideas through',
-  cancer: 'act with care and protect what matters',
-  leo: 'share your ideas warmly and creatively',
-  virgo: 'notice details and improve what you can',
-  libra: 'consider fairness and how your choices affect others',
-  scorpio: 'look beneath the surface and seek the truth',
-  sagittarius: 'stay open to new places and ways of thinking',
-  capricorn: 'choose a long-term goal and keep working toward it',
-  aquarius: 'think independently and try an original approach',
-  pisces: 'listen with empathy and notice the mood around you',
-};
-const planetFocuses: Record<string, string> = {
-  sun: 'your confidence and sense of self',
-  moon: 'your emotional comfort and sense of safety',
-  mercury: 'the way you think and communicate',
-  venus: 'what you value and how you connect with others',
-  mars: 'the way you use energy and take action',
-  jupiter: 'the way you grow and find hope',
-  saturn: 'the way you work toward something steadily',
-  uranus: 'your need for freedom and new ideas',
-  neptune: 'your imagination and sensitivity',
-  pluto: 'how you handle trust and major changes',
+  aries: 'make the first move',
+  taurus: 'give yourself time before deciding',
+  gemini: 'ask a question that opens the conversation',
+  cancer: 'check in on how everyone involved is feeling',
+  leo: 'share why this matters to you',
+  virgo: 'make one practical adjustment',
+  libra: 'hear both sides before deciding',
+  scorpio: 'look for what is really driving the situation',
+  sagittarius: 'look for a wider perspective',
+  capricorn: 'take one small step toward a longer-term goal',
+  aquarius: 'try an approach people around you have not considered',
+  pisces: 'notice what is not being said and respond gently',
 };
 const planetExampleSituations: Record<string, string> = {
-  sun: 'choosing how to spend time on something that matters to you',
-  moon: 'looking for comfort after a tiring day',
-  mercury: 'learning something new or having an important conversation',
+  sun: 'choosing how to spend an afternoon that is yours',
+  moon: 'coming home after a busy day',
+  mercury: 'hearing an idea you want to understand',
   venus: 'deciding how to spend time with someone you care about',
-  mars: 'facing a task you have been putting off',
-  jupiter: 'considering a new interest or direction',
-  saturn: 'working toward a goal that takes time',
-  uranus: 'looking for a solution that fits your own routine',
-  neptune: 'making room for creativity or compassion',
-  pluto: 'moving through a meaningful change',
+  mars: 'deciding whether to start a task now',
+  jupiter: 'getting a chance to try something unfamiliar',
+  saturn: 'starting a goal that will take practice',
+  uranus: 'noticing that a familiar routine no longer works',
+  neptune: 'having a chance to make something creative',
+  pluto: 'facing a change you did not choose',
 };
 const planetExampleActions: Record<string, string> = {
-  sun: 'express what matters to you',
-  moon: 'feel emotionally safe',
-  mercury: 'talk an idea through',
-  venus: 'keep a connection warm',
-  mars: 'take action',
-  jupiter: 'explore a new possibility',
-  saturn: 'take a careful, steady approach',
-  uranus: 'find your own way',
-  neptune: 'follow an ideal',
-  pluto: 'face a major change',
+  sun: 'give your time to the activity you genuinely care about',
+  moon: 'check what would help you feel settled before responding',
+  mercury: 'ask a question that clears up one detail',
+  venus: 'suggest something you would both enjoy',
+  mars: 'start with one concrete step',
+  jupiter: 'try one manageable option you have not explored',
+  saturn: 'break the goal into a realistic next step',
+  uranus: 'test a different way of doing it',
+  neptune: 'turn an idea or feeling into something creative',
+  pluto: 'be honest about what needs to change',
 };
 const signTones: Record<string, string> = {
   aries: 'taking initiative', taurus: 'steadily and practically',
@@ -114,11 +102,11 @@ const signTones: Record<string, string> = {
   aquarius: 'independently and with fresh ideas', pisces: 'with imagination and sensitivity',
 };
 const aspectMeanings: Record<string, string> = {
-  conjunction: 'These two parts of your chart often work together and can bring each other into focus.',
-  opposition: 'You may sometimes feel pulled between these two needs; noticing both can help you find a balance.',
-  trine: 'These parts may work together naturally, so using one can make the other feel easier.',
-  square: 'These parts can pull in different directions, showing where you may need to adjust or choose a priority.',
-  sextile: 'These parts can support each other, especially when you take an opportunity to use them together.',
+  conjunction: 'These themes blend, so one can bring the other to the surface.',
+  opposition: 'You may feel pulled between these needs; finding a workable balance can help.',
+  trine: 'These themes tend to support each other with less effort.',
+  square: 'These themes can compete for attention and ask you to adjust or choose what matters first.',
+  sextile: 'These themes can support each other when you choose to use them together.',
 };
 type AspectPlacementContext = {
   sign?: string;
@@ -141,118 +129,90 @@ export function explainPlanet(
   if (planet.toLowerCase() === 'moon' && uncertainMoonRange && uncertainMoonRange.length > 1) {
     return {
       title: 'Moon sign range',
-      body: `On your birthday, the Moon was in ${uncertainMoonRange.join(' or ')}. Since your birth time is unknown, we cannot tell which one was in place when you were born. The Moon describes what you feel and what helps you feel secure.`,
+    body: `The Moon changed signs on your birth date and could be in ${uncertainMoonRange.join(' or ')}. Without a birth time, we cannot tell which one applies. The Moon is about your emotional needs and what helps you feel safe.`,
       example: 'After a demanding day, a quiet moment or a trusted conversation might help you feel settled again.',
     };
   }
   const key = planet.toLowerCase();
   const theme = planetThemes[key] ?? 'a personal theme in your life';
-  const signPersonality = signPersonalities[sign.toLowerCase()];
+  const signStyle = signStyles[sign.toLowerCase()];
   const signAction = signActions[sign.toLowerCase()] ?? 'approach things in your own way';
-  const planetFocus = planetFocuses[key] ?? 'this part of your life';
   const houseGuide = typeof house === 'number' ? houseGuides[house] : undefined;
   const houseIsKnown = houseGuide !== undefined;
   const bodyParts = [
     `Your ${name} is about ${theme}.`,
-    signPersonality
-      ? `With ${cap(sign)} in your ${name}, you may be ${signPersonality}.`
-      : `With ${cap(sign)} in your ${name}, this part of you may take its own style.`,
+    signStyle
+      ? `In ${cap(sign)}, you may approach this part of life ${signStyle}.`
+      : `In ${cap(sign)}, you may approach this part of life in your own way.`,
     ...(houseGuide
-      ? [`Your ${ordinalHouse(house!)} House is about ${houseGuide.meaning}.`]
+      ? [`In your ${ordinalHouse(house!)} House, this theme is most connected to ${houseGuide.area}.`]
       : []),
-    houseGuide
-      ? `Together, your ${name} in ${cap(sign)} in your ${ordinalHouse(house!)} House connects ${planetFocus} with ${houseGuide.area}. You may notice this when ${houseGuide.moment}, especially when you ${signAction}.`
-      : `Together, this may mean your ${planetFocus} comes through when you ${signAction}.`,
   ];
   const body = bodyParts.join('\n\n');
   return {
     title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
     body,
-    example: makePlanetExample(key, signAction, houseGuide),
+    example: makePlanetExample(key, houseGuide),
   };
 }
 
 function makePlanetExample(
   planet: string,
-  signAction: string,
   houseGuide?: { exampleSituation: string },
 ): string {
   const situation = houseGuide?.exampleSituation ?? planetExampleSituations[planet] ?? 'making an everyday choice';
-  return `Imagine you're ${situation}; you might ${signAction}.`;
+  const action = planetExampleActions[planet] ?? 'choose one practical next step';
+  return `Imagine you're ${situation}; you might ${action}.`;
 }
 
-const houseGuides: Record<number, { meaning: string; area: string; moment: string; exampleSituation: string }> = {
+const houseGuides: Record<number, { area: string; exampleSituation: string }> = {
   1: {
-    meaning: 'how you show up, the first impression you make, and how you begin new things',
-    area: 'first impressions and new beginnings',
-    moment: 'you meet someone new or begin something',
-    exampleSituation: 'meeting someone new or beginning a project',
+    area: 'first impressions and the way you begin things',
+    exampleSituation: 'introducing yourself in a new place',
   },
   2: {
-    meaning: 'what you value, how you handle money, and what helps you feel secure',
-    area: 'your values and sense of security',
-    moment: 'you choose what to spend, save, or protect',
-    exampleSituation: 'deciding what to spend, save, or protect',
+    area: 'money, personal values, and security',
+    exampleSituation: 'deciding whether a purchase is worth it',
   },
   3: {
-    meaning: 'everyday conversations, the questions you ask, and how you learn',
     area: 'everyday conversations and learning',
-    moment: 'you ask questions, learn, or talk an idea through',
-    exampleSituation: 'learning a new skill or sharing news with someone',
+    exampleSituation: 'explaining a new idea to someone',
   },
   4: {
-    meaning: 'home, family, your roots, and where you feel you belong',
     area: 'home, family, and belonging',
-    moment: 'you create a sense of home or connect with family',
-    exampleSituation: 'making your home more comfortable or connecting with family',
+    exampleSituation: 'making one corner of home more comfortable',
   },
   5: {
-    meaning: 'creativity, romance, hobbies, and the things you enjoy',
     area: 'creativity, romance, and fun',
-    moment: 'you make something, enjoy a hobby, or share what you love',
-    exampleSituation: 'sharing something creative or trying a hobby',
+    exampleSituation: 'showing someone a project you have made',
   },
   6: {
-    meaning: 'your routines, daily work, and how you look after everyday needs',
     area: 'daily routines, work, and self-care',
-    moment: 'you organize your day or take care of a practical task',
-    exampleSituation: 'organizing your day or handling a practical task',
+    exampleSituation: 'simplifying a task you repeat every day',
   },
   7: {
-    meaning: 'close relationships, shared decisions, and listening to each other',
     area: 'close relationships and shared decisions',
-    moment: 'you make a shared decision or try to understand someone close to you',
-    exampleSituation: 'making a shared decision with someone close',
+    exampleSituation: 'making plans with someone close',
   },
   8: {
-    meaning: 'trust, shared responsibilities, intimacy, and major changes',
     area: 'trust, shared responsibilities, and deep change',
-    moment: 'you build trust or move through an important change',
-    exampleSituation: 'sharing a responsibility or rebuilding trust',
+    exampleSituation: 'deciding what responsibility to share',
   },
   9: {
-    meaning: 'learning, travel, the ideas you believe in, and questions that help you make sense of life',
     area: 'learning, travel, and the beliefs that guide you',
-    moment: 'you explore a new idea, place, or point of view',
-    exampleSituation: 'exploring a new idea, place, or belief',
+    exampleSituation: 'comparing two different viewpoints',
   },
   10: {
-    meaning: 'your work, long-term goals, and what you want to be known for',
     area: 'work, long-term goals, and your public role',
-    moment: 'you take responsibility or work toward an important goal',
-    exampleSituation: 'working toward a long-term goal or taking responsibility',
+    exampleSituation: 'taking responsibility for an important goal',
   },
   11: {
-    meaning: 'friendships, communities, shared plans, and the future you want to build',
     area: 'friendships, communities, and future plans',
-    moment: 'you collaborate with friends or take part in a community',
-    exampleSituation: 'planning something with friends or a group',
+    exampleSituation: 'organizing a plan with friends',
   },
   12: {
-    meaning: 'quiet moments, rest, and feelings you work through privately',
     area: 'rest, private feelings, and time alone',
-    moment: 'you rest or take time to process what you feel',
-    exampleSituation: 'taking quiet time or working through a private feeling',
+    exampleSituation: 'working quietly on something just for yourself',
   },
 };
 
@@ -277,21 +237,24 @@ export function explainAspect(
   const describe = (planet: string, placement: AspectPlacementContext) => {
     const key = planet.toLowerCase();
     const name = cap(planet);
-    const focus = planetFocuses[key] ?? planetThemes[key] ?? 'this part of your life';
+    const focus = planetThemes[key] ?? 'this part of your life';
     const houseGuide = typeof placement.house === 'number' ? houseGuides[placement.house] : undefined;
-    const signPersonality = placement.sign ? signPersonalities[placement.sign.toLowerCase()] : undefined;
+    const signStyle = placement.sign ? signStyles[placement.sign.toLowerCase()] : undefined;
     const signText = placement.sign ? ` in ${cap(placement.sign)}` : '';
     const houseText = houseGuide && placement.house
       ? ` in your ${ordinalHouse(placement.house)} House`
       : '';
-    const houseDetail = houseGuide ? ` This brings it into ${houseGuide.area}.` : '';
-    const signDetail = signPersonality
-      ? ` With ${cap(placement.sign!)} here, you may be ${signPersonality}.`
+    const area = houseGuide ? ` with ${houseGuide.area}` : '';
+    const focusSentence = houseGuide
+      ? `Your ${name}${signText}${houseText} connects ${focus}${area}.`
+      : `Your ${name}${signText}${houseText} is about ${focus}.`;
+    const signDetail = placement.sign && signStyle
+      ? ` You may approach this part of life ${signStyle}.`
       : '';
     const uncertainMoonDetail = placement.possibleSigns && placement.possibleSigns.length > 1
-      ? ` Your Moon could be in ${placement.possibleSigns.join(' or ')}; without a birth time, we cannot tell which sign applies.`
+      ? ` Its sign could be ${placement.possibleSigns.join(' or ')}.`
       : '';
-    return `Your ${name}${signText}${houseText} is about ${focus}.${houseDetail}${signDetail}${uncertainMoonDetail}`;
+    return `${focusSentence}${signDetail}${uncertainMoonDetail}`;
   };
   const firstSituation = firstPlacement.house
     ? houseGuides[firstPlacement.house]?.exampleSituation
@@ -299,26 +262,19 @@ export function explainAspect(
   const secondSituation = secondPlacement.house
     ? houseGuides[secondPlacement.house]?.exampleSituation
     : undefined;
-  const firstAction = signActions[firstPlacement.sign?.toLowerCase() ?? '']
-    ?? planetExampleActions[firstKey]
-    ?? 'follow one of your priorities';
-  const secondAction = signActions[secondPlacement.sign?.toLowerCase() ?? '']
-    ?? planetExampleActions[secondKey]
-    ?? 'make room for another need';
+  const firstAction = planetExampleActions[firstKey] ?? 'choose one practical next step';
+  const secondAction = planetExampleActions[secondKey] ?? 'make room for another need';
   const firstExampleSituation = firstSituation ?? planetExampleSituations[firstKey] ?? 'making an everyday choice';
   const secondExampleSituation = secondSituation ?? planetExampleSituations[secondKey] ?? 'responding to another need';
-  const example = kind === 'opposition' || kind === 'square'
-    ? `When you're ${firstExampleSituation}, you might want to ${firstAction}; in another situation, you may feel pulled to ${secondAction} when you're ${secondExampleSituation}.`
-    : kind === 'trine'
-      ? `When you're ${firstExampleSituation}, you might ${firstAction}. That can make it easier to ${secondAction} when you're ${secondExampleSituation}.`
-      : kind === 'sextile'
-        ? `While you're ${firstExampleSituation}, you might ${firstAction}; that could help you ${secondAction} when you're ${secondExampleSituation}.`
-        : `While you're ${firstExampleSituation}, you might ${firstAction} and ${secondAction} in the same situation.`;
+  const tenseAspect = kind === 'opposition' || kind === 'square';
+  const example = tenseAspect
+    ? `You might feel pulled between wanting to ${firstAction} when you're ${firstExampleSituation} and needing to ${secondAction} when you're ${secondExampleSituation}.`
+    : `You might ${firstAction} when you're ${firstExampleSituation}, then ${secondAction} when you're ${secondExampleSituation}.`;
   const referenceNote = context.referenceOnly
-    ? ' Since your birth time is unknown, these aspects use local noon as a reference and may shift.'
+    ? ' For an unknown birth time, these calculations use local noon as a reference and may shift.'
     : '';
   const personalLink = aspectMeanings[kind]
-    ?? 'These two parts of your chart are connected, and their balance may show up differently in everyday life.';
+    ?? 'These two themes are connected and may affect each other in everyday life.';
   return {
     title: `${cap(first)} ${type.toLowerCase()} ${cap(second)}`,
     body: `${describe(first, firstPlacement)}\n\n${describe(second, secondPlacement)}\n\n${personalLink}${referenceNote}`,
@@ -637,6 +593,8 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
 }) {
   const [guideOpen, setGuideOpen] = useState(false);
+  const [infoTopic, setInfoTopic] = useState<'chart-details' | 'house-cusps' | null>(null);
+  const infoCopy = infoTopic ? chartInfoCopy[infoTopic] : null;
   useFocusEffect(useCallback(() => {
     setGuideOpen(false);
   }, []));
@@ -788,7 +746,13 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       ) : null}
 
       <Card c={c}>
-        <Label c={c} icon="sliders" text="CHART DETAILS" />
+        <Label
+          c={c}
+          icon="sliders"
+          text="CHART DETAILS"
+          onInfo={() => setInfoTopic('chart-details')}
+          infoTestID="natal-chart-details-info"
+        />
         {data.planets.map((p) => (
           <View key={p.planet} style={styles.detailRow}>
             <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{cap(p.planet)}</Text>
@@ -800,7 +764,13 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
         {housesAvailable ? (
           <>
             <View style={[styles.rule, { backgroundColor: c.border }]} />
-            <Label c={c} icon="grid" text="HOUSE CUSPS" />
+            <Label
+              c={c}
+              icon="grid"
+              text="HOUSE CUSPS"
+              onInfo={() => setInfoTopic('house-cusps')}
+              infoTestID="natal-house-cusps-info"
+            />
             {data.houseCusps.map((h) => (
               <View key={h.house} testID={`natal-house-cusp-${h.house}`} style={styles.detailRow}>
                 <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>House {h.house}</Text>
@@ -815,9 +785,63 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
           </Text>
         ) : null}
       </Card>
+      <Modal
+        visible={infoCopy !== null}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setInfoTopic(null)}
+      >
+        <EdgeSwipeBack
+          testID="natal-technical-info-edge-swipe"
+          onBack={() => setInfoTopic(null)}
+        >
+          <SafeAreaView edges={['top', 'bottom']} style={styles.explanationSafeArea}>
+            <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: c.background }]} />
+            {infoCopy ? (
+              <View
+                accessibilityViewIsModal
+                accessibilityRole="alert"
+                testID="natal-technical-info-modal"
+                style={[styles.explanationCard, { backgroundColor: c.card, borderColor: c.border }]}
+              >
+                <View style={styles.explanationHeader}>
+                  <Text accessibilityRole="header" style={[styles.explanationTitle, { color: c.foreground }]}>
+                    {infoCopy.title}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close chart details explanation"
+                    testID="natal-technical-info-close"
+                    hitSlop={8}
+                    onPress={() => setInfoTopic(null)}
+                    style={styles.explanationClose}
+                  >
+                    <Feather name="x" size={19} color={c.secondary} />
+                  </Pressable>
+                </View>
+                <Text style={[styles.body, { color: c.mutedForeground, marginTop: 12 }]} testID="natal-technical-info-body">
+                  {infoCopy.body}
+                </Text>
+              </View>
+            ) : null}
+          </SafeAreaView>
+        </EdgeSwipeBack>
+      </Modal>
     </View>
   );
 }
+
+const chartInfoCopy = {
+  'chart-details': {
+    title: 'Chart Details',
+    body: 'These are the exact numbers used to calculate your chart. Longitude is a planet’s place along the zodiac. Latitude shows how far north or south it is from the Sun’s path. Speed shows how much its position changes each day. You can skip these numbers if you only want the reading.',
+  },
+  'house-cusps': {
+    title: 'House Cusps',
+    body: 'A cusp is the starting line of a house. The sign and degree show where that part of the chart begins. The twelve houses group areas of life such as home, work, and relationships. These numbers are technical, so you can skip them if you prefer the plain-language reading.',
+  },
+} as const;
 
 function Guide({
   c,
@@ -891,11 +915,36 @@ function Guide({
 function Card({ c, children }: { c: Palette; children: React.ReactNode }) {
   return <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>{children}</View>;
 }
-function Label({ c, icon, text }: { c: Palette; icon: React.ComponentProps<typeof Feather>['name']; text: string }) {
+function Label({
+  c,
+  icon,
+  text,
+  onInfo,
+  infoTestID,
+}: {
+  c: Palette;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  text: string;
+  onInfo?: () => void;
+  infoTestID?: string;
+}) {
   return (
     <View style={styles.labelRow}>
       <Feather name={icon} size={14} color={c.secondary} />
       <Text style={[styles.label, { color: c.secondary }]}>{text}</Text>
+      {onInfo ? (
+        <Pressable
+          testID={infoTestID}
+          accessibilityRole="button"
+          accessibilityLabel={`About ${text.toLowerCase()}`}
+          accessibilityHint="Opens a short explanation"
+          hitSlop={8}
+          onPress={onInfo}
+          style={styles.labelInfoButton}
+        >
+          <Feather name="info" size={14} color={c.secondary} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -965,6 +1014,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontFamily: 'Georgia', fontSize: 22, marginBottom: 8 },
   labelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 12 },
   label: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.5 },
+  labelInfoButton: { alignItems: 'center', height: 32, justifyContent: 'center', width: 32 },
   body: { ...screenTypography.body, marginBottom: 8 },
   loadingRow: { alignItems: 'center', flexDirection: 'row', gap: 14, minHeight: 42 },
   link: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },

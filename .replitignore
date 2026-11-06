@@ -3,6 +3,5 @@
 
 # No need to store the pnpm store twice.
 .local
-/artifacts/soul-compass/static-build/
 /attached_assets/generated_images/soul-compass-crystals/
 /generated-artifacts/

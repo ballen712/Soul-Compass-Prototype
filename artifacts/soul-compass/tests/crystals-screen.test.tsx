@@ -455,7 +455,7 @@ test('the collection button clears the tab bar and detail artwork scales to the 
     root.findByProps({ testID: 'catalog-stone-moonstone' }).props.onPress();
   });
   const detailImage = root.findAll(
-    (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone on linen',
+    (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone stone illustration',
   ).find((node) => Array.isArray(node.props.style))!;
   expect(detailImage).toBeDefined();
   expect(detailImage.props.resizeMode).toBe('contain');

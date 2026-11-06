@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ProfileSchema } from '@/profile/local';
+import { useAppText } from '@/localization';
 import type { HomeLocation, ProfileFormDraft, UserProfile } from '@/profile/profile';
 import {
   formatBirthInputChange,
@@ -83,6 +84,7 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
   { initialProfile, initialDraft, submitLabel, onSubmit },
   ref,
 ) {
+  const t = useAppText();
   const initialBirthTime = initialProfile?.birthTime ?? initialDraft?.birthTime;
   const birthDateInput = useFormattedBirthInput(
     initialProfile?.birthDate ?? initialDraft?.birthDate ?? '',
@@ -124,15 +126,15 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
       validDate.getUTCMonth() !== Number(dateParts[2]) - 1 ||
       validDate.getUTCDate() !== Number(dateParts[3])
     ) {
-      setError('Enter your birth date as YYYY-MM-DD.');
+      setError(t('Enter your birth date as YYYY-MM-DD.'));
       return false;
     }
     if (birthTimeKnown && !/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) {
-      setError('Enter your birth time as HH:MM or choose that you do not know it.');
+      setError(t('Enter your birth time as HH:MM or choose that you do not know it.'));
       return false;
     }
     if (!birthPlace) {
-      setError('Search for and select your place of birth.');
+      setError(t('Search for and select your place of birth.'));
       return false;
     }
 
@@ -147,7 +149,9 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
     const parsed = ProfileSchema.safeParse(candidate);
     if (!parsed.success) {
       const messages = parsed.error.issues.map((issue) => issue.message).filter(Boolean);
-      setError(messages.length ? messages.join(' ') : 'Some profile details are invalid. Please review them.');
+      setError(messages.length
+        ? messages.map((message) => t(message)).join(' ')
+        : t('Some profile details are invalid. Please review them.'));
       return false;
     }
 
@@ -158,7 +162,7 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
       await onSubmit(parsed.data as UserProfile);
       return true;
     } catch {
-      setError('Your profile could not be saved. Please try again.');
+      setError(t('Your profile could not be saved. Please try again.'));
       return false;
     } finally {
       savingRef.current = false;
@@ -183,14 +187,14 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 34) + 48 }]}
     >
-      <Text style={styles.title}>A little about you.</Text>
+      <Text style={styles.title}>{t('A little about you.')}</Text>
       <Text style={styles.description}>
-        Add your birth date and birthplace for your chart. Your birth time is optional.
+        {t('Add your birth date and birthplace for your chart. Your birth time is optional.')}
       </Text>
 
-      <Text style={styles.label}>DATE OF BIRTH</Text>
+      <Text style={styles.label}>{t('DATE OF BIRTH')}</Text>
       <TextInput
-        accessibilityLabel="Date of birth"
+        accessibilityLabel={t('Date of birth')}
         keyboardType="number-pad"
         maxLength={10}
         onChangeText={birthDateInput.onChangeText}
@@ -202,9 +206,9 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         value={birthDate}
       />
 
-      <Text style={styles.label}>BIRTH TIME</Text>
+      <Text style={styles.label}>{t('BIRTH TIME')}</Text>
       <TextInput
-        accessibilityLabel="Birth time"
+        accessibilityLabel={t('Birth time')}
         editable={birthTimeKnown}
         keyboardType="number-pad"
         maxLength={5}
@@ -228,24 +232,34 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         <View style={[styles.checkbox, !birthTimeKnown && styles.checkboxChecked]}>
           {!birthTimeKnown && <View style={styles.checkmark} />}
         </View>
-        <Text style={styles.unknownText}>I don’t know my birth time</Text>
+        <Text style={styles.unknownText}>{t('I don’t know my birth time')}</Text>
       </Pressable>
       {!birthTimeKnown && (
         <Text style={styles.precisionNote}>
-          You can continue without it. Your chart will leave out details that depend on birth time.
+          {t('You can continue without it. Your chart will leave out details that depend on birth time.')}
         </Text>
       )}
 
-      <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Place of Birth' : 'Place of Birth'}</Text>
-      <Text style={styles.sectionDescription}>We use this for your birth chart. It is different from where you live now.</Text>
+      <Text style={styles.sectionTitle}>{t(initialProfile ? 'Edit Place of Birth' : 'Place of Birth')}</Text>
+      <Text style={styles.sectionDescription}>
+        {t('We use this for your birth chart. It is different from where you live now.')}
+      </Text>
       <HomeCityPicker label="Place of birth" value={birthPlace} onSelect={setBirthPlace} />
 
       <View style={styles.sectionDivider} />
-      <Text style={styles.sectionTitle}>{initialProfile ? 'Edit Current Residence' : 'Current Residence'}</Text>
-      <Text style={styles.sectionDescription}>Add where you live so daily readings use your local date. You can do this later in Settings.</Text>
+      <Text style={styles.sectionTitle}>
+        {t(initialProfile ? 'Edit Current Residence' : 'Current Residence')}
+      </Text>
+      <Text style={styles.sectionDescription}>
+        {t('Add where you live so daily readings use your local date. You can do this later in Settings.')}
+      </Text>
       {residenceEnabled ? (
         <>
-          <HomeCityPicker label="Current residence" value={currentResidence} onSelect={setCurrentResidence} />
+          <HomeCityPicker
+            label="Current residence"
+            value={currentResidence}
+            onSelect={setCurrentResidence}
+          />
           <Pressable
             accessibilityRole="button"
             onPress={() => {
@@ -254,7 +268,7 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
             }}
             style={styles.skipResidence}
           >
-            <Text style={styles.skipResidenceText}>Skip current residence for now</Text>
+            <Text style={styles.skipResidenceText}>{t('Skip current residence for now')}</Text>
           </Pressable>
         </>
       ) : (
@@ -263,7 +277,7 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
           onPress={() => setResidenceEnabled(true)}
           style={styles.addResidence}
         >
-          <Text style={styles.addResidenceText}>Add current residence</Text>
+          <Text style={styles.addResidenceText}>{t('Add current residence')}</Text>
         </Pressable>
       )}
 
@@ -274,7 +288,7 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         onPress={save}
         style={[styles.submit, saving && styles.submitDisabled]}
       >
-        <Text style={styles.submitText}>{saving ? 'Saving…' : submitLabel}</Text>
+        <Text style={styles.submitText}>{saving ? t('Saving…') : t(submitLabel)}</Text>
       </Pressable>
     </KeyboardAwareScrollViewCompat>
   );

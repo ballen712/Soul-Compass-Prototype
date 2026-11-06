@@ -15,6 +15,8 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { screenTypography } from '@/constants/typography';
 import { useProfile } from '@/profile/ProfileContext';
+import { getLocalizedCrystalCopy, type CrystalLocale, type LocalizedCrystalCopy } from '@/localization/crystal-copy';
+import { useAppLocale, useAppText } from '@/localization';
 import {
   calculateNatalElementBalance,
   getCrystalSuggestions,
@@ -31,6 +33,23 @@ import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+function localizeCrystal(crystal: Crystal, locale: CrystalLocale): LocalizedCrystalCopy {
+  return getLocalizedCrystalCopy(crystal.name, locale) ?? {
+    name: crystal.name,
+    note: crystal.note,
+    description: crystal.description,
+    guideDescription: crystal.guideDescription,
+    specimenDescription: crystal.specimenDescription,
+  };
+}
+
+function formatCopy(template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
+    template,
+  );
+}
 
 const stoneToneColors: Record<StoneTone, { background: string; foreground: string }> = {
   violet: { background: '#2E2840', foreground: '#D0B7F0' },
@@ -50,6 +69,9 @@ function CrystalArtwork({ crystal, size, detailSize }: {
   detailSize?: number;
 }) {
   const tone = stoneToneColors[crystal.tone];
+  const locale = useAppLocale();
+  const t = useAppText();
+  const copy = localizeCrystal(crystal, locale);
   const responsiveDetailStyle = size === 'detail' && detailSize !== undefined
     ? { width: detailSize, height: detailSize, alignSelf: 'center' as const }
     : null;
@@ -66,13 +88,13 @@ function CrystalArtwork({ crystal, size, detailSize }: {
         source={crystal.image}
         style={responsiveDetailStyle ? [imageStyle, responsiveDetailStyle] : imageStyle}
         resizeMode={size === 'detail' ? 'contain' : 'cover'}
-        accessibilityLabel={crystal.imageDescription ?? `${crystal.name} stone`}
+        accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
       />
     );
   }
   return (
     <View
-      accessibilityLabel={`${crystal.name} stone illustration`}
+      accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
       style={[
         size === 'feature'
           ? styles.featureImage
@@ -92,7 +114,7 @@ function CrystalArtwork({ crystal, size, detailSize }: {
         color={tone.foreground}
       />
       {size === 'feature' ? (
-        <Text style={[styles.artworkCaption, { color: tone.foreground }]}>SYMBOLIC ILLUSTRATION</Text>
+        <Text style={[styles.artworkCaption, { color: tone.foreground }]}>{t('SYMBOLIC ILLUSTRATION')}</Text>
       ) : null}
     </View>
   );
@@ -101,6 +123,9 @@ function CrystalArtwork({ crystal, size, detailSize }: {
 function CollectionToggle({ name }: { name: string }) {
   const colors = useColors();
   const c = colors.cosmos;
+  const locale = useAppLocale();
+  const t = useAppText();
+  const displayName = getLocalizedCrystalCopy(name, locale)?.name ?? name;
   const { preferences, toggleCrystal } = useProfile();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,13 +135,13 @@ function CollectionToggle({ name }: { name: string }) {
     if (busy) return;
     setBusy(true); setError(null);
     try { await toggleCrystal(slug); }
-    catch { setError('Could not update your collection on this device.'); }
+    catch { setError(t('Could not update your collection on this device.')); }
     finally { setBusy(false); }
   }
-  const label = inCollection ? 'In Your Collection' : 'Add to Collection';
+  const label = inCollection ? t('In Your Collection') : t('Add to Collection');
   return (
     <View style={styles.collectWrap}>
-      <Pressable testID={`collect-${slug}`} accessibilityRole="switch" accessibilityLabel={`${name}: ${label}`} accessibilityState={{ checked: inCollection, disabled: busy, busy }} disabled={busy} onPress={toggle}
+      <Pressable testID={`collect-${slug}`} accessibilityRole="switch" accessibilityLabel={`${displayName}: ${label}`} accessibilityState={{ checked: inCollection, disabled: busy, busy }} disabled={busy} onPress={toggle}
         style={[styles.collectButton, { borderColor: c.border }, inCollection && { backgroundColor: c.secondary, borderColor: c.secondary }]}>
         {busy ? <ActivityIndicator size="small" color={c.secondary} /> : <Feather name={inCollection ? 'check' : 'plus'} size={11} color={inCollection ? c.homeBackground : c.secondary} />}
         <Text style={[styles.collectText, { color: inCollection ? c.homeBackground : c.secondary }]}>{label}</Text>
@@ -128,12 +153,16 @@ function CollectionToggle({ name }: { name: string }) {
 
 function HiddenNote({ count }: { count: number }) {
   const colors = useColors();
+  const t = useAppText();
   if (count === 0) return null;
+  const copy = count === 1
+    ? formatCopy(t('{count} stone is hidden. You can restore hidden stones in Settings.'), { count })
+    : formatCopy(t('{count} stones are hidden. You can restore hidden stones in Settings.'), { count });
   return (
     <View style={[styles.hiddenNote, { borderColor: colors.crystals.border, backgroundColor: colors.crystals.card }]}>
       <Feather name="eye-off" size={13} color={colors.crystals.secondary} />
       <Text style={[styles.hiddenText, { color: colors.crystals.mutedForeground }]}>
-        {count === 1 ? '1 stone is' : `${count} stones are`} hidden. You can restore hidden stones in Settings.
+        {copy}
       </Text>
     </View>
   );
@@ -142,17 +171,35 @@ function HiddenNote({ count }: { count: number }) {
 function describeElementBalance(
   balance: Extract<ReturnType<typeof calculateNatalElementBalance>, { status: 'calculated' }>,
   suggestionCount: number,
+  t: (source: string) => string,
 ) {
-  const join = (elements: string[]) => elements.map((element) => element.toLowerCase()).join(' and ');
-  const stoneCount = `${suggestionCount} chart-matched stone ${suggestionCount === 1 ? 'match' : 'matches'}`;
   if (balance.dominant.length === 4) {
-    return `Across ${balance.total} reliable planetary sign placements, the four elements appear in a fairly even mix. Here are ${stoneCount}.`;
+    return formatCopy(t('Looking at {total} reliable planetary placements in your chart, the four elements are fairly balanced. These {count} suggestions connect with qualities in your birth chart.'), {
+      total: balance.total,
+      count: suggestionCount,
+    });
   }
-  return `Across ${balance.total} reliable planetary sign placements, your chart has more ${join(balance.dominant)} placements and fewer ${join(balance.leastRepresented)}. These ${stoneCount} match qualities in your chart.`;
+  const join = (elements: string[]) => {
+    const translated = elements.map((element) => t(element));
+    return translated.length < 2
+      ? translated[0] ?? ''
+      : formatCopy(t('{theme1} and {theme2}'), {
+        theme1: translated[0],
+        theme2: translated.slice(1).join(t(', ')),
+      });
+  };
+  return formatCopy(t('Looking at {total} reliable planetary placements, your chart shows more {dominant} and fewer {least} placements. These {count} suggestions connect with qualities in your birth chart.'), {
+    total: balance.total,
+    dominant: join(balance.dominant),
+    least: join(balance.leastRepresented),
+    count: suggestionCount,
+  });
 }
 
 export default function CrystalsScreen() {
   const colors = useColors();
+  const locale = useAppLocale();
+  const t = useAppText();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const detailImageSize = Math.max(1, Math.min(320, windowWidth - 56, windowHeight * 0.34));
@@ -174,15 +221,17 @@ export default function CrystalsScreen() {
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
+  const translateStoneName = (name: string) =>
+    getLocalizedCrystalCopy(name, locale)?.name ?? name;
   const natalElementResult = useMemo(
     () => profile ? calculateNatalElementBalance(profile) : null,
     [profile],
   );
   const natalStoneSuggestions = useMemo(
     () => natalElementResult?.status === 'calculated'
-      ? getNatalCrystalSuggestions(natalElementResult, hidden, 8)
+      ? getNatalCrystalSuggestions(natalElementResult, hidden, 8, t, translateStoneName)
       : [],
-    [natalElementResult, hidden],
+    [natalElementResult, hidden, t, locale],
   );
   const astrology = useMemo(
     () => (profile ? getDailyAstrology(profile, now) : null),
@@ -199,8 +248,10 @@ export default function CrystalsScreen() {
           : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
       },
       3,
+      t,
+      translateStoneName,
     ),
-    [astrology, preferences.crystalPreferences, now],
+    [astrology, preferences.crystalPreferences, now, t, locale],
   );
   const recommendation = crystalSuggestions[0] ?? null;
   const catalog = crystalCatalog;
@@ -217,10 +268,12 @@ export default function CrystalsScreen() {
     const query = collectionSearch.trim().toLocaleLowerCase();
     return query
       ? catalog.filter((crystal) =>
-        `${crystal.name} ${crystal.note} ${crystal.specimenDescription}`.toLocaleLowerCase().includes(query),
+        `${crystal.name} ${crystal.note} ${crystal.specimenDescription} ${Object.values(localizeCrystal(crystal, locale)).join(' ')}`
+          .toLocaleLowerCase()
+          .includes(query),
       )
       : catalog;
-  }, [collectionSearch, catalog]);
+  }, [collectionSearch, catalog, locale]);
   const hiddenCount = catalog.filter((crystal) =>
     hidden.includes(slugOf(crystal.name)),
   ).length;
@@ -301,8 +354,8 @@ export default function CrystalsScreen() {
               <Pressable
                 testID="stone-guide-info"
                 accessibilityRole="button"
-                accessibilityLabel="About the Stone Guide"
-                accessibilityHint="Opens an explanation of daily stone suggestions and your collection"
+                accessibilityLabel={t('About the Stone Guide')}
+                accessibilityHint={t('Opens an explanation of daily stone suggestions and your collection')}
                 onPress={() => {
                   setSelectedNatalStone(null);
                   setGuideOpen(true);
@@ -317,9 +370,9 @@ export default function CrystalsScreen() {
           <HiddenNote count={hiddenCount} />
           {hiddenCount === catalog.length ? (
             <View style={[styles.hiddenNote, { borderColor: colors.crystals.border, backgroundColor: colors.crystals.card, flexDirection: 'column', alignItems: 'flex-start' }]}>
-              <Text style={[styles.hiddenText, { color: colors.crystals.foreground }]}>All stones are hidden. Restore a stone in Settings to see suggestions again.</Text>
+              <Text style={[styles.hiddenText, { color: colors.crystals.foreground }]}>{t('All stones are hidden. Restore a stone in Settings to see suggestions again.')}</Text>
               <Pressable accessibilityRole="button" onPress={() => router.push('/settings')}>
-                <Text style={[styles.collectText, { color: colors.crystals.secondary, paddingVertical: 12 }]}>Open settings</Text>
+                <Text style={[styles.collectText, { color: colors.crystals.secondary, paddingVertical: 12 }]}>{t('Open settings')}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -335,10 +388,10 @@ export default function CrystalsScreen() {
               ]}
             >
               <Text style={[styles.emptyTitle, { color: colors.cosmos.foreground }]}>
-                No clear match today
+                {t('No clear match today')}
               </Text>
               <Text style={[styles.emptyBody, { color: colors.cosmos.mutedForeground }]}>
-                {noMatchCopy}
+        {t(noMatchCopy)}
               </Text>
             </View>
           ) : null}
@@ -372,10 +425,10 @@ export default function CrystalsScreen() {
                   ]}
                 >
                   {recommendation.basis === 'intention'
-                    ? 'INTENTION COMPANION'
+                    ? t('INTENTION COMPANION')
                     : recommendation.basis === 'feeling'
-                      ? 'FEELING COMPANION'
-                      : 'TODAY’S COMPANION'}
+                      ? t('FEELING COMPANION')
+                      : t('TODAY’S COMPANION')}
                 </Text>
               </View>
             </View>
@@ -388,7 +441,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.foreground },
                     ]}
                   >
-                    {recommendation.crystal.name}
+                    {localizeCrystal(recommendation.crystal, locale).name}
                   </Text>
                   <Text
                     style={[
@@ -396,7 +449,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.secondary },
                     ]}
                   >
-                    {recommendation.crystal.note}
+                    {localizeCrystal(recommendation.crystal, locale).note}
                   </Text>
                 </View>
               </View>
@@ -423,7 +476,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.mutedForeground },
                 ]}
               >
-                MORE STONES TO CONSIDER
+                {t('MORE STONES TO CONSIDER')}
               </Text>
               <Text
                 style={[
@@ -431,7 +484,7 @@ export default function CrystalsScreen() {
                   { color: colors.crystals.foreground },
                 ]}
               >
-                {visibleAlternatives.length === 1 ? 'Another companion' : 'Two other companions'}
+                {visibleAlternatives.length === 1 ? t('Another companion') : t('Two other companions')}
               </Text>
             </View>
             <Feather
@@ -461,7 +514,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.foreground },
                     ]}
                   >
-                    {suggestion.crystal.name}
+                    {localizeCrystal(suggestion.crystal, locale).name}
                   </Text>
                   <Text
                     style={[
@@ -469,7 +522,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.secondary },
                     ]}
                   >
-                    {suggestion.crystal.note}
+                    {localizeCrystal(suggestion.crystal, locale).note}
                   </Text>
                   <Text style={[styles.alternativeDescription, { color: colors.cosmos.mutedForeground }]}>
                     {suggestion.reason}
@@ -484,7 +537,7 @@ export default function CrystalsScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Explore the full crystal collection, ${catalog.length} stones`}
+            accessibilityLabel={formatCopy(t('Explore the full crystal collection, {count} stones'), { count: catalog.length })}
             testID="open-crystal-collection"
             onPress={() => {
               setCollectionSearch('');
@@ -507,10 +560,10 @@ export default function CrystalsScreen() {
             </View>
             <View style={styles.catalogButtonCopy}>
               <Text style={[styles.catalogButtonTitle, { color: colors.cosmos.foreground }]}>
-                Explore the full collection
+                {t('Explore the full collection')}
               </Text>
               <Text style={[styles.catalogButtonSubtitle, { color: colors.cosmos.mutedForeground }]}>
-                {catalog.length} stones · Browse images and notes
+                {formatCopy(t('{count} stones · Browse images and notes'), { count: catalog.length })}
               </Text>
             </View>
             <Feather name="chevron-right" size={19} color={colors.cosmos.secondary} />
@@ -558,22 +611,22 @@ export default function CrystalsScreen() {
               {selectedNatalStone ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Back to the Stone Guide"
+                  accessibilityLabel={t('Back to the Stone Guide')}
                   testID="back-to-stone-guide"
                   onPress={returnToStoneGuide}
                   style={styles.guideBackButton}
                 >
                   <Feather name="arrow-left" size={17} color={colors.cosmos.secondary} />
-                  <Text style={[styles.guideBackText, { color: colors.cosmos.secondary }]}>Back to guide</Text>
+                  <Text style={[styles.guideBackText, { color: colors.cosmos.secondary }]}>{t('Back to guide')}</Text>
                 </Pressable>
               ) : (
                 <Text style={[styles.guideModalTitle, { color: colors.cosmos.foreground }]}>
-                  About the Stone Guide
+                  {t('About the Stone Guide')}
                 </Text>
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close Stone Guide explanation"
+                accessibilityLabel={t('Close Stone Guide explanation')}
                 testID="close-stone-guide"
                 hitSlop={10}
                 onPress={closeStoneGuide}
@@ -605,45 +658,45 @@ export default function CrystalsScreen() {
               {selectedNatalStone ? (
                 <View style={styles.natalStoneDetail}>
                   <Text style={[styles.natalStoneDetailTitle, { color: colors.cosmos.foreground }]}>
-                    {selectedNatalStone.crystal.name}
+                    {localizeCrystal(selectedNatalStone.crystal, locale).name}
                   </Text>
                   <Text style={[styles.natalStoneMeta, { color: colors.cosmos.secondary }]}>
-                    {selectedNatalStone.element} · {selectedNatalStone.crystal.note}
+                    {t(selectedNatalStone.element)} · {localizeCrystal(selectedNatalStone.crystal, locale).note}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
                     {selectedNatalStone.reason}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {selectedNatalStone.crystal.description}
+                    {localizeCrystal(selectedNatalStone.crystal, locale).description}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    Add this stone to your collection to keep track of the ones you own.
+                    {t('Add this stone to your collection to keep track of the ones you own.')}
                   </Text>
                   <CollectionToggle name={selectedNatalStone.crystal.name} />
                 </View>
               ) : (
                 <>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    The guide includes {crystalCatalog.length} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.
+                    {formatCopy(t('The guide includes {count} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.'), { count: crystalCatalog.length })}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.
+                    {t('With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
                   </Text>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.
+                    {t('If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.')}
                   </Text>
                   <View style={styles.natalGuideSection} testID="natal-stone-recommendations">
                     <Text style={[styles.natalStoneSectionTitle, { color: colors.cosmos.foreground }]}>
-                      Your birth-chart companions
+                      {t('Your birth-chart companions')}
                     </Text>
                     {natalElementResult?.status === 'calculated' ? (
                       <>
                         <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                          {describeElementBalance(natalElementResult, natalStoneSuggestions.length)}
+                          {describeElementBalance(natalElementResult, natalStoneSuggestions.length, t)}
                         </Text>
                         {!natalElementResult.preciseBirthMoment ? (
                           <Text style={[styles.natalStoneMeta, { color: colors.cosmos.secondary }]}>
-                            Your birth time is unknown, so placements that could change during that day are left out.
+                            {t('Your birth time is unknown, so placements that could change during that day are left out.')}
                           </Text>
                         ) : null}
                         {natalStoneSuggestions.length > 0 ? (
@@ -652,7 +705,7 @@ export default function CrystalsScreen() {
                               <Pressable
                                 key={suggestion.crystal.name}
                                 accessibilityRole="button"
-                                accessibilityLabel={`Read why ${suggestion.crystal.name} fits your birth chart`}
+                                 accessibilityLabel={formatCopy(t('Read why {stone} fits your birth chart'), { stone: localizeCrystal(suggestion.crystal, locale).name })}
                                 testID={`natal-stone-${slugOf(suggestion.crystal.name)}`}
                                 onPress={() => {
                                   restoreGuideScrollRef.current = false;
@@ -665,10 +718,10 @@ export default function CrystalsScreen() {
                               >
                                 <View style={styles.natalStoneRowCopy}>
                                   <Text style={[styles.natalStoneName, { color: colors.cosmos.foreground }]}>
-                                    {index + 1}. {suggestion.crystal.name}
+                                    {index + 1}. {localizeCrystal(suggestion.crystal, locale).name}
                                   </Text>
                                   <Text style={[styles.natalStoneMeta, { color: colors.cosmos.mutedForeground }]}>
-                                    {suggestion.element} · {suggestion.crystal.note}
+                                    {t(suggestion.element)} · {localizeCrystal(suggestion.crystal, locale).note}
                                   </Text>
                                 </View>
                                 <Feather name="chevron-right" size={17} color={colors.cosmos.secondary} />
@@ -677,23 +730,23 @@ export default function CrystalsScreen() {
                           </View>
                         ) : (
                           <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                            The stones you have hidden are left out. Restore some in Settings to see chart-based suggestions.
+                            {t('The stones you have hidden are left out. Restore some in Settings to see chart-based suggestions.')}
                           </Text>
                         )}
                       </>
                     ) : (
                       <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
                         {profile
-                          ? natalElementResult?.message ?? 'A reliable chart summary is not available yet.'
-                          : 'Save your birth details to see a local, chart-based list of stones.'}
+                          ? t(natalElementResult?.message ?? 'A reliable chart summary is not available yet.')
+                          : t('Save your birth details to see a local, chart-based list of stones.')}
                       </Text>
                     )}
                     <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                      These stones are matched to the qualities that stand out in your chart.
+                      {t('These stones are matched to the qualities that stand out in your chart.')}
                     </Text>
                   </View>
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    If you enjoy crystals, use the guide to choose a loose stone or a piece of jewelry—a pendant, ring, or bracelet. Tap “Add to Collection” for stones you already own, so you can see at a glance which companions are already yours.
+                    {t('If you enjoy crystals, use the guide to choose a loose stone or a piece of jewelry—a pendant, ring, or bracelet. Tap “Add to Collection” for stones you already own, so you can see at a glance which companions are already yours.')}
                   </Text>
                 </>
               )}
@@ -733,21 +786,21 @@ export default function CrystalsScreen() {
             {selectedCollectionStone ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Back to all stones"
+                accessibilityLabel={t('Back to all stones')}
                 testID="back-to-crystal-catalog"
                 onPress={returnToCollection}
                 style={styles.collectionBackButton}
               >
                   <Feather name="arrow-left" size={15} color={colors.crystals.secondary} />
-                <Text style={[styles.collectionBackText, { color: colors.crystals.secondary }]}>All stones</Text>
+                <Text style={[styles.collectionBackText, { color: colors.crystals.secondary }]}>{t('All stones')}</Text>
               </Pressable>
             ) : (
               <View style={styles.collectionHeading}>
                 <Text style={[styles.collectionTitle, { color: colors.crystals.foreground }]}>
-                  The full collection
+                  {t('The full collection')}
                 </Text>
                 <Text style={[styles.collectionCount, { color: colors.crystals.mutedForeground }]}>
-                  {catalog.length} stones to explore
+                  {formatCopy(t('{count} stones to explore'), { count: catalog.length })}
                 </Text>
               </View>
             )}
@@ -756,12 +809,12 @@ export default function CrystalsScreen() {
                 numberOfLines={1}
                 style={[styles.collectionDetailHeaderTitle, { color: colors.crystals.foreground }]}
               >
-                {selectedCollectionStone.name}
+                {localizeCrystal(selectedCollectionStone, locale).name}
               </Text>
             ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close the full collection"
+              accessibilityLabel={t('Close the full collection')}
               testID="close-crystal-catalog"
               onPress={closeCollection}
               style={styles.collectionCloseButton}
@@ -782,24 +835,24 @@ export default function CrystalsScreen() {
             >
               <CrystalArtwork crystal={selectedCollectionStone} size="detail" detailSize={detailImageSize} />
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
-                WHAT TO NOTICE
+                {t('WHAT TO NOTICE')}
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
-                {selectedCollectionStone.specimenDescription}
+                {localizeCrystal(selectedCollectionStone, locale).specimenDescription}
               </Text>
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
-                GOOD FOR
+                {t('GOOD FOR')}
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
-                {selectedCollectionStone.description}
+                {localizeCrystal(selectedCollectionStone, locale).description}
                 {'\n\n'}
-                {selectedCollectionStone.guideDescription}
+                {localizeCrystal(selectedCollectionStone, locale).guideDescription}
               </Text>
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
-                GUIDE THEMES
+                {t('GUIDE THEMES')}
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
-                {selectedCollectionStone.note}
+                {localizeCrystal(selectedCollectionStone, locale).note}
               </Text>
               <CollectionToggle name={selectedCollectionStone.name} />
             </ScrollView>
@@ -830,18 +883,21 @@ export default function CrystalsScreen() {
               >
                 <Feather name="search" size={17} color={colors.crystals.mutedForeground} />
                 <TextInput
-                  accessibilityLabel="Search stones"
+                  accessibilityLabel={t('Search stones')}
                   testID="crystal-catalog-search"
                   value={collectionSearch}
                   onChangeText={setCollectionSearch}
-                  placeholder="Search stones or themes"
+                  placeholder={t('Search stones or themes')}
                   placeholderTextColor={colors.crystals.mutedForeground}
                   returnKeyType="search"
                   style={[styles.collectionSearchInput, { color: colors.crystals.foreground }]}
                 />
               </View>
               <Text style={[styles.collectionResults, { color: colors.crystals.mutedForeground }]}>
-                {catalogMatches.length} {catalogMatches.length === 1 ? 'stone' : 'stones'}
+                {formatCopy(
+                  t(catalogMatches.length === 1 ? '{count} stone' : '{count} stones'),
+                  { count: catalogMatches.length },
+                )}
               </Text>
               <View
                 testID="collection-list-viewport"
@@ -892,7 +948,9 @@ export default function CrystalsScreen() {
                   renderItem={({ item: stone }) => (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Read about ${stone.name}`}
+                      accessibilityLabel={formatCopy(t('Read about {stone}'), {
+                        stone: localizeCrystal(stone, locale).name,
+                      })}
                       testID={`catalog-stone-${slugOf(stone.name)}`}
                       onPress={() => setSelectedCollectionStone(stone)}
                       style={[
@@ -906,16 +964,16 @@ export default function CrystalsScreen() {
                       <CrystalArtwork crystal={stone} size="catalog" />
                       <View style={styles.catalogStoneCopy}>
                         <Text style={[styles.catalogStoneName, { color: colors.crystals.foreground }]}>
-                          {stone.name}
+                          {localizeCrystal(stone, locale).name}
                         </Text>
                         <Text style={[styles.catalogStoneNote, { color: colors.crystals.secondary }]}>
-                          {stone.note}
+                          {localizeCrystal(stone, locale).note}
                         </Text>
                         <Text
                           numberOfLines={2}
                           style={[styles.catalogStoneDescription, { color: colors.crystals.mutedForeground }]}
                         >
-                          {stone.specimenDescription}
+                          {localizeCrystal(stone, locale).specimenDescription}
                         </Text>
                       </View>
                       <Feather name="chevron-right" size={18} color={colors.crystals.secondary} />
@@ -924,7 +982,7 @@ export default function CrystalsScreen() {
                   ItemSeparatorComponent={() => <View style={styles.catalogSeparator} />}
                   ListEmptyComponent={(
                     <Text style={[styles.collectionEmpty, { color: colors.crystals.mutedForeground }]}>
-                      No stones match that search. Try a different name or theme.
+                      {t('No stones match that search. Try a different name or theme.')}
                     </Text>
                   )}
                 />

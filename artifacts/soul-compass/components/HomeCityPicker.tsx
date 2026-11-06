@@ -3,6 +3,7 @@ import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, Vie
 import type { HomeLocation } from '@/profile/profile';
 import { searchHomeCities } from '@/services/geocoding';
 import type { HomeCitySearchResult } from '@/services/geocoding';
+import { useAppText } from '@/localization';
 
 type Props = {
   label: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function HomeCityPicker({ label, value, onSelect }: Props) {
+  const t = useAppText();
   const [query, setQuery] = useState(value?.city ?? '');
   const [results, setResults] = useState<HomeCitySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
     const search = query.trim();
     if (search.length < 2) {
       setLoading(false);
-      setError('Enter at least two letters to search.');
+      setError(t('Enter at least two letters to search.'));
       return;
     }
     setLoading(true);
@@ -51,9 +53,11 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
       const matches = await searchHomeCities(search, controller.signal);
       if (request !== generation.current || controller.signal.aborted) return;
       setResults(matches);
-      if (matches.length === 0) setError('No matching cities with time-zone data were found.');
+      if (matches.length === 0) setError(t('No matching cities with time-zone data were found.'));
     } catch {
-      if (request === generation.current) setError('Could not search cities. Check your connection and try again.');
+      if (request === generation.current) {
+        setError(t('Could not search cities. Check your connection and try again.'));
+      }
     } finally {
       if (request === generation.current) {
         if (timer.current) clearTimeout(timer.current);
@@ -67,26 +71,26 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
     <View style={styles.container}>
       <View style={styles.searchRow}>
         <TextInput
-          accessibilityLabel={label}
+          accessibilityLabel={t(label)}
           autoCapitalize="words"
           onChangeText={(text) => {
             changeQuery(text);
             if (value && text !== value.city) onSelect(null);
           }}
           onSubmitEditing={searchCities}
-          placeholder={`Search ${label.toLowerCase()}`}
+          placeholder={`${t('Search')} ${t(label).toLocaleLowerCase()}`}
           placeholderTextColor="#8B877F"
           returnKeyType="search"
           style={styles.input}
           value={query}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel="Search cities" accessibilityState={{ busy: loading }} onPress={searchCities} style={styles.searchButton}>
-          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.searchText}>Search</Text>}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Search cities')} accessibilityState={{ busy: loading }} onPress={searchCities} style={styles.searchButton}>
+          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.searchText}>{t('Search')}</Text>}
         </Pressable>
       </View>
       {value && (
         <Text style={styles.selected}>
-          Selected: {value.city}, {value.country} · {value.timeZone}
+          {t('Selected')}: {value.city}, {value.country} · {value.timeZone}
         </Text>
       )}
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
@@ -117,7 +121,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
         );
       })}
       <Text testID="city-search-attribution" style={styles.attribution}>
-        Powered by{' '}
+        {t('Powered by')}{' '}
         <Text
           accessibilityRole="link"
           accessibilityLabel="Geoapify"
@@ -138,11 +142,11 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
         {' '}·{' '}
         <Text
           accessibilityRole="link"
-          accessibilityLabel="Geoapify privacy policy"
+          accessibilityLabel={t('Geoapify privacy policy')}
           onPress={() => Linking.openURL('https://www.geoapify.com/privacy-policy/')}
           style={styles.attributionLink}
         >
-          Privacy
+          {t('Privacy')}
         </Text>
       </Text>
     </View>

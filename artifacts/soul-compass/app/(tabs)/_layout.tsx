@@ -1,55 +1,48 @@
 import React from 'react';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
-import { NativeTabs } from 'expo-router/native-tabs';
-import { Platform } from 'react-native';
+import { Platform, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { FirstRunAppGuide } from '@/components/FirstRunAppGuide';
+import { useAppText } from '@/localization';
 
-const tabLabelStyle = {
+const tabLabelTextStyle: TextStyle = {
+  flexShrink: 1,
   fontFamily: 'Inter_600SemiBold',
-  fontSize: 9,
+  fontSize: 8.5,
+  lineHeight: 11,
+  letterSpacing: 0.2,
+  textAlign: 'center',
+  width: '100%',
 };
 
-function NativeTabLayout() {
+const tabLabelContainerStyle: ViewStyle = {
+  alignItems: 'center',
+  height: 22,
+  justifyContent: 'center',
+  minWidth: 0,
+  width: '100%',
+};
+
+function FixedTabLabel({
+  color,
+  children,
+}: {
+  color: TextStyle['color'] | null;
+  children: string;
+}) {
   return (
-    <NativeTabs
-      labelStyle={{
-        default: tabLabelStyle,
-        selected: tabLabelStyle,
-      }}
-    >
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'sparkles', selected: 'sparkles' }}
-        />
-        <NativeTabs.Trigger.Label>COSMOS</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="crystals">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'diamond', selected: 'diamond.fill' }}
-        />
-        <NativeTabs.Trigger.Label>CRYSTALS</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="natal">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'circle.circle', selected: 'circle.circle.fill' }}
-        />
-        <NativeTabs.Trigger.Label>NATAL CHART</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'safari', selected: 'safari.fill' }}
-        />
-        <NativeTabs.Trigger.Label>EXPLORE</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={tabLabelContainerStyle}>
+      <Text numberOfLines={2} style={[tabLabelTextStyle, color == null ? undefined : { color }]}>
+        {children}
+      </Text>
+    </View>
   );
 }
 
 function ClassicTabLayout() {
   const colors = useColors();
+  const t = useAppText();
   const isWeb = Platform.OS === 'web';
 
   return (
@@ -58,11 +51,10 @@ function ClassicTabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.navigation.foreground,
         tabBarInactiveTintColor: colors.navigation.mutedForeground,
-        tabBarLabelStyle: {
-          fontFamily: 'Inter_600SemiBold',
-          fontSize: 9,
-          letterSpacing: 1.4,
-          marginTop: 2,
+        tabBarItemStyle: {
+          flex: 1,
+          minWidth: 0,
+          paddingHorizontal: 0,
         },
         tabBarStyle: {
           backgroundColor: colors.navigation.background,
@@ -76,7 +68,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'COSMOS',
+          title: t('COSMOS'),
+          tabBarLabel: FixedTabLabel,
           tabBarIcon: ({ color, focused }) =>
             <Feather
               name="sun"
@@ -92,7 +85,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="crystals"
         options={{
-          title: 'CRYSTALS',
+          title: t('CRYSTALS'),
+          tabBarLabel: FixedTabLabel,
           tabBarIcon: ({ color, focused }) => (
             <MaterialCommunityIcons
               name="diamond-stone"
@@ -105,7 +99,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="natal"
         options={{
-          title: 'NATAL CHART',
+          title: t('NATAL CHART'),
+          tabBarLabel: FixedTabLabel,
           tabBarIcon: ({ focused }) => (
             <Feather
               name="target"
@@ -122,7 +117,8 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'EXPLORE',
+          title: t('EXPLORE'),
+          tabBarLabel: FixedTabLabel,
           tabBarIcon: ({ color, focused }) => (
             <Feather
               name="compass"
@@ -137,14 +133,6 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return (
-      <>
-        <NativeTabLayout />
-        <FirstRunAppGuide />
-      </>
-    );
-  }
   return (
     <>
       <ClassicTabLayout />

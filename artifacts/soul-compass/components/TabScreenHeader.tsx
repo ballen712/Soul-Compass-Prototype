@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { screenTypography } from '@/constants/typography';
 import { SettingsButton } from '@/components/SettingsButton';
+import { useAppText } from '@/localization';
 
 type TabScreenHeaderProps = {
   title: string;
@@ -20,6 +21,8 @@ export function TabScreenHeader({
   titleAccessory,
   afterSpacing,
 }: TabScreenHeaderProps) {
+  const t = useAppText();
+  const localizedSubtitle = typeof subtitle === 'string' ? t(subtitle) : subtitle;
   return (
     <View style={{ marginBottom: afterSpacing }}>
       <View style={styles.brandRow}>
@@ -34,13 +37,13 @@ export function TabScreenHeader({
             accessibilityRole="header"
             style={[styles.title, { color: titleColor }]}
           >
-            {title}
+            {t(title)}
           </Text>
           {titleAccessory}
         </View>
-        {subtitle !== undefined && subtitle !== null ? (
+        {localizedSubtitle !== undefined && localizedSubtitle !== null ? (
           <Text style={[styles.subtitle, { color: subtitleColor ?? titleColor }]}>
-            {subtitle}
+            {localizedSubtitle}
           </Text>
         ) : null}
       </View>

@@ -13,6 +13,7 @@ import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { PRODUCT } from '@/constants/product';
 import { APP_GUIDE_INTRO } from '@/constants/app-guide';
 import { AppGuideCards } from '@/components/AppGuideContent';
+import { APP_LANGUAGE_LABELS, APP_LOCALES, useAppText } from '@/localization';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) =>
@@ -21,16 +22,7 @@ const slugOf = (name: string) =>
 const CATALOG = crystalCatalog
   .map((c) => ({ id: slugOf(c.name), name: c.name }))
   .sort((first, second) => first.name.localeCompare(second.name));
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'hu', label: 'Hungarian' },
-  { code: 'it', label: 'Italian' },
-  { code: 'de', label: 'German' },
-  { code: 'fr', label: 'French' },
-  { code: 'es', label: 'Spanish' },
-  { code: 'ru', label: 'Russian' },
-  { code: 'pt', label: 'Portuguese' },
-];
+const LANGUAGES = APP_LOCALES.map((code) => ({ code, label: APP_LANGUAGE_LABELS[code] }));
 
 type Tab = 'profile' | 'preferences' | 'privacy' | 'about';
 
@@ -67,16 +59,18 @@ function FeelingChoice({ option, selected, onPress }: {
 }
 
 function Section({ title, description, children }: { title: string; description?: string; children?: React.ReactNode }) {
+  const t = useAppText();
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {description ? <Text style={styles.body}>{description}</Text> : null}
+      <Text style={styles.sectionTitle}>{t(title)}</Text>
+      {description ? <Text style={styles.body}>{t(description)}</Text> : null}
       {children}
     </View>
   );
 }
 
 export default function SettingsScreen() {
+  const t = useAppText();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { profile, saveProfile, preferences, savePreferences, toggleCrystal, privacy, setConsent } = useProfile();
@@ -103,16 +97,16 @@ export default function SettingsScreen() {
     if (options.clearMessage !== false) setMessage(null);
     try {
       await action();
-      if (ok) setMessage(ok);
+      if (ok) setMessage(t(ok));
     }
-    catch (error) { setMessage(error instanceof Error ? error.message : 'That change could not be saved on this device. Please try again.'); }
+    catch (error) { setMessage(t(error instanceof Error ? error.message : 'That change could not be saved on this device. Please try again.')); }
     finally { busyRef.current = false; setBusy(false); }
   }
 
   async function submit(nextProfile: UserProfile) {
     await saveProfile(nextProfile);
     setTab(null);
-    setMessage('Birth details saved on this device.');
+    setMessage(t('Birth details saved on this device.'));
   }
 
   const toggleFeeling = (id: string) => {
@@ -204,11 +198,11 @@ export default function SettingsScreen() {
 
           {tab === 'preferences' ? (
             <>
-               <Section title="Future language preference" description="The app is currently in English. Your choice is saved for a future version; it will not translate screens today.">
+               <Section title="App language" description="Some parts are translated, but most screens are still in English.">
                 <View style={styles.chips}>
                   {[...LANGUAGES, ...(LANGUAGES.some((l) => l.code === preferences.language) || !preferences.language ? [] : [{ code: preferences.language, label: `Saved: ${preferences.language}` }])].map((l) => (
                     <Chip key={l.code} label={l.label} active={preferences.language === l.code}
-                      onPress={() => void run(() => savePreferences({ ...preferences, language: l.code }), 'Future language preference saved. The app stays in English.')} />
+                      onPress={() => void run(() => savePreferences({ ...preferences, language: l.code }), 'Language saved. Most screens are still in English.')} />
                   ))}
                 </View>
               </Section>

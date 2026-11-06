@@ -19,6 +19,7 @@ import { ProfileProvider, useProfile } from '@/profile/ProfileContext';
 import { NatalAutoRefresh, NatalCalculationProvider } from '@/hooks/useNatalCalculation';
 import { setBaseUrl } from '@workspace/api-client-react';
 import { FirstChartConsentPrompt } from '@/components/FirstChartConsentPrompt';
+import { AppLocaleProvider } from '@/localization';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -77,15 +78,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
       <ProfileProvider>
-        <NatalCalculationProvider>
-          <ErrorBoundary>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-          </ErrorBoundary>
-        </NatalCalculationProvider>
+        <AppLocaleProvider>
+          <NatalCalculationProvider>
+            <ErrorBoundary>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+            </ErrorBoundary>
+          </NatalCalculationProvider>
+        </AppLocaleProvider>
       </ProfileProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

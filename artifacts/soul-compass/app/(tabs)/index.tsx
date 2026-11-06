@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
+import { useAppText } from '@/localization';
 
 const reflectionExplanations: Record<string, string> = {
   'Focus on one thing at a time.':
@@ -65,6 +66,7 @@ export default function CosmosScreen() {
   const scrollRef = useRef<ScrollViewInstance | null>(null);
   useScrollToTop(scrollRef);
   const colors = useColors();
+  const t = useAppText();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const { profile } = useProfile();
@@ -148,7 +150,7 @@ export default function CosmosScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         overScrollMode="never"
-        accessibilityLabel="Daily reflection"
+        accessibilityLabel={t('Daily reflection')}
       >
         <View style={styles.page}>
           <View
@@ -165,7 +167,7 @@ export default function CosmosScreen() {
           >
             <Image
               source={cosmosArt}
-              accessibilityLabel="A quiet field of stars in a deep navy sky"
+              accessibilityLabel={t('A quiet field of stars in a deep navy sky')}
               resizeMode="cover"
               style={styles.heroImage}
             />
@@ -192,8 +194,8 @@ export default function CosmosScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Read more about today’s reflection"
-              accessibilityHint="Opens a simple explanation of the daily reading"
+              accessibilityLabel={t('Read more about today’s reflection')}
+              accessibilityHint={t('Opens a simple explanation of the daily reading')}
               onPress={() => setActiveDetail('reflection')}
               style={styles.reflectionPrompt}
             >
@@ -204,7 +206,7 @@ export default function CosmosScreen() {
                     { color: colors.cosmos.foreground },
                   ]}
                 >
-                  {reading.title}
+                  {t(reading.title)}
                 </Text>
                 <View style={styles.infoCircle}>
                   <Feather name="info" size={15} color={colors.cosmos.secondary} />
@@ -216,22 +218,22 @@ export default function CosmosScreen() {
                   { color: colors.cosmos.mutedForeground },
                 ]}
               >
-                {reading.body}
+                {t(reading.body)}
               </Text>
             </Pressable>
             {astrology?.status === 'unavailable' ? (
               <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
-                Your personal reading isn’t available right now. Check your saved details in Settings.
+                {t('Your personal reading isn’t available right now. Check your saved details in Settings.')}
               </Text>
             ) : !calculatedReading ? (
               <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
-                {dailyReading.status}
+                {t(dailyReading.status)}
               </Text>
             ) : null}
             {profile && !profile.currentResidence ? (
               <Pressable accessibilityRole="button" onPress={() => router.push('/settings')}>
                 <Text style={[styles.factorSummary, { color: colors.cosmos.secondary, paddingVertical: 12 }]}>
-                  Add current residence for your daily reflection →
+                  {t('Add current residence for your daily reflection →')}
                 </Text>
               </Pressable>
             ) : null}
@@ -244,10 +246,10 @@ export default function CosmosScreen() {
 
               <View style={styles.guidanceSection}>
                 <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
-                  FOCUS FOR TODAY
+                  {t('FOCUS FOR TODAY')}
                 </Text>
                 <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
-                  {reading.favorableFocus}
+                  {t(reading.favorableFocus)}
                 </Text>
               </View>
 
@@ -261,10 +263,10 @@ export default function CosmosScreen() {
 
               <View style={styles.guidanceSection}>
                 <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
-                  WHAT TO LEAVE FOR LATER
+                  {t('WHAT TO LEAVE FOR LATER')}
                 </Text>
                 <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
-                  {reading.gentleCaution}
+                  {t(reading.gentleCaution)}
                 </Text>
               </View>
 
@@ -277,8 +279,8 @@ export default function CosmosScreen() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Read more about A moment to keep"
-              accessibilityHint="Opens a simple explanation"
+              accessibilityLabel={t('Read more about A moment to keep')}
+              accessibilityHint={t('Opens a simple explanation')}
               onPress={() => setActiveDetail('moment')}
               style={styles.reflectionRow}
             >
@@ -289,7 +291,7 @@ export default function CosmosScreen() {
                     { color: colors.cosmos.secondary },
                   ]}
                 >
-                  A MOMENT TO KEEP
+                  {t('A MOMENT TO KEEP')}
                 </Text>
                 <Text
                   style={[
@@ -297,7 +299,7 @@ export default function CosmosScreen() {
                     { color: colors.cosmos.foreground },
                   ]}
                 >
-                  “{reading.reflection}”
+                  “{t(reading.reflection)}”
                 </Text>
               </View>
               <View style={styles.infoCircle}>
@@ -317,17 +319,17 @@ export default function CosmosScreen() {
           >
             <View style={styles.ritualCopy}>
               <Text style={[styles.ritualTitle, { color: colors.cosmos.foreground }]}>
-                A small daily ritual
+                {t('A small daily ritual')}
               </Text>
               <Text style={[styles.ritualAction, { color: colors.cosmos.foreground }]}>
-                {dailyRitual}
+                {t(dailyRitual)}
               </Text>
             </View>
             <View style={styles.ritualFooter}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Explore other daily ritual ideas"
-                accessibilityHint="Opens practical examples"
+                accessibilityLabel={t('Explore other daily ritual ideas')}
+                accessibilityHint={t('Opens practical examples')}
                 onPress={() => setActiveDetail('ritual')}
                 style={({ pressed }) => [
                   styles.ritualButton,
@@ -335,7 +337,7 @@ export default function CosmosScreen() {
                 ]}
               >
                 <Text style={[styles.ritualButtonText, { color: colors.cosmos.secondary }]}>
-                  Explore other ideas
+                  {t('Explore other ideas')}
                 </Text>
                 <View style={styles.infoCircle}>
                   <Feather name="info" size={15} color={colors.cosmos.secondary} />
@@ -386,12 +388,12 @@ export default function CosmosScreen() {
                     accessibilityRole="header"
                     style={[styles.detailTitle, { color: colors.cosmos.foreground }]}
                   >
-                    {detail.title}
+                    {t(detail.title)}
                   </Text>
                 ) : null}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Close explanation"
+                  accessibilityLabel={t('Close explanation')}
                   hitSlop={8}
                   onPress={() => setActiveDetail(null)}
                   style={styles.closeButton}
@@ -404,13 +406,13 @@ export default function CosmosScreen() {
                 contentContainerStyle={styles.detailScrollContent}
               >
                 <Text style={[styles.detailBody, { color: colors.cosmos.mutedForeground }]}>
-                  {detail.body}
+                  {t(detail.body)}
                 </Text>
                 {detail.examples.map((example) => (
                   <View key={example} testID="daily-ritual-option" style={styles.exampleRow}>
                     <View style={[styles.exampleMark, { backgroundColor: colors.cosmos.secondary }]} />
                     <Text style={[styles.exampleText, { color: colors.cosmos.foreground }]}>
-                      {example}
+                      {t(example)}
                     </Text>
                   </View>
                 ))}

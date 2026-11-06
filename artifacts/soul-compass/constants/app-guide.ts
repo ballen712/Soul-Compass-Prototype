@@ -18,6 +18,6 @@ export const APP_GUIDE_TABS = [
   },
   {
     title: 'Explore',
-    description: 'Tarot reflections and longer-term transits are planned for this space.',
+    description: 'Tarot reflections, longer-term transits, and Life Directions are planned for this space.',
   },
 ] as const;

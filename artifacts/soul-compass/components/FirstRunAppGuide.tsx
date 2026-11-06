@@ -8,9 +8,11 @@ import { AppGuideCards } from '@/components/AppGuideContent';
 import { useColors } from '@/hooks/useColors';
 import { CONSENT_VERSION } from '@/profile/local';
 import { useProfile } from '@/profile/ProfileContext';
+import { useAppText } from '@/localization';
 
 export function FirstRunAppGuide() {
   const colors = useColors();
+  const t = useAppText();
   const { profile, loaded, error, privacy } = useProfile();
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -67,15 +69,15 @@ export function FirstRunAppGuide() {
           >
             <View style={styles.header}>
               <View style={styles.headerCopy}>
-                <Text style={[styles.eyebrow, { color: colors.cosmos.secondary }]}>WELCOME</Text>
+                <Text style={[styles.eyebrow, { color: colors.cosmos.secondary }]}>{t('WELCOME')}</Text>
                 <Text style={[styles.title, { color: colors.cosmos.foreground }]}>
-                  A quick guide to Soul Compass
+                  {t('A quick guide to Soul Compass')}
                 </Text>
               </View>
               <Pressable
                 testID="first-run-guide-close"
                 accessibilityRole="button"
-                accessibilityLabel="Close introduction"
+                accessibilityLabel={t('Close introduction')}
                 onPress={() => void dismiss()}
                 hitSlop={12}
                 style={styles.close}
@@ -88,7 +90,7 @@ export function FirstRunAppGuide() {
               contentContainerStyle={styles.content}
             >
               <Text style={[styles.label, { color: colors.cosmos.secondary }]}>
-                FOUR WAYS TO EXPLORE
+                {t('FOUR WAYS TO EXPLORE')}
               </Text>
               <AppGuideCards variant="modal" />
             </ScrollView>
@@ -99,7 +101,7 @@ export function FirstRunAppGuide() {
               style={[styles.action, { backgroundColor: colors.cosmos.secondary }]}
             >
               <Text style={[styles.actionText, { color: colors.cosmos.background }]}>
-                Explore the app
+                {t('Explore the app')}
               </Text>
             </Pressable>
           </View>

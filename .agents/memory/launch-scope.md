@@ -123,8 +123,20 @@ The Soul Compass voice should be warm, gently mystical, psychologically reflecti
 
 **How to apply:** use broad traits such as self-inquiry, directness, gentle paradox, and light humor. Keep astrology and crystal associations symbolic, avoid diagnoses or promises, and do not copy distinctive phrasing.
 
-Explore is a fourth navigation tab and, for its initial step, is an unpaid overview of planned Tarot and longer-term transit features. Do not add ads or payment flows without separate approval.
+Explore is a fourth navigation tab with a free overview. The user approved paid Tarot readings, chose 22 Major Arcana as the first authored content set, and approved Life Directions as a third planned tile; its full analysis and monetization are not yet approved.
 
-**Why:** the user chose to establish the Explore screen before deciding on monetization.
+**Why:** the user chose to keep the Explore overview free, approved paid Tarot readings, selected the 22 Major Arcana text set, and approved a planned Life Directions tile without requesting its implementation.
 
-**How to apply:** keep planned features clearly labeled until their working experiences are built; keep existing daily tabs available without payment.
+**How to apply:** keep the overview and existing daily tabs available without payment. Show Life Directions only as planned until its multi-signal chart method is built and reviewed; do not presume it is paid. Do not expose Tarot until its original art, seven-language copy, chart-linking rules, and payment model are ready. Before billing implementation, confirm one-time unlock versus per-reading credits and connect RevenueCat; do not send birth-chart data to it.
+
+The approved app languages are English, Hungarian, Italian, German, French, Spanish, and Russian. Do not offer Portuguese. Localization is staged and must not be described as complete until all user-facing screens and data-driven content have been translated and checked.
+
+**Why:** the user confirmed these seven languages and explicitly declined adding Portuguese.
+
+**How to apply:** keep the language selector limited to these seven, preserve English fallback for legacy or unsupported locale values, and clearly label any incomplete translation work.
+
+New users choose a language before seeing onboarding or entering birth details; show each flag with the language's own name, save the choice locally, and keep Settings as the later change point.
+
+**Why:** the user wants the app to begin in a chosen language before its guide or personal-data form appears.
+
+**How to apply:** preserve this first-run order and do not require an account or network request to choose a language.

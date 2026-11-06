@@ -2,9 +2,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { APP_GUIDE_TABS } from '@/constants/app-guide';
 import { useColors } from '@/hooks/useColors';
+import { useAppText } from '@/localization';
 
 export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 'settings' }) {
   const colors = useColors();
+  const t = useAppText();
   const isModal = variant === 'modal';
   const foreground = isModal ? colors.cosmos.foreground : colors.foreground;
   const muted = isModal ? colors.cosmos.mutedForeground : colors.mutedForeground;
@@ -24,7 +26,7 @@ export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 's
           ]}
         >
           <Text style={[styles.cardTitle, isModal && styles.modalCardTitle, { color: foreground }]}>
-            {item.title}
+          {t(item.title)}
           </Text>
           <Text
             style={[
@@ -33,7 +35,7 @@ export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 's
               { color: muted },
             ]}
           >
-            {item.description}
+            {t(item.description)}
           </Text>
         </View>
       ))}

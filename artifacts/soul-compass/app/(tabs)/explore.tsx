@@ -10,6 +10,7 @@ import { TabScreenHeader } from '@/components/TabScreenHeader';
 import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 import { screenTypography } from '@/constants/typography';
 import { useColors } from '@/hooks/useColors';
+import { useAppText } from '@/localization';
 import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 
 const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
@@ -32,10 +33,17 @@ const features = [
     icon: 'activity' as const,
     description: 'Follow longer planetary cycles and how their themes may connect with your chart.',
   },
+  {
+    id: 'life-directions',
+    title: 'Life Directions',
+    icon: 'compass' as const,
+    description: 'Explore work styles, strengths, and interests that may feel natural to you.',
+  },
 ];
 
 export default function ExploreScreen() {
   const colors = useColors();
+  const t = useAppText();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const scrollRef = useRef<ScrollViewInstance | null>(null);
@@ -118,10 +126,10 @@ export default function ExploreScreen() {
             />
 
             <Text style={[styles.sectionLabel, { color: colors.cosmos.secondary }]}>
-              IN DEVELOPMENT
+              {t('IN DEVELOPMENT')}
             </Text>
             <Text style={[styles.intro, { color: colors.cosmos.mutedForeground }]}>
-              Tarot and longer-term transits are planned for this space. Your daily Cosmos, Crystals, and Natal Chart stay just as they are.
+              {t('Tarot, longer-term transits, and Life Directions are planned for this space. Your daily Cosmos, Crystals, and Natal Chart stay just as they are.')}
             </Text>
 
             <View style={styles.featureList}>
@@ -129,7 +137,7 @@ export default function ExploreScreen() {
                 <View
                   key={feature.id}
                   testID={`explore-feature-${feature.id}`}
-                  accessibilityLabel={`${feature.title}, planned`}
+                  accessibilityLabel={`${t(feature.title)}, ${t('PLANNED')}`}
                   style={[
                     styles.featureCard,
                     { backgroundColor: colors.cosmos.card, borderColor: colors.cosmos.border },
@@ -141,15 +149,15 @@ export default function ExploreScreen() {
                     </View>
                     <View style={styles.featureTitleGroup}>
                       <Text style={[styles.featureTitle, { color: colors.cosmos.foreground }]}>
-                        {feature.title}
+                        {t(feature.title)}
                       </Text>
                       <Text style={[styles.featureStatus, { color: colors.cosmos.secondary }]}>
-                        PLANNED
+                        {t('PLANNED')}
                       </Text>
                     </View>
                   </View>
                   <Text style={[styles.featureDescription, { color: colors.cosmos.mutedForeground }]}>
-                    {feature.description}
+                    {t(feature.description)}
                   </Text>
                 </View>
               ))}

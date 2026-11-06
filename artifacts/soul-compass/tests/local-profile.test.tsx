@@ -19,6 +19,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: async (key: string) => state.data.get(key) ?? null,
     setItem: async (key: string, value: string) => { state.data.set(key, value); },
+    removeItem: async (key: string) => { state.data.delete(key); },
   },
 }));
 vi.mock('@/auth/supabase', () => { throw new Error('Active local app must not initialize Supabase'); });
@@ -34,6 +35,7 @@ function adapter() {
   const storage = {
     getItem: vi.fn(async (key: string) => data.get(key) ?? null),
     setItem: vi.fn(async (key: string, value: string) => { data.set(key, value); }),
+    removeItem: vi.fn(async (key: string) => { data.delete(key); }),
   };
   return { data, storage, store: new LocalProfileStore(storage) };
 }
@@ -72,6 +74,23 @@ test('profile, residence and all preferences survive provider restart', async ()
   await act(async () => view.saveProfile({ ...profile, birthTime: { status: 'known', localTime: '00:01' } }));
   expect(view.preferences.language).toBe('hu');
   expect(view.profile?.birthTime).toEqual({ status: 'known', localTime: '00:01' });
+});
+test('the Settings delete action resets the shared app profile to first-run defaults', async () => {
+  await render();
+  await act(async () => view.saveProfile(profile));
+  await act(async () => view.savePreferences({
+    language: 'ru', crystalCollection: ['amethyst'],
+    crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired' },
+  }));
+  await act(async () => view.setConsent(true));
+
+  await act(async () => view.clearLocalData());
+
+  expect(view.profile).toBeNull();
+  expect(view.onboardingDraft).toBeNull();
+  expect(view.preferences).toEqual(emptyRecord().preferences);
+  expect(view.privacy).toEqual(emptyRecord().privacy);
+  expect(view.canCalculate()).toBe(false);
 });
 test('feeling resets exactly at local midnight while open, not after 24 hours', async () => {
   vi.useFakeTimers();
@@ -249,8 +268,68 @@ test('consent grants, persists, revokes and can voluntarily be granted again', a
   const afterRevoke = new LocalProfileStore(storage); await afterRevoke.load(); expect(afterRevoke.canCalculate()).toBe(false);
   await afterRevoke.setConsent(true); expect(await afterRevoke.withCalculationConsent(request)).toBe('chart');
 });
+test('deleting local data removes profile, legacy data and cached chart and restarts with empty preferences', async () => {
+  const { data, store, storage } = adapter();
+  await store.load();
+  await store.saveProfile(profile);
+  await store.savePreferences({
+    language: 'ru', crystalCollection: ['amethyst'],
+    crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired' },
+  });
+  await store.setConsent(true);
+  data.set(LEGACY_KEY, JSON.stringify(profile));
+  data.set('soul-compass.natal-chart-cache.v1', JSON.stringify({ privateChart: true }));
+
+  await store.clearLocalData();
+
+  expect(storage.removeItem).toHaveBeenCalledWith('soul-compass.natal-chart-cache.v1');
+  expect(storage.removeItem).toHaveBeenCalledWith(LEGACY_KEY);
+  expect(storage.removeItem).toHaveBeenCalledWith(LOCAL_KEY);
+  expect(data.size).toBe(0);
+  expect(store.getSnapshot().record).toEqual(emptyRecord());
+  expect(store.canCalculate()).toBe(false);
+
+  const reopened = new LocalProfileStore(storage);
+  await reopened.load();
+  expect(reopened.getSnapshot().record).toEqual(emptyRecord());
+  expect(reopened.canCalculate()).toBe(false);
+});
+test('deleting local data aborts an active chart request before clearing the profile', async () => {
+  const { store } = adapter();
+  await store.load();
+  await store.saveProfile(profile);
+  await store.setConsent(true);
+  let requestSignal: AbortSignal | undefined;
+  const pending = store.withCalculationConsent(signal => {
+    requestSignal = signal;
+    return new Promise<string>(() => {});
+  });
+
+  expect(requestSignal?.aborted).toBe(false);
+  await store.clearLocalData();
+  await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  expect(requestSignal?.aborted).toBe(true);
+  expect(store.getSnapshot().record.profile).toBeNull();
+});
+test('failed deletion stays explicit, revokes chart consent in-session, and can be retried', async () => {
+  const { data, store, storage } = adapter();
+  await store.load();
+  await store.saveProfile(profile);
+  await store.setConsent(true);
+  storage.removeItem.mockRejectedValueOnce(new Error('storage unavailable'));
+
+  await expect(store.clearLocalData()).rejects.toThrow('Could not finish deleting data');
+  expect(store.getSnapshot().record.profile).toEqual(profile);
+  expect(store.getSnapshot().record.privacy.astrologyApiConsent).toBe(false);
+  expect(store.canCalculate()).toBe(false);
+
+  await store.clearLocalData();
+  expect(data.size).toBe(0);
+  expect(store.getSnapshot().record.profile).toBeNull();
+});
 test('a matching Natal Chart is cached locally and reused only for matching birth inputs', async () => {
-  const { store } = adapter(); await store.load();
+  const { store } = adapter(); await store.load(); await store.saveProfile(profile);
+  const cachedProfile = store.getSnapshot().record.profile!;
   const chart = CalculateNatalChartResponse.parse({
     input: { birthTimeKnown: false },
     calculation: {
@@ -278,12 +357,16 @@ test('a matching Natal Chart is cached locally and reused only for matching birt
     warnings: [],
   }) as unknown as NatalChartResponse;
 
-  await store.saveNatalChartCache('synthetic-profile-key', chart, 'later');
+  await store.saveNatalChartCache('synthetic-profile-key', chart, 'later', cachedProfile);
   expect(await store.loadNatalChartCache('different-profile-key')).toBeNull();
   const saved = await store.loadNatalChartCache('synthetic-profile-key');
   expect(saved?.disambiguation).toBe('later');
   expect(saved?.data.planets).toEqual([]);
   expect(new Date(saved!.data.calculation.instantUtc).toISOString()).toBe('2000-01-01T12:00:00.000Z');
+  await store.clearLocalData();
+  await expect(store.saveNatalChartCache('synthetic-profile-key', chart, 'later', cachedProfile))
+    .rejects.toThrow('profile changed');
+  expect(await store.loadNatalChartCache('synthetic-profile-key')).toBeNull();
 });
 test('revocation aborts an in-flight request and discards a late response', async () => {
   const { store } = adapter(); await store.load(); await store.setConsent(true);

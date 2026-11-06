@@ -34,6 +34,29 @@ test('the supported language set matches the seven selected launch languages', (
   expect(Object.keys(APP_LANGUAGE_LABELS)).toEqual([...APP_LOCALES]);
 });
 
+test('local profile deletion and its confirmation are translated in every supported language', () => {
+  const deletionCopy = [
+    'Delete local profile',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.',
+    'Delete my local data',
+    'Delete your local data?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.',
+    'Keep my data',
+    'Delete and start over',
+    'Deleting…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.',
+  ];
+
+  for (const locale of APP_LOCALES) {
+    for (const source of deletionCopy) {
+      expect(translateText(source, locale), `${locale}: ${source}`).not.toBe('');
+      if (locale !== 'en') {
+        expect(translateText(source, locale), `${locale}: ${source}`).not.toBe(source);
+      }
+    }
+  }
+});
+
 test('regional language tags resolve to their supported base locale', () => {
   expect(normalizeAppLocale('hu-HU')).toBe('hu');
   expect(normalizeAppLocale('es_MX')).toBe('es');

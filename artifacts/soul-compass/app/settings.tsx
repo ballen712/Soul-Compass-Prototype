@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileForm, type ProfileFormHandle } from '@/components/ProfileForm';
@@ -14,6 +14,7 @@ import { PRODUCT } from '@/constants/product';
 import { APP_GUIDE_INTRO } from '@/constants/app-guide';
 import { AppGuideCards } from '@/components/AppGuideContent';
 import { APP_LANGUAGE_LABELS, APP_LOCALES, useAppText } from '@/localization';
+import { useColors } from '@/hooks/useColors';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) =>
@@ -71,14 +72,20 @@ function Section({ title, description, children }: { title: string; description?
 
 export default function SettingsScreen() {
   const t = useAppText();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, saveProfile, preferences, savePreferences, toggleCrystal, privacy, setConsent } = useProfile();
+  const {
+    profile, saveProfile, preferences, savePreferences, toggleCrystal, privacy,
+    setConsent, clearLocalData,
+  } = useProfile();
   const [tab, setTab] = useState<Tab | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const profileFormRef = useRef<ProfileFormHandle | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState('');
   const [hiddenSearch, setHiddenSearch] = useState('');
   const collectionMatches = CATALOG.filter((c) => c.name.toLowerCase().includes(collectionSearch.trim().toLowerCase()));
@@ -107,6 +114,34 @@ export default function SettingsScreen() {
     await saveProfile(nextProfile);
     setTab(null);
     setMessage(t('Birth details saved on this device.'));
+  }
+
+  function openDeleteDialog() {
+    setDeleteError(null);
+    setDeleteDialogVisible(true);
+  }
+
+  function closeDeleteDialog() {
+    if (busyRef.current) return;
+    setDeleteDialogVisible(false);
+    setDeleteError(null);
+  }
+
+  async function deleteLocalProfile() {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setDeleteError(null);
+    try {
+      await clearLocalData();
+      setDeleteDialogVisible(false);
+      router.replace('/onboarding');
+    } catch (error) {
+      setDeleteError(t(error instanceof Error ? error.message : 'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.'));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   }
 
   const toggleFeeling = (id: string) => {
@@ -149,7 +184,7 @@ export default function SettingsScreen() {
     <Stack.Screen options={{ headerShown: false, gestureEnabled: Platform.OS === 'ios' && tab === null }} />
     <EdgeSwipeBack
       testID="settings-edge-swipe-back"
-      enabled={tab !== null}
+      enabled={tab !== null && !deleteDialogVisible}
       onBack={handleBack}
     >
     <SafeAreaView edges={['top']} style={[styles.safeArea, Platform.OS === 'web' && { paddingTop: 67 }]}>
@@ -303,6 +338,22 @@ export default function SettingsScreen() {
                 )}
               </Section>
               <Section title="Local storage" description="Your profile, preferences, and collection stay in this app on this device. This storage is not encrypted. There is no account, cloud sync, or export. Deleting the app, losing the device, or clearing browser data can erase your information. Your device backup may include app data." />
+              <Section
+                title="Delete local profile"
+                description="Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue."
+              >
+                <Pressable
+                  testID="settings-delete-local-data"
+                  accessibilityRole="button"
+                  disabled={busy}
+                  onPress={openDeleteDialog}
+                  style={[styles.deleteAction, { borderColor: colors.destructive }]}
+                >
+                  <Text style={[styles.deleteActionText, { color: colors.destructive }]}>
+                    {t('Delete my local data')}
+                  </Text>
+                </Pressable>
+              </Section>
             </>
           ) : null}
 
@@ -355,6 +406,73 @@ export default function SettingsScreen() {
       )}
     </SafeAreaView>
     </EdgeSwipeBack>
+    <Modal
+      visible={deleteDialogVisible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={closeDeleteDialog}
+    >
+      <View style={styles.deleteBackdrop}>
+        <SafeAreaView edges={['top', 'bottom']} style={styles.deleteSafeArea}>
+          <View
+            accessibilityViewIsModal
+            style={[
+              styles.deleteDialog,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.deleteDialogTitle, { color: colors.foreground }]}>
+              {t('Delete your local data?')}
+            </Text>
+            <ScrollView
+              style={styles.deleteDialogScroll}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.deleteDialogScrollContent}
+            >
+              <Text style={[styles.deleteDialogBody, { color: colors.mutedForeground }]}>
+                {t('This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.')}
+              </Text>
+              {deleteError ? (
+                <Text accessibilityRole="alert" style={[styles.deleteDialogError, { color: colors.destructive }]}>
+                  {deleteError}
+                </Text>
+              ) : null}
+            </ScrollView>
+            <View style={styles.deleteDialogActions}>
+              <Pressable
+                testID="cancel-delete-local-data"
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={closeDeleteDialog}
+                style={({ pressed }) => [
+                  styles.deleteDialogButton,
+                  { backgroundColor: colors.secondary, opacity: pressed || busy ? 0.72 : 1 },
+                ]}
+              >
+                <Text style={[styles.deleteDialogButtonText, { color: colors.secondaryForeground }]}>
+                  {t('Keep my data')}
+                </Text>
+              </Pressable>
+              <Pressable
+                testID="confirm-delete-local-data"
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={() => void deleteLocalProfile()}
+                style={({ pressed }) => [
+                  styles.deleteDialogButton,
+                  { backgroundColor: colors.destructive, opacity: pressed || busy ? 0.72 : 1 },
+                ]}
+              >
+                <Text style={[styles.deleteDialogButtonText, { color: colors.destructiveForeground }]}>
+                  {busy ? t('Deleting…') : t('Delete and start over')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+    </Modal>
     </>
   );
 }
@@ -404,4 +522,17 @@ const styles = StyleSheet.create({
   smallButtonTextActive: { color: '#F5F1E8' },
   secondaryButton: { minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#D9D3C7', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, alignSelf: 'flex-start' },
   secondaryText: { color: '#58664F', fontSize: 14, fontWeight: '600' },
+  deleteAction: { minHeight: 48, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  deleteActionText: { fontSize: 14, fontWeight: '600' },
+  deleteBackdrop: { flex: 1, justifyContent: 'center', paddingHorizontal: 18, backgroundColor: 'rgba(0, 0, 0, 0.58)' },
+  deleteSafeArea: { maxHeight: '100%', justifyContent: 'center' },
+  deleteDialog: { width: '100%', maxWidth: 440, maxHeight: '85%', alignSelf: 'center', borderWidth: 1, borderRadius: 22, padding: 20, gap: 14 },
+  deleteDialogTitle: { fontSize: 20, lineHeight: 26, fontWeight: '600' },
+  deleteDialogScroll: { flexShrink: 1, maxHeight: 360 },
+  deleteDialogScrollContent: { gap: 12 },
+  deleteDialogBody: { fontSize: 14, lineHeight: 21 },
+  deleteDialogError: { fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  deleteDialogActions: { flexDirection: 'row', gap: 10 },
+  deleteDialogButton: { flex: 1, minHeight: 48, borderRadius: 12, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  deleteDialogButtonText: { fontSize: 13, lineHeight: 17, fontWeight: '600', textAlign: 'center' },
 });

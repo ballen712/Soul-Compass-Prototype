@@ -11,7 +11,7 @@ const profile: UserProfile = {
 };
 beforeEach(() => vi.clearAllMocks());
 test('service checks consent before API; decline and revocation block all future sends', async () => {
-  const store = new LocalProfileStore({ getItem: async () => null, setItem: async () => {} });
+  const store = new LocalProfileStore({ getItem: async () => null, setItem: async () => {}, removeItem: async () => {} });
   await store.load(); await store.saveProfile(profile);
   await expect(requestNatal(store, profile, null)).rejects.toThrow();
   await store.setConsent(false); await expect(requestNatal(store, profile, null)).rejects.toThrow();

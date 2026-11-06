@@ -28,7 +28,7 @@ For a privacy request, contact the operator at the address above and describe th
 - Your profile and crystal collection are stored on your device.
 - An optional natal-chart calculation sends required birth details to the Soul Compass API only after you grant permission.
 - City search sends the city text you enter to the service for matching; it does not use device GPS.
-- Local profile data may be lost if you clear app data or uninstall the app. Device backups may include it.
+- To erase your saved profile on this device, open Settings → Privacy → Delete local profile and confirm. You will need to select a language and enter your details again. Device backups and technical records created by network features are not erased by this action.
 
 ## Basic troubleshooting
 

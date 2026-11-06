@@ -12,7 +12,7 @@ Keep launch **accountless and local-first**. Nothing in the current core experie
 
 | Option | Product value | Added obligations and effort | Launch decision |
 |---|---|---|---|
-| Local profile only | Works without registration; birth details and preferences stay on the device except the consented chart request. | No cloud sync or automatic restore; provide clear data-loss information and consider an in-app reset/export later. | **Use now.** |
+| Local profile only | Works without registration; birth details and preferences stay on the device except the consented chart request. | No cloud sync or automatic restore; a local delete/reset control exists, while export/import remains a future option. | **Use now.** |
 | Optional cloud account/sync | Cross-device restore and synchronization. | Adds account data, secure ownership and RLS, sync/conflict behavior, user support and account deletion. Current account deletion path depends on an unconfigured server-only key. | Defer until users request sync. |
 | Google Sign-In | Convenient OAuth for users who want cloud accounts. | Requires configured OAuth and account deletion. Apple Guideline 4.8 generally requires an equivalent privacy-preserving login option when a third-party sign-in is used for the primary account on iOS, unless an exception applies. | Not needed for the current app. |
 | Sign in with Apple | Convenient native iOS login. | Requires Apple account setup and still creates account, deletion and privacy obligations; Android support needs an additional design. | Not needed without cloud accounts. |
@@ -42,7 +42,7 @@ Geoapify use is documented in the project as its Free plan, with a published all
 
 Replit's current private-deployment guide says a live app must first be unpublished, then its sharing option changed to Workspace only or Invite only, and then republished. This will interrupt the current public link. It may also make the published `/api` endpoint unreachable to an external mobile client.
 
-The owner has selected “restrict access now.” The agent cannot perform this Publishing change from code. Use the Publishing tool and confirm whether the app is available to Workspace only or invited collaborators after republishing.
+The owner has selected “restrict access now,” but the live deployment service still reports the API as public. Its health endpoint returned 200 on 2026-11-06. The agent cannot change Publishing visibility from code. The owner must unpublish, choose Workspace only or Invite only, and republish in the Publishing tool. This interrupts the current public URL and blocks native clients that call it unless a separate public API design is in place.
 
 Do not put a Replit external-access token in an Expo bundle. Anyone who extracts a mobile bundle can extract a bundled token. For public App Store users, decide between a carefully rate-limited public calculation API or a real authenticated gateway; keep the profile itself local and never send it to a new service without approval.
 
@@ -51,10 +51,10 @@ Do not put a Replit external-access token in an Expo bundle. Anyone who extracts
 | Step | Actions and expected result | Effort | Cost before Apple membership |
 |---|---|---:|---|
 | 1. Restrict the existing deployment | Unpublish; set Workspace only/Invite only; republish; test local Expo development separately. Avoid sharing its old URL. | 15–30 min of owner UI work | No new service fee; existing deployment usage may still apply. |
-| 2. Confirm production API design | Determine the exact public API hostname for the eventual native build; test `/api/healthz`, chart calculation, city search, quota database, failure behavior and limits. | 0.5–1 day | Existing Replit and Geoapify usage only; exact account costs unknown. |
+| 2. Confirm production API design | The production API hostname is available. On 2026-11-06, health and astrology health returned 200, a synthetic natal calculation returned 200, anonymous `/api/me/profile` returned 401, and an unapproved browser origin returned 403. City search was not called to avoid spending Geoapify quota; production quota-retention and multi-instance limit behavior still need verification. | 0.5–1 day | Existing Replit and Geoapify usage only; exact account costs unknown. |
 | 3. Complete legal/privacy facts | Fill operator identity/address, purpose/legal bases, retention, provider role/DPA, transfers, age audience and user-rights process. Review with EU/Hungary counsel. | 1–3 days plus adviser time | Adviser fee unknown. |
-| 4. Prepare app privacy controls | Decide whether to add an in-app local-data reset; agree on data-loss and backup wording. Add the final policy URL in the app only after policy approval. | 0.5–2 days | No new provider required. |
-| 5. Complete release-quality checks | Fix the two stale astrology test expectations; finish EN/RU/IT and other selected locale QA; test compact devices, larger text, consent revoke, network failures and return-after-restart. | 2–5 days | No store fee. |
+| 4. Prepare app privacy controls | A confirmed local-profile reset is implemented in Settings → Privacy and its limits are documented. Add the final policy URL in the app only after operator details and policy review are complete. | 0.5–2 days | No new provider required. |
+| 5. Complete release-quality checks | On 2026-11-06, all 142 local tests and 20 astrology tests passed after updating two stale copy assertions; API typecheck and 43 tests passed; Expo compatibility reported 20/20 checks. Finish seven-locale QA, native device checks, larger text, consent withdrawal, network failures and return-after-restart. | 2–5 days | No store fee. |
 | 6. Prepare listing assets | Final descriptions, support/privacy pages, icon and iPhone screenshots; select category and answer rating/export questions. | 1–3 days | No store fee; design/legal assistance optional. |
 | 7. Register Apple account when ready | Enroll with the correct personal/organization identity, complete verification and agreements. | Account-dependent | Annual Apple fee; verify current local price. |
 | 8. Generate iOS TestFlight build | Use Replit Expo Launch, sign/upload the build, test on the owner's device and invited testers. | 1–2 weeks including feedback | Apple membership; Replit/Expo build charges depend on account plan and were not checked. |
@@ -63,11 +63,11 @@ Do not put a Replit external-access token in an Expo bundle. Anyone who extracts
 
 ## App configuration notes
 
-- The iOS bundle ID and iPhone-only flag are present. `ios.buildNumber` is not explicitly set in `app.json`; confirm that the release tool assigns/increments one for each upload.
+- The iOS bundle ID and iPhone-only flag are present. `ios.buildNumber` is set to `"1"` for the first native upload; increment it for each later upload.
 - The app icon is a 1024×1024 opaque PNG with the requested starfield design.
 - No explicit splash-screen asset/configuration was found; inspect the generated native launch screen before store screenshots.
 - Android `package` and `versionCode` are not set in `app.json`.
-- The artifact description in `artifacts/soul-compass/.replit-artifact/artifact.toml` still calls the experience “local sample content.” Review/update this metadata through the supported artifact validation flow before public launch; do not edit the manifest directly.
+- The artifact description now accurately describes the local-first app; it was updated through the supported artifact validation flow.
 - A prior compatibility report records static iOS and Android bundle checks, not signed `.ipa`/`.aab` installation or store review.
 
 ## Pre-submission test journey

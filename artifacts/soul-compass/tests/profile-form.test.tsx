@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LOCAL_KEY, emptyRecord } from '../profile/local';
@@ -11,17 +11,20 @@ const state = vi.hoisted(() => ({
   search: vi.fn(),
   platformOS: 'web',
 }));
+const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: async (key: string) => state.storage.get(key) ?? null,
     setItem: async (key: string, value: string) => { state.storage.set(key, value); },
+    removeItem: async (key: string) => { state.storage.delete(key); },
   },
 }));
 vi.mock('react-native', () => ({
   AppState: { addEventListener: () => ({ remove: () => {} }) },
   ActivityIndicator: 'ActivityIndicator',
   Linking: { openURL: vi.fn() },
+  Modal: 'Modal',
   PanResponder: { create: (handlers: any) => ({ panHandlers: {
     onMoveShouldSetResponderCapture: handlers.onMoveShouldSetPanResponderCapture,
     onResponderRelease: handlers.onPanResponderRelease,
@@ -47,7 +50,7 @@ vi.mock('@/services/geocoding', () => ({
 }));
 vi.mock('expo-router', () => ({
   Stack: { Screen: 'StackScreen' },
-  useRouter: () => ({ canGoBack: () => false, back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ canGoBack: () => false, back: vi.fn(), replace: navigation.replace }),
 }));
 vi.mock('@/constants/content', () => ({
   crystalCatalog: [
@@ -515,6 +518,36 @@ test('preferences offers daily feelings without intentions and supports changing
   await act(async () => { root.findByProps({ testID: second }).props.onPress(); });
   expect(profileState.preferences.crystalPreferences.feeling).toBeNull();
   expect(profileState.profile).toEqual(existingProfile);
+});
+
+test('Privacy requires confirmation to delete the local profile and returns to first-run setup', async () => {
+  const record = emptyRecord();
+  record.profile = existingProfile;
+  record.preferences.language = 'ru';
+  record.preferences.crystalCollection = ['amethyst'];
+  state.storage.set(LOCAL_KEY, JSON.stringify(record));
+  navigation.replace.mockClear();
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => { await pressText(root, 'Privacy'); });
+  expect(root.findByType(Modal).props.visible).toBe(false);
+  await act(async () => { root.findByProps({ testID: 'settings-delete-local-data' }).props.onPress(); });
+  expect(root.findByType(Modal).props.visible).toBe(true);
+
+  await act(async () => { root.findByProps({ testID: 'cancel-delete-local-data' }).props.onPress(); });
+  expect(root.findByType(Modal).props.visible).toBe(false);
+  expect(profileState.profile).toEqual(existingProfile);
+  expect(state.storage.has(LOCAL_KEY)).toBe(true);
+
+  await act(async () => { root.findByProps({ testID: 'settings-delete-local-data' }).props.onPress(); });
+  await act(async () => { await root.findByProps({ testID: 'confirm-delete-local-data' }).props.onPress(); });
+
+  expect(profileState.profile).toBeNull();
+  expect(profileState.preferences.language).toBe('en');
+  expect(profileState.preferences.crystalCollection).toEqual([]);
+  expect(state.storage.size).toBe(0);
+  expect(navigation.replace).toHaveBeenCalledWith('/onboarding');
 });
 
 test('onboarding rejects impossible dates and a missing birthplace', async () => {

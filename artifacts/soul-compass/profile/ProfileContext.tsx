@@ -17,6 +17,7 @@ function useStoreValue(store: LocalProfileStore) {
     saveProfile: store.saveProfile, loadNatalChartCache: store.loadNatalChartCache,
     saveNatalChartCache: store.saveNatalChartCache, savePreferences: store.savePreferences,
     toggleCrystal: store.toggleCrystal, setConsent: store.setConsent,
+    clearLocalData: store.clearLocalData,
     reloadLocal: store.load, canCalculate: store.canCalculate,
     withCalculationConsent: store.withCalculationConsent.bind(store),
   };

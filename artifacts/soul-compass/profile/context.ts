@@ -16,6 +16,7 @@ export type ProfileContextValue = {
   savePreferences: LocalProfileStore['savePreferences'];
   toggleCrystal: LocalProfileStore['toggleCrystal'];
   setConsent: LocalProfileStore['setConsent'];
+  clearLocalData: LocalProfileStore['clearLocalData'];
   reloadLocal: LocalProfileStore['load'];
   canCalculate: LocalProfileStore['canCalculate'];
   withCalculationConsent: LocalProfileStore['withCalculationConsent'];

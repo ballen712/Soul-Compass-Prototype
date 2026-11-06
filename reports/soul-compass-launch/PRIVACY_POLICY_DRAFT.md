@@ -19,7 +19,7 @@ The app does not ask you to create an account and does not currently provide clo
 
 The app stores your birth profile, selected residence, language, preferences, daily feeling, crystal collection, hidden stones and privacy-consent status on your device using the app's local storage.
 
-This local storage is not encrypted by Soul Compass at the application layer. Your device's backup may include app data. You can remove local data by [DESCRIBE THE FINAL IN-APP RESET AND/OR DEVICE CLEARING STEPS]. The current app does not provide a full profile export or import feature.
+This local storage is not encrypted by Soul Compass at the application layer. Your device's backup may include app data. To erase the local profile, open **Settings → Privacy → Delete local profile** and confirm. This removes the saved profile, birth details, residence, language, preferences, crystal collection, chart consent and cached chart from this device, then returns the app to setup. You must select a language and enter your details again to continue. This action does not erase device backups or technical records created by network features. The current app does not provide a full profile export or import feature.
 
 ## 3. Optional natal-chart calculation
 
@@ -64,7 +64,7 @@ Soul Compass does not currently offer advertising or sell user profile data. [Th
 
 ## 8. Retention and deletion
 
-Local profile information remains on your device until you clear app data or uninstall the app; your operating-system backup may retain a copy.
+Local profile information remains on your device until you use **Settings → Privacy → Delete local profile**, clear app data or uninstall the app. The in-app action removes the profile and cached chart from this device and returns the app to setup. Operating-system backups may retain a copy.
 
 The Soul Compass chart endpoint was not found to persist birth requests or charts in its application database. Replit infrastructure logs and Geoapify provider logs have not been fully verified. The final policy must name the actual retention periods or criteria for each server/provider record.
 
@@ -94,6 +94,6 @@ Privacy and support contact: soulcompass.support@gmail.com. Please do not email 
 - Verify production Replit logs, database retention/backups, region and provider agreement.
 - Verify Geoapify retention/role/DPA and current account configuration.
 - Decide and document legal bases; review EU rights and international transfers.
-- Implement or precisely document local data reset and the process for server/provider rights requests.
+- Verify the in-app local data reset and define the process for server/provider rights requests; do not imply that the reset deletes backups or provider/infrastructure records.
 - Translate and proofread for the app's seven supported languages: English, Hungarian, Italian, German, French, Spanish and Russian.
 - Obtain qualified legal review. This draft is not a declaration of GDPR compliance.

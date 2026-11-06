@@ -1,7 +1,7 @@
 kind = "mobile"
 previewPath = "/"
 title = "Soul Compass"
-description = "An iPhone-first reflective companion with daily horoscope inspiration and a curated crystal guide, using local sample content."
+description = "A local-first iPhone app for daily reflections, optional natal-chart exploration and a curated crystal guide."
 version = "1.0.0"
 id = "artifacts/soul-compass"
 router = "expo-domain"

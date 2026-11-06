@@ -21,7 +21,7 @@
 - API request logging omits query strings and request bodies. Do not infer that all Replit infrastructure logs have the same policy.
 - City-query caching is in server memory. Persistent PostgreSQL is for operational quotas and keyed source digests, not profile or chart storage, according to the project implementation and documentation.
 - Local app data is in AsyncStorage and is not encrypted at the application layer. The app's Settings warns that device backups may include it.
-- There is no in-app full-profile erase or export/import flow in the inspected UI. The user can edit profile fields and can clear app data/uninstall, but a first-class reset control is not present.
+- Settings → Privacy now offers a confirmed local-profile deletion flow. It removes the current and legacy profile keys plus the cached natal chart, revokes chart permission, and returns the app to first-run setup. It does not erase device backups or technical records created by network features. Full export/import is not present.
 - If consent is withdrawn, future calculations are blocked and an active request is aborted/discarded when possible. This cannot reverse a request that already reached the server.
 - Geoapify policy notes in `artifacts/soul-compass/LICENSES_AND_DATA_SOURCES.md` describe short provider logging for successful requests, but error logging and the live account configuration still need verification.
 
@@ -35,7 +35,7 @@ The final answers depend on verifying platform/provider retention and the final 
 - **Data potentially available to processors:** Replit receives API traffic and runtime metadata; Geoapify receives typed city queries and server network metadata.
 - **Tracking / advertising:** none found in the inspected app flow; re-check final SDKs and platform privacy manifests.
 - **Linked to identity:** no app account or direct user identifier is sent with the chart request. Hosting/network logs can still have IP metadata; confirm actual retention before answering the store form.
-- **Data deletion:** no cloud account profile is active. Local profile can be cleared by removing app data/uninstalling; no in-app reset/export exists. Provider/hosting retention needs confirmation.
+- **Data deletion:** no cloud account profile is active. The in-app reset deletes the local profile and chart cache; device backups and provider/hosting technical records are separate. No full export/import exists. Provider/hosting retention needs confirmation.
 - **Privacy URL:** absent from the app's own links and project files. Must be created and made public before submission.
 - **Privacy manifest / SDK declarations:** inspect the final iOS archive and each shipped SDK before submission.
 

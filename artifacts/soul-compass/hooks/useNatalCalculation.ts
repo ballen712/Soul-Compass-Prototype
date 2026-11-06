@@ -103,7 +103,7 @@ function useNatalCalculationState(): NatalCalculationState {
       if (alive.current && revision.current === requestRevision && current.current.canCalculate()) {
         let cacheWarning: string | undefined;
         try {
-          await current.current.saveNatalChartCache(cacheKey, data, choice);
+          await current.current.saveNatalChartCache(cacheKey, data, choice, ctx.profile);
         } catch {
           cacheWarning = 'Your chart was calculated but could not be saved on this device. It may need to be calculated again next time.';
         }

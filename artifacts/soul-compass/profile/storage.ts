@@ -10,6 +10,7 @@ import {
 export interface StorageAdapter {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
 }
 type Snapshot = { record: LocalRecord; loaded: boolean; error: string | null };
 export type CachedNatalChart = {
@@ -27,6 +28,7 @@ export class LocalProfileStore {
   private loading: Promise<void> | null = null;
   private consentRevision = 0;
   private denyRequests = false;
+  private clearingData = false;
   private controllers = new Set<AbortController>();
   constructor(private storage: StorageAdapter) {}
   getSnapshot = () => this.snapshot;
@@ -89,6 +91,7 @@ export class LocalProfileStore {
   };
   private update(change: (record: LocalRecord) => LocalRecord): Promise<void> {
     return this.enqueue(async () => {
+      if (this.clearingData) throw new Error('Local data is being deleted. Please wait and try again.');
       if (!this.snapshot.loaded || this.snapshot.error) throw new Error('Reload local data before saving.');
       try {
         const next = LocalRecordSchema.parse(change({
@@ -118,8 +121,10 @@ export class LocalProfileStore {
     ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
   }));
   loadNatalChartCache = async (profileKey: string): Promise<CachedNatalChart | null> => {
+    if (this.clearingData) return null;
+    const revision = this.consentRevision;
     const raw = await this.storage.getItem(NATAL_CHART_CACHE_KEY);
-    if (raw === null) return null;
+    if (raw === null || this.clearingData || revision !== this.consentRevision) return null;
     let value: unknown;
     try {
       value = JSON.parse(raw);
@@ -148,12 +153,22 @@ export class LocalProfileStore {
     profileKey: string,
     data: NatalChartResponse,
     disambiguation: 'earlier' | 'later' | null,
+    expectedProfile: UserProfile,
   ): Promise<void> => {
     const parsed = CalculateNatalChartResponse.safeParse(data);
     if (!parsed.success) throw new Error('The chart response could not be validated for local storage.');
-    await this.storage.setItem(NATAL_CHART_CACHE_KEY, JSON.stringify({
-      profileKey, data: parsed.data, disambiguation,
-    }));
+    if (this.clearingData || this.snapshot.record.profile !== expectedProfile) {
+      throw new Error('The local profile changed before the chart could be saved.');
+    }
+    const revision = this.consentRevision;
+    await this.enqueue(async () => {
+      if (this.clearingData || revision !== this.consentRevision || this.snapshot.record.profile !== expectedProfile) {
+        throw new Error('The local profile changed before the chart could be saved.');
+      }
+      await this.storage.setItem(NATAL_CHART_CACHE_KEY, JSON.stringify({
+        profileKey, data: parsed.data, disambiguation,
+      }));
+    });
   };
   savePreferences = (preferences: LocalPreferences) => {
     // Apply only fields changed by this action, preserving queued collection edits.
@@ -188,6 +203,7 @@ export class LocalProfileStore {
     }),
   }));
   setConsent = (allowed: boolean): Promise<void> => {
+    if (this.clearingData) return Promise.reject(new Error('Local data is being deleted. Please wait and try again.'));
     const revision = ++this.consentRevision;
     const now = new Date().toISOString();
     if (!allowed) {
@@ -215,6 +231,44 @@ export class LocalProfileStore {
       if (revision !== this.consentRevision) return;
       this.denyRequests = !allowed;
       this.publish({ record, loaded: true, error: null });
+    });
+  };
+  clearLocalData = (): Promise<void> => {
+    if (this.clearingData) return Promise.reject(new Error('Local data deletion is already in progress.'));
+    if (!this.snapshot.loaded || this.snapshot.error) {
+      return Promise.reject(new Error('Reload local data before deleting it.'));
+    }
+
+    this.clearingData = true;
+    this.denyRequests = true;
+    this.consentRevision += 1;
+    this.stopRequests();
+    const revokedAt = new Date().toISOString();
+    const revokedRecord = LocalRecordSchema.parse({
+      ...this.snapshot.record,
+      privacy: { ...this.snapshot.record.privacy, astrologyApiConsent: false, revokedAt },
+    });
+    this.publish({ record: revokedRecord, loaded: true, error: null });
+
+    return this.enqueue(async () => {
+      try {
+        // Persist the revocation first when possible, so a partial deletion
+        // cannot leave a previously granted calculation permission active.
+        try {
+          await this.storage.setItem(LOCAL_KEY, JSON.stringify(revokedRecord));
+        } catch {
+          // Continue with removal. If removal also fails, the session remains
+          // blocked and the UI asks the user to retry before closing the app.
+        }
+        await this.storage.removeItem(NATAL_CHART_CACHE_KEY);
+        await this.storage.removeItem(LEGACY_KEY);
+        await this.storage.removeItem(LOCAL_KEY);
+        this.publish({ record: emptyRecord(), loaded: true, error: null });
+      } catch {
+        throw new Error('Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.');
+      } finally {
+        this.clearingData = false;
+      }
     });
   };
   canCalculate = () => !this.denyRequests && this.snapshot.loaded && !this.snapshot.error

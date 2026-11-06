@@ -22,7 +22,7 @@ Interpretations depend on the information entered and the calculation method. Un
 
 ## 3. Your information and device
 
-Your profile and preferences are stored locally on your device. The current app does not require registration or provide cloud synchronization. If you clear app data or uninstall the app, your local information may be lost; device backups may contain app data. Optional natal-chart calculations and city search use the network as described in the Privacy Policy.
+Your profile and preferences are stored locally on your device. The current app does not require registration or provide cloud synchronization. You can erase the local profile in Settings → Privacy → Delete local profile; this returns the app to setup and requires you to enter your details again. Device backups and technical records created by network features are not erased by this action. Optional natal-chart calculations and city search use the network as described in the Privacy Policy.
 
 Do not send birth details in ordinary support email. The app does not attach your profile to a support email.
 

@@ -295,6 +295,93 @@ const localizedText: Record<Exclude<AppLocale, 'en'>, Record<string, string>> = 
   },
 };
 
+const localDataDeletionTranslations: Record<Exclude<AppLocale, 'en'>, Record<string, string>> = {
+  hu: {
+    'Delete local profile': 'Helyi profil törlése',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Töröld erről az eszközről a profilodat és a mentett adataidat. A Soul Compass visszatér a beállításhoz; a folytatáshoz válassz nyelvet, és add meg újra az adataidat.',
+    'Delete my local data': 'Helyi adataim törlése',
+    'Delete your local data?': 'Törlöd a helyi adataidat?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'Ez a művelet nem vonható vissza. Eltávolítja erről az eszközről a születési adataidat, jelenlegi lakóhelyedet, mentett képletedet, nyelvedet, napi hangulatodat, beállításaidat, kőgyűjteményedet és a képletszámítás engedélyét. Ezután visszatérsz a beállításhoz, és újra meg kell adnod az adataidat. Az eszköz biztonsági mentéseit és a hálózati funkciók technikai naplóit nem törli.',
+    'Keep my data': 'Megtartom az adataimat',
+    'Delete and start over': 'Törlés és újrakezdés',
+    'Deleting…': 'Törlés…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'Nem sikerült befejezni a törlést. Néhány adat az eszközön maradhat. A képletszámítások egyelőre le vannak tiltva. Próbáld újra az alkalmazás bezárása előtt.',
+  },
+  it: {
+    'Delete local profile': 'Elimina il profilo locale',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Rimuovi da questo dispositivo il profilo e i dati salvati. Soul Compass tornerà alla configurazione iniziale: scegli una lingua e inserisci di nuovo i tuoi dati per continuare.',
+    'Delete my local data': 'Elimina i miei dati locali',
+    'Delete your local data?': 'Eliminare i dati locali?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'Non puoi annullare questa operazione. Verranno rimossi da questo dispositivo i dati di nascita, il luogo in cui vivi, la carta salvata, la lingua, lo stato d’animo del giorno, le preferenze, la collezione di pietre e il consenso al calcolo della carta. Tornerai alla configurazione iniziale e dovrai inserire di nuovo i tuoi dati. I backup del dispositivo e i registri tecnici di rete non vengono eliminati.',
+    'Keep my data': 'Conserva i miei dati',
+    'Delete and start over': 'Elimina e ricomincia',
+    'Deleting…': 'Eliminazione…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'Non è stato possibile completare l’eliminazione. Alcuni dati potrebbero restare su questo dispositivo. Per ora le richieste della carta sono bloccate. Riprova prima di chiudere l’app.',
+  },
+  de: {
+    'Delete local profile': 'Lokales Profil löschen',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Entferne dein Profil und gespeicherte Angaben von diesem Gerät. Soul Compass kehrt zur Einrichtung zurück. Wähle eine Sprache und gib deine Daten erneut ein, um fortzufahren.',
+    'Delete my local data': 'Meine lokalen Daten löschen',
+    'Delete your local data?': 'Lokale Daten löschen?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'Das lässt sich nicht rückgängig machen. Geburtsdaten, aktueller Wohnort, gespeichertes Geburtshoroskop, Sprache, Tagesgefühl, Einstellungen, Steinsammlung und die Zustimmung zur Berechnung werden von diesem Gerät entfernt. Danach kehrst du zur Einrichtung zurück und musst deine Daten erneut eingeben. Gerätesicherungen und technische Netzwerkprotokolle werden dadurch nicht gelöscht.',
+    'Keep my data': 'Daten behalten',
+    'Delete and start over': 'Löschen und neu beginnen',
+    'Deleting…': 'Wird gelöscht…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'Die Daten konnten nicht vollständig gelöscht werden. Einige Angaben können auf diesem Gerät verbleiben. Berechnungsanfragen sind vorerst gesperrt. Bitte versuche es erneut, bevor du die App schließt.',
+  },
+  fr: {
+    'Delete local profile': 'Supprimer le profil local',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Supprimez de cet appareil votre profil et les informations enregistrées. Soul Compass reviendra à la configuration initiale. Choisissez une langue et saisissez à nouveau vos informations pour continuer.',
+    'Delete my local data': 'Supprimer mes données locales',
+    'Delete your local data?': 'Supprimer vos données locales ?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'Cette action est irréversible. Elle supprime de cet appareil vos données de naissance, votre lieu de résidence, votre thème natal enregistré, la langue, votre humeur du jour, vos préférences, votre collection de pierres et votre autorisation de calcul. Vous reviendrez à la configuration initiale et devrez saisir à nouveau vos informations. Les sauvegardes de l’appareil et les journaux techniques du réseau ne sont pas supprimés.',
+    'Keep my data': 'Conserver mes données',
+    'Delete and start over': 'Supprimer et recommencer',
+    'Deleting…': 'Suppression…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'La suppression n’a pas pu être terminée. Certaines informations peuvent rester sur cet appareil. Les demandes de calcul sont bloquées pour le moment. Réessayez avant de fermer l’application.',
+  },
+  es: {
+    'Delete local profile': 'Eliminar perfil local',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Elimina de este dispositivo tu perfil y los datos guardados. Soul Compass volverá a la configuración inicial. Elige un idioma e introduce tus datos otra vez para continuar.',
+    'Delete my local data': 'Eliminar mis datos locales',
+    'Delete your local data?': '¿Eliminar tus datos locales?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'No se puede deshacer. Se eliminarán de este dispositivo tus datos de nacimiento, tu residencia actual, la carta guardada, el idioma, el estado de ánimo del día, las preferencias, la colección de piedras y el permiso para calcular la carta. Volverás a la configuración inicial y tendrás que introducir tus datos de nuevo. No se eliminan las copias de seguridad del dispositivo ni los registros técnicos de red.',
+    'Keep my data': 'Conservar mis datos',
+    'Delete and start over': 'Eliminar y empezar de nuevo',
+    'Deleting…': 'Eliminando…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'No se pudieron eliminar todos los datos. Es posible que algunos sigan en este dispositivo. Por ahora, las solicitudes de cálculo están bloqueadas. Inténtalo de nuevo antes de cerrar la aplicación.',
+  },
+  ru: {
+    'Delete local profile': 'Удалить локальный профиль',
+    'Remove your profile and saved details from this device. Soul Compass will return to setup; select a language and enter your details again to continue.':
+      'Удалить профиль и сохранённые данные с этого устройства. Soul Compass вернётся к начальной настройке: выбери язык и введи данные заново, чтобы продолжить.',
+    'Delete my local data': 'Удалить мои данные с устройства',
+    'Delete your local data?': 'Удалить данные с устройства?',
+    'This cannot be undone. It removes your birth details, current home, saved chart, language, daily feeling, preferences, stone collection, and chart permission from this device. You will return to setup and need to enter your details again. Device backups and technical network records are not deleted.':
+      'Это действие нельзя отменить. С этого устройства будут удалены дата и место рождения, текущее место жительства, сохранённая натальная карта, язык, настроение, настройки, коллекция камней и разрешение на расчёт карты. После этого приложение вернётся к начальной настройке, и данные нужно будет ввести заново. Резервные копии устройства и технические сетевые журналы эта функция не удаляет.',
+    'Keep my data': 'Оставить данные',
+    'Delete and start over': 'Удалить и начать заново',
+    'Deleting…': 'Удаление…',
+    'Could not finish deleting data. Some information may remain on this device. Chart requests are blocked for now. Please try again before closing the app.':
+      'Не удалось завершить удаление. Некоторые данные могут остаться на устройстве. Расчёт натальной карты пока заблокирован. Попробуй ещё раз до закрытия приложения.',
+  },
+};
+
 const localeContext = createContext<AppLocale>('en');
 
 export function normalizeAppLocale(value: string | null | undefined): AppLocale {
@@ -304,7 +391,8 @@ export function normalizeAppLocale(value: string | null | undefined): AppLocale 
 
 export function translateText(source: string, locale: AppLocale): string {
   if (locale === 'en') return source;
-  return localizedText[locale][source]
+  return localDataDeletionTranslations[locale][source]
+    ?? localizedText[locale][source]
     ?? cosmosTranslations[locale][source]
     ?? onboardingTranslations[locale][source]
     ?? crystalUiCopy[locale]?.[source]

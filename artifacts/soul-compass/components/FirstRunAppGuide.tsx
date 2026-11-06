@@ -88,7 +88,7 @@ export function FirstRunAppGuide() {
               contentContainerStyle={styles.content}
             >
               <Text style={[styles.label, { color: colors.cosmos.secondary }]}>
-                THREE WAYS TO EXPLORE
+                FOUR WAYS TO EXPLORE
               </Text>
               <AppGuideCards variant="modal" />
             </ScrollView>

@@ -99,7 +99,7 @@ test('the first-run guide explains each current tab and stays dismissed on later
   });
 
   const firstCopy = renderer!.root.findAllByType(Text).map(node => node.props.children);
-  expect(firstCopy).toContain('THREE WAYS TO EXPLORE');
+  expect(firstCopy).toContain('FOUR WAYS TO EXPLORE');
   expect(firstCopy).not.toContain(APP_GUIDE_INTRO);
   expect(APP_GUIDE_INTRO).not.toMatch(/grew out of my own search|I have explored/i);
   for (const tab of APP_GUIDE_TABS) {

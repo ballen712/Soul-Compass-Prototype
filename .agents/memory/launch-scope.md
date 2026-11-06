@@ -122,3 +122,9 @@ The Soul Compass voice should be warm, gently mystical, psychologically reflecti
 **Why:** the user asked for a subtle Osho-inspired warmth while keeping the app's wording clear and human.
 
 **How to apply:** use broad traits such as self-inquiry, directness, gentle paradox, and light humor. Keep astrology and crystal associations symbolic, avoid diagnoses or promises, and do not copy distinctive phrasing.
+
+Explore is a fourth navigation tab and, for its initial step, is an unpaid overview of planned Tarot and longer-term transit features. Do not add ads or payment flows without separate approval.
+
+**Why:** the user chose to establish the Explore screen before deciding on monetization.
+
+**How to apply:** keep planned features clearly labeled until their working experiences are built; keep existing daily tabs available without payment.

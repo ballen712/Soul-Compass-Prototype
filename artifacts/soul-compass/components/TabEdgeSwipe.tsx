@@ -2,12 +2,12 @@ import React, { useMemo, useRef } from 'react';
 import { PanResponder, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const TAB_COUNT = 3;
+const TAB_COUNT = 4;
 const EDGE_WIDTH = 32;
 const CLAIM_DISTANCE = 20;
 const SWITCH_DISTANCE = 76;
 const HORIZONTAL_BIAS = 1.25;
-const TAB_HREFS = ['/(tabs)', '/(tabs)/crystals', '/(tabs)/natal'] as const;
+const TAB_HREFS = ['/(tabs)', '/(tabs)/crystals', '/(tabs)/natal', '/(tabs)/explore'] as const;
 
 type GestureInput = {
   enabled: boolean;

@@ -38,6 +38,12 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>NATAL CHART</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="explore">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'safari', selected: 'safari.fill' }}
+        />
+        <NativeTabs.Trigger.Label>EXPLORE</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -109,6 +115,19 @@ function ClassicTabLayout() {
                   ? colors.navigation.foreground
                   : colors.navigation.mutedForeground
               }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'EXPLORE',
+          tabBarIcon: ({ color, focused }) => (
+            <Feather
+              name="compass"
+              size={19}
+              color={focused ? colors.navigation.foreground : colors.navigation.mutedForeground}
             />
           ),
         }}

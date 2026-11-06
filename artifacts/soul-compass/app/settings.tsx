@@ -315,7 +315,7 @@ export default function SettingsScreen() {
           {tab === 'about' ? (
             <>
               <Section title="About Soul Compass" description={APP_GUIDE_INTRO} />
-              <Section title="Three ways to explore">
+              <Section title="Four ways to explore">
                 <AppGuideCards variant="settings" />
               </Section>
               <Section title="Support" description={PRODUCT.supportEmail}>

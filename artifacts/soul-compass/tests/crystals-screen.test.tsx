@@ -358,14 +358,14 @@ test('tab edge swipes wrap between the first and last tabs in both directions', 
     .find((node) => String(node.type) === 'View')!.props;
   expect(handlers.onMoveShouldSetResponderCapture({}, { x0: 3, dx: 28, dy: 4 })).toBe(true);
   await act(async () => { handlers.onResponderRelease({}, { x0: 3, dx: 110, dy: 8 }); });
-  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/natal');
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/explore');
   await act(async () => { handlers.onResponderRelease({}, { x0: 398, dx: -110, dy: 8 }); });
   expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/crystals');
 
   await act(async () => {
     renderer!.update(
-      <TabEdgeSwipe tabIndex={2} testID="tab-edge-swipe-last">
-        <Text>Natal Chart</Text>
+      <TabEdgeSwipe tabIndex={3} testID="tab-edge-swipe-last">
+        <Text>Explore</Text>
       </TabEdgeSwipe>,
     );
   });
@@ -375,7 +375,7 @@ test('tab edge swipes wrap between the first and last tabs in both directions', 
   await act(async () => { handlers.onResponderRelease({}, { x0: 398, dx: -110, dy: 8 }); });
   expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)');
   await act(async () => { handlers.onResponderRelease({}, { x0: 3, dx: 110, dy: 8 }); });
-  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/crystals');
+  expect(state.navigate).toHaveBeenLastCalledWith('/(tabs)/natal');
 });
 
 test('the full collection centers each opened stone after returning from its details', async () => {

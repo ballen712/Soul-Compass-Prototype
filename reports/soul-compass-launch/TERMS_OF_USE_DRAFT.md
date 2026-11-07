@@ -6,7 +6,7 @@
 **Operator:** Vadim Shelokhanov (individual)
 **Country:** Hungary
 **Contact address:** Budapest, Gombocz Zoltan, 1118
-**Support:** soulcompass.support@gmail.com
+**Support:** Soul Compass Support <soulcompass.support@gmail.com>
 **Terms URL:** [PUBLIC HTTPS URL]
 
 ## 1. What Soul Compass provides
@@ -51,7 +51,7 @@ Soul Compass is intended for users aged 13 and older and is not intended for chi
 
 The operator may update these terms when the app or applicable law changes. Material changes and their effective date should be shown at [PUBLIC TERMS URL].
 
-Questions: soulcompass.support@gmail.com.
+Questions: Soul Compass Support <soulcompass.support@gmail.com>.
 
 ## Legal review required before publication
 

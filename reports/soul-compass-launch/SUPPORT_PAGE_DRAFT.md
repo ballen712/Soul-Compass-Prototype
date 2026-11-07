@@ -4,7 +4,7 @@
 
 ## Need help?
 
-Email **soulcompass.support@gmail.com**.
+Email **Soul Compass Support** at **soulcompass.support@gmail.com**.
 
 To help us investigate, include:
 

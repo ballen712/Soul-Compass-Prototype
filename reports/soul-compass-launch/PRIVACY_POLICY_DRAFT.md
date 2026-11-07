@@ -1,13 +1,13 @@
 # Soul Compass Privacy Policy — DRAFT
 
-> **Not for publication.** This is a working draft based on code inspected on 6 November 2026. It contains unresolved facts and legal decisions. Do not add it to App Store Connect, Google Play, a public website or the app until every bracketed item is resolved and the policy has been reviewed for the operator's actual circumstances.
+> **Not for publication.** This is a working draft based on code and deployment checks reviewed on 7 November 2026. It contains unresolved facts and legal decisions. Do not add it to App Store Connect, Google Play, a public website or the app until every bracketed item is resolved and the policy has been reviewed for the operator's actual circumstances.
 
 **Last updated:** [PUBLICATION DATE]
 **Effective date:** [EFFECTIVE DATE]
 **Controller / operator:** Vadim Shelokhanov (individual)
 **Country:** Hungary
-**Postal/contact address:** Budapest, Gombocz Zoltan, 1118
-**Privacy contact:** soulcompass.support@gmail.com
+**Postal/contact address:** Budapest, Gombocz Zoltan, 1118 — completeness and postal deliverability must be confirmed before publication.
+**Privacy contact:** Soul Compass Support <soulcompass.support@gmail.com>
 **Policy URL:** [STABLE PUBLIC HTTPS URL]
 
 ## 1. About this policy
@@ -28,7 +28,7 @@ If you give permission for a natal-chart calculation, the app sends your birth d
 
 Your name, current residence, language, daily feeling and crystal collection are not included in this request. The app saves the chart on your device. It does not queue a failed request for later. You can withdraw permission in Settings; withdrawal blocks future requests and cancels or discards an active result when possible, but cannot undo a request that has already been sent.
 
-**Server retention to verify before publication:** the application route returns the calculation result and no profile/chart database write was found. Replit hosting, networking and security logs have not been verified. State the actual data and retention behavior after checking the production configuration and provider terms.
+The production calculation endpoint was checked with fabricated birth details and returned a chart response. The inspected application route does not write the request or chart to its application database. Replit hosting, networking and security-log retention have not been verified; this test does not establish that infrastructure keeps no request metadata.
 
 ## 4. City search
 
@@ -38,9 +38,9 @@ When you tap Search, the city name you enter is sent to the Soul Compass server 
 
 ## 5. Operational and technical information
 
-The Soul Compass API processes network requests and uses short-lived in-memory request limits. Its application request logger records request method, path without query parameters and response status; the inspected logger does not record request bodies.
+The Soul Compass API processes network requests. Its application request logger records request method, path without query parameters and response status; the inspected logger does not record request bodies. Astrology calculation requests are subject to a shared, one-minute aggregate limit. PostgreSQL stores only the total count and limit for the current minute, without a user, device, or IP identifier. The separate local peer limiter applies to protected legacy account routes. Replit may observe or retain ordinary connection metadata.
 
-City-search quota controls also store an operational counter and a keyed daily HMAC digest of the server-observed connection peer in PostgreSQL. The quota database does not store the raw city query or raw peer address; the peer may be a proxy rather than the end user's device. Previous-day digests are deleted when a later quota transaction runs after UTC midnight. Cleanup is request-triggered, not scheduled, so a digest may remain longer if no later request occurs. [CONFIRM DATABASE BACKUP RETENTION AND SET AN APPROVED MAXIMUM RETENTION PERIOD BEFORE PUBLICATION.]
+City-search quota controls also store an operational counter and a keyed daily HMAC digest of the server-observed connection peer in PostgreSQL. The quota database does not store the raw city query or raw peer address; the peer may be a proxy rather than the end user's device. Previous-day digests are deleted when a later quota transaction runs after UTC midnight. Cleanup is request-triggered, not scheduled, so a digest may remain longer if no later request occurs. The aggregate astrology count resets when a calculation arrives in a later minute window and may remain unchanged while idle. [CONFIRM DATABASE BACKUP RETENTION AND SET AN APPROVED MAXIMUM RETENTION PERIOD BEFORE PUBLICATION.]
 
 Replit hosts the app/API and operational database. Its infrastructure may process connection and service metadata. [DESCRIBE THE ACTUAL REPLIT DATA REGION, LOGGING, RETENTION, SUBPROCESSORS AND CONTRACTUAL TERMS AFTER VERIFICATION.]
 
@@ -59,7 +59,7 @@ The current network features use:
 - **Replit** to host the app API and operational quota database.
 - **Geoapify** to provide city-search results.
 
-The active mobile flow does not use Supabase for profile synchronization. Supabase authentication and profile modules exist in the repository but are not connected to the current local-first UI.
+The active mobile flow does not use Supabase for profile synchronization. The API still exposes protected `/api/me` profile routes that require a valid Supabase access token and use the authenticated owner for profile operations. The current mobile UI does not call these routes. This dormant, but reachable, cloud-profile capability must be either disabled before release or accurately documented and tested against the live Supabase project. The service-role key is not configured, so administrative account deletion is unavailable.
 
 Soul Compass does not currently offer advertising or sell user profile data. [The controller must confirm this statement and update it before publication if the business model changes.]
 
@@ -73,7 +73,7 @@ You may contact the privacy address above to make a request about information pr
 
 ## 9. Your rights
 
-Depending on your location and the applicable law, you may have rights to access, correct, delete, restrict or object to processing, obtain a portable copy, withdraw consent and complain to a data-protection authority. Contact [PRIVACY CONTACT] to submit a request.
+Depending on your location and the applicable law, you may have rights to access, correct, delete, restrict or object to processing, obtain a portable copy, withdraw consent and complain to a data-protection authority. Contact Soul Compass Support at soulcompass.support@gmail.com to submit a request.
 
 **Controller and supervisory authority details:** [COMPLETE AFTER CONFIRMING THE OPERATOR'S ESTABLISHMENT AND APPLICABLE AUTHORITY.]
 
@@ -85,7 +85,7 @@ Soul Compass is intended for users aged 13 and older and is not intended for chi
 
 We will update this policy when the app's data flows or providers change. The effective date and summary of material changes will appear at the top of this page.
 
-Privacy and support contact: soulcompass.support@gmail.com. Please do not email your birth date, birth time, birthplace, screenshots containing your profile or other sensitive personal details unless the support team specifically explains a secure, necessary process.
+Privacy and support contact: Soul Compass Support <soulcompass.support@gmail.com>. Please do not email your birth date, birth time, birthplace, screenshots containing your profile or other sensitive personal details unless the support team specifically explains a secure, necessary process.
 
 ---
 
@@ -97,6 +97,7 @@ Privacy and support contact: soulcompass.support@gmail.com. Please do not email 
 - The owner selected a 13+ intended audience. Have a qualified adviser review child-consent rules and align store age ratings before release.
 - Verify production Replit logs, database retention/backups, region and provider agreement.
 - Verify Geoapify retention/role/DPA and current account configuration.
+- Decide whether to disable the dormant protected `/api/me` routes or retain and disclose this cloud-profile capability; verify the live Supabase project and whether any cloud records exist before making that decision.
 - Decide and document legal bases; review EU rights and international transfers.
 - Verify the in-app local data reset and define the process for server/provider rights requests; do not imply that the reset deletes backups or provider/infrastructure records.
 - Translate and proofread for the app's seven supported languages: English, Hungarian, Italian, German, French, Spanish and Russian.

@@ -25,7 +25,7 @@ Replit's August 2026 billing documentation describes Autoscale charges as a mont
 - City search runs after the user taps Search. Only the entered city query and fixed search parameters go from the server to Geoapify. No device GPS, profile or end-user IP/header is forwarded. Geoapify receives normal server connection metadata.
 - Project records describe Replit PostgreSQL as operational quota storage, not profile storage. The Supabase Auth/profile modules and RLS migration exist in the repository but are not used by the active local-first UI.
 - No ad, analytics, in-app purchase or runtime AI provider was found in the active app flow. AI crystal illustrations are bundled locally.
-- Support email configured in the app: `soulcompass.support@gmail.com`.
+- Official support contact used in the app and draft release materials: **Soul Compass Support** (`soulcompass.support@gmail.com`).
 
 ## Documents in this folder
 
@@ -35,7 +35,11 @@ Replit's August 2026 billing documentation describes Autoscale charges as a mont
 - `TERMS_OF_USE_DRAFT.md` — non-final terms outline for the current free, accountless app.
 - `TERMS_OF_USE_DRAFT_RU.md` — Russian working translation; not legal-reviewed.
 - `SUPPORT_PAGE_DRAFT.md` — support-page copy that avoids asking users to email birth details.
+- `APP_STORE_DESCRIPTION_DRAFT.md` — English store-listing proposal; confirm every claim and current field limits before submission.
+- `AGE_RATING_ASSESSMENT_DRAFT.md` — preliminary content review only; the current Apple questionnaire still needs completion.
 - `LAUNCH_ROADMAP.md` — platform decision, cost notes and pre-release sequence.
+
+The app also contains English-only draft routes at `/privacy` and `/support`. Both show a prominent not-for-publication banner and are not linked from Settings as final legal pages. They are available in the development preview only; they have not been deployed to the production host.
 
 ## Do not publish until these are resolved
 

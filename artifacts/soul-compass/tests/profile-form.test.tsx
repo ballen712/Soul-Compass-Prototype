@@ -211,6 +211,13 @@ test('onboarding accepts a known birth time', async () => {
   });
 });
 
+test('the first-run profile form keeps current residence for Settings', async () => {
+  await render(<ProfileForm includeResidence={false} submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
+  const root = renderer!.root;
+  expect(root.findAllByProps({ accessibilityLabel: 'Current residence' })).toHaveLength(0);
+  expect(root.findAllByProps({ accessibilityLabel: 'Place of birth' })).toHaveLength(1);
+});
+
 test('birth date and time add separators while typing digits and keep the caret after them', async () => {
   await render(<ProfileForm submitLabel="Continue" onSubmit={vi.fn(async () => {})} />);
   const root = renderer!.root;
@@ -358,6 +365,40 @@ test('settings can update the birthplace city and time without changing other pr
   expect(profileState.profile?.currentResidence).toEqual(currentResidence);
 });
 
+test('current residence is under Profile and can be cleared to use birthplace', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+  const root = renderer!.root;
+
+  await act(async () => {
+    root.findByProps({ testID: 'settings-tab-profile' }).props.onPress();
+  });
+  expect(root.findAllByProps({ accessibilityLabel: 'Current residence' })).toHaveLength(1);
+  expect(findTextNode(root, 'Place of birth')).toBeDefined();
+  expect(findTextNode(root, 'Edit Place of Birth')).toBeUndefined();
+  await act(async () => { await pressText(root, 'Skip current residence for now'); });
+  await act(async () => { await pressText(root, 'Save Changes'); });
+  expect(profileState.profile?.currentResidence).toBeNull();
+  expect(profileState.profile?.birthPlace).toEqual(existingProfile.birthPlace);
+
+  await act(async () => {
+    root.findByProps({ testID: 'settings-tab-preferences' }).props.onPress();
+  });
+  expect(root.findAllByProps({ accessibilityLabel: 'Current residence' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'settings-residence-save' })).toHaveLength(0);
+});
+
+test('Settings remains usable before the user creates a local profile', async () => {
+  state.storage.clear();
+  await render(<ProfileProvider><SettingsScreen /></ProfileProvider>);
+  const root = renderer!.root;
+
+  expect(findTextNode(root, 'Settings')).toBeDefined();
+  expect(findTextNode(root, 'App language')).toBeDefined();
+  expect(findTextNode(root, 'About Soul Compass')).toBeDefined();
+  expect(findTextNode(root, 'Delete local profile')).toBeUndefined();
+});
+
 test('editing a city without selecting a search result cannot save the old location', async () => {
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
@@ -429,6 +470,8 @@ test('an iOS edge swipe returns from a Settings section to the Settings menu', a
   const stackOptions = () => root.findAll((node) => String(node.type) === 'StackScreen')[0].props.options;
 
   await act(async () => { root.findByProps({ testID: 'settings-tab-about' }).props.onPress(); });
+  expect(findTextNode(root, 'Soul Compass Support')).toBeDefined();
+  expect(findTextNode(root, 'soulcompass.support@gmail.com')).toBeDefined();
   expect(stackOptions().gestureEnabled).toBe(false);
   const edge = root.findAllByProps({ testID: 'settings-edge-swipe-back' })
     .find((node) => String(node.type) === 'View')!.props;

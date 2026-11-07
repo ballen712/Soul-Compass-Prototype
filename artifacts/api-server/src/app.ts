@@ -3,9 +3,15 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { calculationRateLimit, configuredOrigins } from "./middlewares/security";
+import { profileRateLimit, configuredOrigins } from "./middlewares/security";
+import { postgresCalculationRateLimit } from "./middlewares/postgres-calculation-limit";
+import { sharedCalculationRateLimit, type CalculationRateLimitStore } from "./middlewares/shared-calculation-limit";
 
-export function createApp(options: { allowedOrigins?: readonly string[]; rateLimit?: number } = {}): Express {
+export function createApp(options: {
+  allowedOrigins?: readonly string[];
+  profileRateLimit?: number;
+  calculationRateLimitStore?: CalculationRateLimitStore;
+} = {}): Express {
 const app = express();
 app.disable("x-powered-by");
 // Do not trust caller-supplied forwarded headers for authorization or rate limits.
@@ -42,7 +48,8 @@ app.use("/api", (req, res, next) => {
   next();
 });
 app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], credentials: false }));
-app.use(calculationRateLimit(options.rateLimit));
+app.use(profileRateLimit(options.profileRateLimit));
+app.use(sharedCalculationRateLimit(options.calculationRateLimitStore ?? postgresCalculationRateLimit()));
 app.use("/api", (req, res, next) => {
   if (["POST", "PUT"].includes(req.method) && !req.is("application/json")) {
     res.status(415).json({ error: "Calculation requests must use application/json." });

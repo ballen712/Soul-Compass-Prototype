@@ -69,7 +69,11 @@ test('the first-run prompt appears after a profile exists and consent is unset',
   expect(copy).toContain('Create your Natal Chart?');
   expect(copy).not.toContain('OPTIONAL');
   expect(copy.join(' ')).not.toContain('Cosmos and Crystals still work');
-  expect(copy.join(' ')).not.toContain('You can withdraw permission in Settings.');
+  expect(copy.join(' ')).toContain('only to calculate your chart');
+  expect(copy.join(' ')).toContain('do not create an online profile with them');
+  expect(copy.join(' ')).toContain('Your profile and chart stay on this device');
+  expect(copy.join(' ')).toContain('delete your saved data in Settings');
+  expect(copy.join(' ')).not.toContain('If you are offline');
 });
 
 test('Agree and Not now save one explicit choice and close the prompt', async () => {

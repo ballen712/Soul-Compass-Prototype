@@ -7,9 +7,22 @@ import { join } from "node:path";
 import { test } from "node:test";
 import type { AddressInfo } from "node:net";
 import { createApp } from "../src/app";
+import type { CalculationRateLimitStore } from "../src/middlewares/shared-calculation-limit";
 
-async function withApp(fn: (base: string) => Promise<void>, limit = 120) {
-  const server = createApp({ allowedOrigins: ["https://allowed.example"], rateLimit: limit }).listen(0, "127.0.0.1");
+const allowCalculations: CalculationRateLimitStore = {
+  reserve: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+};
+
+async function withApp(
+  fn: (base: string) => Promise<void>,
+  profileLimit = 120,
+  calculationStore: CalculationRateLimitStore = allowCalculations,
+) {
+  const server = createApp({
+    allowedOrigins: ["https://allowed.example"],
+    profileRateLimit: profileLimit,
+    calculationRateLimitStore: calculationStore,
+  }).listen(0, "127.0.0.1");
   await once(server, "listening");
   try { await fn(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api`); }
   finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
@@ -29,6 +42,21 @@ test("CORS allowlist admits the app, rejects unrelated origins, native requests 
   assert.equal((await fetch(`${base}/astrology/health`, { headers: { origin: "https://evil.example" } })).status, 403);
   assert.equal((await fetch(`${base}/astrology/health`)).status, 200);
 }));
+
+test("production astrology health response does not expose provider details", async () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    await withApp(async (base) => {
+      const response = await fetch(`${base}/astrology/health`);
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { status: "ok" });
+    });
+  } finally {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+  }
+});
 
 test("privacy: natal responses never echo raw profiles and cannot be cached", async () => withApp(async (base) => {
   const response = await fetch(`${base}/astrology/natal-chart`, json({ ...payload, accountId: "someone-else", currentResidence: { private: "should-not-return" } }));
@@ -63,14 +91,24 @@ test("malformed, oversized, compressed and wrong-content-type bodies have saniti
   }
 }));
 
-test("rate limit returns 429 and forwarded-header spoofing cannot bypass it", async () => withApp(async (base) => {
+test("shared calculation limit returns a bounded Retry-After response", async () => withApp(async (base) => {
   const url = `${base}/astrology/positions`;
-  const body = { atUtc: "2000-01-01T12:00:00Z" };
-  assert.equal((await fetch(url, json(body))).status, 200);
-  assert.equal((await fetch(url, json(body, { "x-forwarded-for": "1.2.3.4" }))).status, 200);
-  const blocked = await fetch(url, json(body, { "x-forwarded-for": "8.8.8.8" }));
+  const blocked = await fetch(url, json({ atUtc: "2000-01-01T12:00:00Z" }));
   assert.equal(blocked.status, 429);
-  assert.ok(blocked.headers.get("retry-after"));
+  assert.equal(blocked.headers.get("retry-after"), "34");
+}, 120, { reserve: async () => ({ allowed: false, retryAfterSeconds: 34 }) }));
+
+test("shared calculation limiter fails closed without leaking database errors", async () => withApp(async (base) => {
+  const response = await fetch(`${base}/astrology/positions`, json({ atUtc: "2000-01-01T12:00:00Z" }));
+  assert.equal(response.status, 503);
+  assert.doesNotMatch(await response.text(), /private database detail/);
+}, 120, { reserve: async () => { throw new Error("private database detail"); } }));
+
+test("legacy authenticated profile limiter remains local and ignores forwarded-header spoofing", async () => withApp(async (base) => {
+  const url = `${base}/me/profile`;
+  assert.equal((await fetch(url, { headers: { "x-forwarded-for": "1.2.3.4" } })).status, 401);
+  assert.equal((await fetch(url, { headers: { "x-forwarded-for": "8.8.8.8" } })).status, 401);
+  assert.equal((await fetch(url)).status, 429);
 }, 2));
 
 test("public file index excludes traversal, symlinks, hidden files and source maps", () => {

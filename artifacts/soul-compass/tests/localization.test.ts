@@ -15,6 +15,7 @@ import {
   useAppText,
 } from '../localization';
 import { dailyRituals } from '@/constants/daily-rituals';
+import { APP_GUIDE_INTRO, APP_GUIDE_TABS } from '@/constants/app-guide';
 
 function LocaleProbe() {
   const t = useAppText();
@@ -32,6 +33,25 @@ function LocaleTree() {
 test('the supported language set matches the seven selected launch languages', () => {
   expect(APP_LOCALES).toEqual(['en', 'hu', 'it', 'de', 'fr', 'es', 'ru']);
   expect(Object.keys(APP_LANGUAGE_LABELS)).toEqual([...APP_LOCALES]);
+});
+
+test('Natal Chart consent is concise and translated in every supported language', () => {
+  const consentCopy = [
+    'Create your Natal Chart?',
+    'We send your birth date, time if known, and birthplace details to our server only to calculate your chart. We do not create an online profile with them. If your chart is saved on this device, we use it instead of sending the same details again.',
+    'Your profile and chart stay on this device. You can withdraw permission or delete your saved data in Settings at any time. If your birth details change, we may send the updated details for a new calculation.',
+    'Agree and calculate',
+    'Not now',
+  ];
+
+  for (const locale of APP_LOCALES) {
+    for (const source of consentCopy) {
+      expect(translateText(source, locale), `${locale}/${source}`).not.toBe('');
+      if (locale !== 'en') {
+        expect(translateText(source, locale), `${locale}/${source}`).not.toBe(source);
+      }
+    }
+  }
 });
 
 test('local profile deletion and its confirmation are translated in every supported language', () => {
@@ -75,6 +95,24 @@ test('the first translated navigation and guide copy exists in all selected lang
   }
   expect(translateText('A quick guide to Soul Compass', 'hu')).not.toBe('A quick guide to Soul Compass');
   expect(translateText('A quick guide to Soul Compass', 'en')).toBe('A quick guide to Soul Compass');
+});
+
+test('About and all four guide descriptions are translated in every selected language', () => {
+  const guideCopy = [
+    APP_GUIDE_INTRO,
+    ...APP_GUIDE_TABS.flatMap((tab) => [
+      tab.description,
+      ...('settingsDescription' in tab ? [tab.settingsDescription] : []),
+    ]),
+  ];
+
+  for (const locale of APP_LOCALES) {
+    for (const source of guideCopy) {
+      const translated = translateText(source, locale);
+      expect(translated, `${locale}/${source}`).not.toBe('');
+      if (locale !== 'en') expect(translated, `${locale}/${source}`).not.toBe(source);
+    }
+  }
 });
 
 test('Explore Life Directions labels and planned-feature copy are translated in all selected languages', () => {

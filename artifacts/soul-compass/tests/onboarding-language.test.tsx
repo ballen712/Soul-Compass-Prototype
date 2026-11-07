@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   saveProfile: vi.fn(async () => {}),
   savePreferences: vi.fn(async () => {}),
 }));
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
@@ -28,6 +29,8 @@ vi.mock('react-native', () => ({
   View: 'View',
 }));
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
+vi.mock('react-native-svg', () => ({ default: 'Svg', Path: 'Path', Rect: 'Rect' }));
+vi.mock('expo-router', () => ({ useRouter: () => navigation }));
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 vi.mock('@/components/ProfileForm', () => ({ ProfileForm: 'ProfileForm' }));
 vi.mock('@/profile/ProfileContext', () => ({
@@ -43,6 +46,14 @@ vi.mock('@/hooks/useColors', () => ({
     destructive: '#A85247',
     tint: '#8A7859',
     radius: 24,
+    cosmos: {
+      homeBackground: '#070B13',
+      card: '#1D2B40',
+      foreground: '#F1EEE6',
+      secondary: '#D6C39B',
+      mutedForeground: '#A8B0BC',
+      border: '#354258',
+    },
   }),
 }));
 
@@ -65,6 +76,7 @@ beforeEach(() => {
   state.onboardingDraft = null;
   state.saveProfile.mockReset();
   state.savePreferences.mockReset().mockResolvedValue(undefined);
+  navigation.push.mockReset();
 });
 
 afterEach(async () => {
@@ -82,6 +94,27 @@ test('first launch asks for a language before showing the birth profile form', a
   expect(renderer!.root.findAll((node) => String(node.type) === 'ProfileForm')).toHaveLength(0);
 });
 
+test('language picker uses the shared header, hides visible names, and opens Settings', async () => {
+  await act(async () => {
+    renderer = create(<OnboardingScreen />);
+  });
+  const root = renderer!.root;
+  const visibleText = root.findAll((node) => String(node.type) === 'Text')
+    .map((node) => typeof node.props.children === 'string' ? node.props.children : '')
+    .join(' ');
+
+  expect(root.findByProps({ testID: 'settings-button' })).toBeDefined();
+  expect(root.findByProps({ testID: 'language-option-en' }).props.accessibilityLabel).toContain('English');
+  expect(visibleText).not.toContain('English');
+  expect(visibleText).not.toContain('Magyar');
+  expect(visibleText).toContain('Choose your language');
+
+  await act(async () => {
+    root.findByProps({ testID: 'settings-button' }).props.onPress();
+  });
+  expect(navigation.push).toHaveBeenCalledExactlyOnceWith('/settings');
+});
+
 test('choosing a language saves it locally and then opens onboarding', async () => {
   await act(async () => {
     renderer = create(<OnboardingScreen />);
@@ -95,7 +128,9 @@ test('choosing a language saves it locally and then opens onboarding', async () 
     ...state.preferences,
     language: 'es',
   });
-  expect(renderer!.root.findAll((node) => String(node.type) === 'ProfileForm')).toHaveLength(1);
+  const profileForms = renderer!.root.findAll((node) => String(node.type) === 'ProfileForm');
+  expect(profileForms).toHaveLength(1);
+  expect(profileForms[0].props.includeResidence).toBe(false);
   expect(renderer!.root.findAllByProps({ testID: 'language-option-es' })).toHaveLength(0);
 });
 

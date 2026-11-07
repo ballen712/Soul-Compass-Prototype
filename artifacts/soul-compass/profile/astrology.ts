@@ -464,12 +464,10 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
       };
     }
 
-    if (!profile.currentResidence) {
-      return {
-        status: 'unavailable',
-        message: 'Set your current residence in Settings to anchor daily readings to your local date. Your birth city is not used as a substitute.',
-      };
-    }
+    // The current residence sets the local daily date when provided; otherwise
+    // the saved birthplace supplies a reliable time zone so daily guidance works
+    // for users who have not chosen a residence.
+    const dailyLocation = profile.currentResidence ?? profile.birthPlace;
 
     const natalPlacements = getNatalPlacements(profile, preciseBirthMoment, birthInstant);
     if (natalPlacements.length === 0) {
@@ -492,7 +490,7 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
       transits,
       aspects,
       preciseBirthMoment,
-      calculationDate: localDateLabel(now, profile.currentResidence.timeZone),
+      calculationDate: localDateLabel(now, dailyLocation.timeZone),
       sourceLabel: `${EPHEMERIS_SOURCE.name} · geocentric tropical positions · ${EPHEMERIS_SOURCE.models} · documented ±1 arcminute · ${EPHEMERIS_SOURCE.url}`,
     };
   } catch {

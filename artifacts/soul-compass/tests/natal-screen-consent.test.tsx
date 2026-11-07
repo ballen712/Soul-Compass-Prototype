@@ -84,6 +84,10 @@ vi.mock('@/hooks/useColors', () => ({
 
 import NatalScreen, { explainAngle, explainAspect, explainPlanet } from '../app/(tabs)/natal';
 import { FirstChartConsentPrompt } from '../components/FirstChartConsentPrompt';
+import { dailyReadingTranslations } from '../localization/daily-copy';
+import { natalTranslations } from '../localization/natal-copy';
+import { screenTranslations } from '../localization/screen-copy';
+import { formatAppText, translateText, type AppLocale } from '../localization';
 
 let renderer: ReactTestRenderer | undefined;
 const chartResult = {
@@ -122,30 +126,35 @@ function resumeApp() {
 test('planet explanations translate sign and house placements into everyday personal language', () => {
   const sun = explainPlanet('Sun', 'Aquarius', 6);
   expect(sun.title).toBe('Sun in Aquarius · House 6');
-  expect(sun.body).toContain('Your Sun is about confidence and your sense of self.');
+  expect(sun.body).toContain('This planet relates to confidence and your sense of self.');
+  expect(sun.body).toContain('It can point to what gives you direction and where you want to express yourself');
   expect(sun.body).toContain('In Aquarius, you may approach this part of life independently and in an unconventional way.');
-  expect(sun.body).toContain('In your 6th House, this theme is most connected to daily routines, work, and self-care.');
+  expect(sun.body).toContain('In everyday life, this might look like: try an approach people around you have not considered.');
+  expect(sun.body).toContain('In your 6th House, this theme is most connected to daily routines, work, practical responsibilities, and the ways you look after yourself.');
   expect(sun.body).not.toContain('Together');
   expect(sun.body).not.toMatch(/connected with|In astrology|Astrologers often describe/i);
-  expect(sun.example).toContain("Imagine you're simplifying a task you repeat every day");
+  expect(sun.example).toContain('Imagine this situation: you are simplifying a task you repeat every day.');
+  expect(sun.example).toContain('approach it independently and in an unconventional way');
   expect(sun.example).not.toMatch(/^For example,/);
   expect(sun.example).toContain('give your time to the activity you genuinely care about');
 
   const moon = explainPlanet('Moon', 'Pisces', 7);
   expect(moon.title).toBe('Moon in Pisces · House 7');
-  expect(moon.body).toContain('Your Moon is about your emotional needs and what helps you feel safe.');
+  expect(moon.body).toContain('This planet relates to your emotional needs and what helps you feel safe.');
+  expect(moon.body).toContain('It can point to the comfort, closeness, and familiar routines you reach for when you feel tired or uncertain.');
   expect(moon.body).toContain('In Pisces, you may approach this part of life with imagination and sensitivity.');
-  expect(moon.body).toContain('In your 7th House, this theme is most connected to close relationships and shared decisions.');
+  expect(moon.body).toContain('In your 7th House, this theme is most connected to close one-to-one relationships, cooperation, and the decisions you make with another person.');
   expect(moon.body).not.toContain('Together');
 
   const taurusSun = explainPlanet('Sun', 'Taurus', 12);
-  expect(taurusSun.example).toBe(
-    "Imagine you're working quietly on something just for yourself; you might give your time to the activity you genuinely care about.",
-  );
+  expect(taurusSun.example).toContain('Imagine this situation: you are working quietly on something just for yourself.');
+  expect(taurusSun.example).toContain('approach it at a measured, steady pace');
+  expect(taurusSun.example).toContain('give your time to the activity you genuinely care about');
+  expect(taurusSun.example).toContain('rest, private feelings, time alone, and the quiet moments you need to process life');
 
   const scorpioSun = explainPlanet('Sun', 'Scorpio', 9);
   expect(scorpioSun.body).toContain('In Scorpio, you may approach this part of life privately and with intensity.');
-  expect(scorpioSun.body).toContain('In your 9th House, this theme is most connected to learning, travel, and the beliefs that guide you.');
+  expect(scorpioSun.body).toContain('In your 9th House, this theme is most connected to learning, travel, new experiences, and the beliefs that guide how you see the world.');
 });
 
 test('all planet, sign, and house combinations use plain-language explanations', () => {
@@ -159,13 +168,15 @@ test('all planet, sign, and house combinations use plain-language explanations',
     for (const sign of signs) {
       for (let house = 1; house <= 12; house += 1) {
         const explanation = explainPlanet(planet, sign, house);
-        expect(explanation.body).toContain(`Your ${planet} is about`);
+        expect(explanation.body).toContain('This planet relates to');
         expect(explanation.body).toContain(`In ${sign}, you may approach this part of life`);
         expect(explanation.body).toContain(`In your ${house === 1 ? '1st' : house === 2 ? '2nd' : house === 3 ? '3rd' : `${house}th`} House, this theme is most connected to`);
         expect(explanation.body).not.toContain('Together');
         expect(explanation.body.split('\n\n')).toHaveLength(3);
+        expect(explanation.body.length).toBeGreaterThan(300);
         expect(explanation.body).not.toMatch(/connected with|In astrology|Astrologers often describe/i);
-        expect(explanation.example).toBeTruthy();
+        expect((explanation.example ?? '').length).toBeGreaterThan(150);
+        expect(explanation.example).toContain('approach it');
         expect(explanation.example).not.toMatch(/^For example,/);
       }
     }
@@ -176,7 +187,7 @@ test('unknown birth time does not add a house interpretation', () => {
   const sun = explainPlanet('Sun', 'Aquarius');
   expect(sun.title).toBe('Sun in Aquarius');
   expect(sun.body).not.toContain('house');
-  expect(sun.example).toContain("Imagine you're choosing how to spend an afternoon that is yours");
+  expect(sun.example).toContain('Imagine this situation: you are choosing how to spend an afternoon that is yours');
   expect(sun.example).toContain('give your time to the activity you genuinely care about');
 });
 
@@ -187,15 +198,15 @@ test('major aspects explain both actual placements in everyday language', () => 
   });
 
   expect(sextile.title).toBe('Sun sextile Mars');
-  expect(sextile.body).toContain('Your Sun in Taurus in your 12th House connects confidence and your sense of self with rest, private feelings, and time alone.');
-  expect(sextile.body).toContain('Your Mars in Leo in your 6th House connects your energy and how you take action with daily routines, work, and self-care.');
+  expect(sextile.body).toContain('Your Sun in Taurus in your 12th House connects confidence and your sense of self with rest, private feelings, time alone, and the quiet moments you need to process life.');
+  expect(sextile.body).toContain('Your Mars in Leo in your 6th House connects your energy and how you take action with daily routines, work, practical responsibilities, and the ways you look after yourself.');
   expect(sextile.body).toContain('These themes can support each other when you choose to use them together.');
   expect(sextile.example).toContain('working quietly on something just for yourself');
   expect(sextile.example).toContain('simplifying a task you repeat every day');
   expect(sextile.body).not.toContain('Your 12th House is about');
   expect(sextile.body).not.toContain('Together');
   expect(sextile.example).not.toMatch(/^For example,/);
-  expect(explainAngle('Ascendant', 'Libra').example).toMatch(/^When /);
+  expect(explainAngle('Ascendant', 'Libra').example).toMatch(/^Imagine joining a group/);
   expect(explainPlanet('Moon', 'Pisces', undefined, ['Pisces', 'Aries']).example)
     .not.toMatch(/^For example,/);
 
@@ -395,22 +406,35 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(findText(root, 'Sun in Aquarius · House 5')).toBeDefined();
   expect(findText(root, 'A hypothetical example')).toBeDefined();
   expect(findText(root, 'A question to reflect on')).toBeUndefined();
-  expect(
-    findText(root, "Imagine you're showing someone a project you have made; you might give your time to the activity you genuinely care about."),
-  ).toBeDefined();
+  expect(findText(root, explainPlanet('Sun', 'Aquarius', 5).example!)).toBeDefined();
   expect(root.findByProps({ testID: 'natal-explanation-stage' }).props.style.justifyContent).toBe('center');
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('House 5'))).toBe(true);
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
   expect(root.findAllByProps({ testID: 'natal-explanation-modal' })).toHaveLength(0);
   await act(async () => { root.findByProps({ testID: 'natal-angle-midheaven' }).props.onPress(); });
   expect(findText(root, 'Midheaven in Cancer')).toBeDefined();
+  expect(
+    root.findAllByType(Text).some((node) =>
+      String(node.props.children).includes('Your Midheaven in Cancer points to the direction'),
+    ),
+  ).toBe(true);
+  expect(
+    root.findAllByType(Text).some((node) =>
+      String(node.props.children).includes('Imagine a team project has become difficult.'),
+    ),
+  ).toBe(true);
+  expect(
+    root.findAllByType(Text).some((node) =>
+      String(node.props.children).includes('Treat it as a prompt, not a fixed description'),
+    ),
+  ).toBe(false);
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
   await act(async () => { root.findByProps({ testID: 'natal-aspect-sun-trine-moon' }).props.onPress(); });
   expect(findText(root, 'Sun trine Moon')).toBeDefined();
   expect(findText(root, 'A hypothetical example')).toBeDefined();
   expect(
     root.findAllByType(Text).some((node) =>
-      String(node.props.children).includes('Your Sun in Aquarius in your 5th House connects confidence and your sense of self with creativity, romance, and fun.'),
+      String(node.props.children).includes('Your Sun in Aquarius in your 5th House connects confidence and your sense of self with creativity, romance, fun, and the things you enjoy making or sharing.'),
     ),
   ).toBe(true);
   await act(async () => { root.findByProps({ testID: 'natal-explanation-close' }).props.onPress(); });
@@ -487,7 +511,10 @@ test('Natal Chart guide starts closed, centers its title, and closes again on re
   expect(scrollView.props.testID).toBe('natal-main-scroll');
   expect(state.scrollToTopRef).not.toBeNull();
   expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
-  expect(scrollView.props.contentContainerStyle[1].paddingBottom).toBe(32);
+  expect(scrollView.props.contentContainerStyle[0].paddingBottom).toBe(24);
+  expect(scrollView.props.bounces).toBe(false);
+  expect(scrollView.props.alwaysBounceVertical).toBe(false);
+  expect(scrollView.props.overScrollMode).toBe('never');
 });
 
 test('timed chart keeps angles but omits Placidus houses when the location cannot support them', async () => {
@@ -596,4 +623,135 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   await act(async () => { root.findByProps({ testID: 'natal-planet-moon' }).props.onPress(); });
   expect(findText(root, 'Moon sign range')).toBeDefined();
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('Aquarius or Pisces'))).toBe(true);
+});
+
+const supportedTranslationLocales: Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];
+
+test('screen, natal, and daily-reading dictionaries have matching keys in all six translated locales', () => {
+  for (const dictionary of [screenTranslations, natalTranslations, dailyReadingTranslations]) {
+    const keysByLocale = supportedTranslationLocales.map((locale) => Object.keys(dictionary[locale]).sort());
+    for (const keys of keysByLocale.slice(1)) expect(keys).toEqual(keysByLocale[0]);
+    for (const locale of supportedTranslationLocales) {
+      for (const [source, translation] of Object.entries(dictionary[locale])) {
+        expect(translation.trim(), `${locale}: ${source}`).not.toBe('');
+        if (translation !== source) {
+          expect(translateText(source, locale), `${locale}: ${source} lookup`).not.toBe(source);
+        }
+      }
+    }
+  }
+});
+
+test.each(supportedTranslationLocales)('personal natal explanations are localized in %s', (locale) => {
+  const t = (source: string) => translateText(source, locale);
+  const planet = explainPlanet('Sun', 'Aquarius', 6, undefined, t);
+  const aspect = explainAspect('Sun', 'Mars', 'sextile', {
+    first: { sign: 'Taurus', house: 12 },
+    second: { sign: 'Leo', house: 6 },
+  }, t);
+  const ascendant = explainAngle('Ascendant', 'Cancer', t);
+  const midheaven = explainAngle('Midheaven', 'Capricorn', t);
+
+  expect(planet.body).not.toContain('This planet relates to');
+  expect(planet.body).not.toContain('In Aquarius,');
+  expect(planet.body).not.toContain('In your 6th House');
+  expect(planet.example).not.toContain('Imagine this situation:');
+  expect(planet.example).not.toContain('you are');
+  if (locale === 'ru') {
+    expect(planet.example).toContain('Представь такую ситуацию: ты упрощаешь задачу, которую выполняешь каждый день.');
+    expect(planet.example).toContain('в таких сферах жизни: повседневные привычки');
+    expect(planet.title).toContain('Солнце в знаке Водолея');
+    expect(planet.body).toContain('В знаке Водолея');
+    expect(planet.body).toContain('В 6-м доме');
+    expect(aspect.body).toContain('Планета «Солнце» в знаке Тельца в 12-м доме');
+    expect(ascendant.title).toBe('Асцендент в знаке Рака');
+    expect(midheaven.title).toBe('Середина неба в знаке Козерога');
+  }
+  expect(aspect.title).not.toBe('Sun sextile Mars');
+  expect(aspect.body).not.toContain('Your Sun in Taurus');
+  expect(aspect.body).not.toContain('Your Mars in Leo');
+  expect(ascendant.body).not.toContain('In astrology,');
+  expect(midheaven.body).not.toContain('In astrology,');
+  expect(ascendant.body).not.toContain('Treat it as a prompt, not a fixed description');
+  expect(midheaven.body).not.toContain('Treat it as a prompt, not a fixed description');
+  expect(ascendant.body).toContain(t('notice the mood and respond with care'));
+  expect(midheaven.body).toContain(t('take responsibility and plan a few steps ahead'));
+  expect(ascendant.example).toContain(t('check in on how everyone involved is feeling'));
+  expect(midheaven.example).toContain(t('take one small step toward a longer-term goal'));
+  expect(ascendant.body).not.toContain('Your Ascendant in');
+  expect(midheaven.body).not.toContain('Your Midheaven in');
+  expect(ascendant.example).not.toContain('Imagine joining a group');
+  expect(midheaven.example).not.toContain('Imagine a team project');
+  for (const value of [
+    planet.body, planet.example, aspect.title, aspect.body,
+    ascendant.body, ascendant.example, midheaven.body, midheaven.example,
+  ]) {
+    expect(value).not.toMatch(/\{(?:planet|sign|house|focus|area|situation|action|angle|meaning|tone)\}/);
+  }
+
+  const angleCases = [
+    ['Aries', 'take initiative before every detail is settled', 'make the first move'],
+    ['Taurus', 'move at a steady pace and choose what feels dependable', 'give yourself time before deciding'],
+    ['Gemini', 'ask questions, exchange ideas, and adapt as a conversation shifts', 'ask a question that opens the conversation'],
+    ['Cancer', 'notice the mood and respond with care', 'check in on how everyone involved is feeling'],
+    ['Leo', 'bring warmth and show what matters to you', 'share why this matters to you'],
+    ['Virgo', 'notice details and look for a practical improvement', 'make one practical adjustment'],
+    ['Libra', 'look for common ground and make room for a fair exchange', 'hear both sides before deciding'],
+    ['Scorpio', 'observe closely, share gradually, and look for sincerity', 'look for what is really driving the situation'],
+    ['Sagittarius', 'look for the wider meaning and stay open to new experiences', 'look for a wider perspective'],
+    ['Capricorn', 'take responsibility and plan a few steps ahead', 'take one small step toward a longer-term goal'],
+    ['Aquarius', 'think independently and suggest a fresh approach', 'try an approach people around you have not considered'],
+    ['Pisces', 'notice the mood and respond with imagination and sensitivity', 'notice what is not being said and respond gently'],
+  ];
+  for (const [sign, style, action] of angleCases) {
+    const rising = explainAngle('Ascendant', sign, t);
+    const career = explainAngle('Midheaven', sign, t);
+    expect(rising.body).toContain(t(style));
+    expect(career.body).toContain(t(style));
+    expect(rising.example).toContain(t(action));
+    expect(career.example).toContain(t(action));
+    expect(rising.body).not.toContain(style);
+    expect(career.body).not.toContain(style);
+    expect(rising.example).not.toContain(action);
+    expect(career.example).not.toContain(action);
+  }
+});
+
+test('Russian sign names and house numbers use the correct grammatical case', () => {
+  const t = (source: string) => translateText(source, 'ru');
+  const signCases: [string, string][] = [
+    ['Aries', 'Овна'],
+    ['Taurus', 'Тельца'],
+    ['Gemini', 'Близнецов'],
+    ['Cancer', 'Рака'],
+    ['Leo', 'Льва'],
+    ['Virgo', 'Девы'],
+    ['Libra', 'Весов'],
+    ['Scorpio', 'Скорпиона'],
+    ['Sagittarius', 'Стрельца'],
+    ['Capricorn', 'Козерога'],
+    ['Aquarius', 'Водолея'],
+    ['Pisces', 'Рыб'],
+  ];
+
+  for (const [sign, genitive] of signCases) {
+    expect(explainPlanet('Sun', sign, 1, undefined, t).title).toContain(`в знаке ${genitive}`);
+    expect(explainPlanet('Sun', sign, 1, undefined, t).body).toContain(`В знаке ${genitive}`);
+    expect(explainAngle('Ascendant', sign, t).title).toContain(`в знаке ${genitive}`);
+  }
+  for (let house = 1; house <= 12; house += 1) {
+    expect(explainPlanet('Sun', 'Aquarius', house, undefined, t).body).toContain(`В ${house}-м доме`);
+  }
+});
+
+test.each(supportedTranslationLocales)('calculated daily reflection copy is localized in %s', (locale) => {
+  const body = formatAppText('Today highlights {theme}. {explanation}', locale, {
+    theme: translateText('energy and initiative', locale),
+    explanation: translateText('A practiced skill or routine can help you make steady progress.', locale),
+  });
+
+  expect(body).not.toContain('Today highlights');
+  expect(body).not.toContain('energy and initiative');
+  expect(body).not.toContain('A practiced skill');
+  expect(body).not.toMatch(/\{(?:theme|explanation)\}/);
 });

@@ -6,7 +6,7 @@
 **Оператор:** Vadim Shelokhanov (физическое лицо)
 **Страна:** Hungary
 **Контактный адрес:** Budapest, Gombocz Zoltan, 1118
-**Поддержка:** soulcompass.support@gmail.com
+**Поддержка:** Soul Compass Support <soulcompass.support@gmail.com>
 **URL условий:** [ПУБЛИЧНЫЙ HTTPS-АДРЕС]
 
 ## 1. Что предлагает Soul Compass
@@ -51,7 +51,7 @@ Soul Compass предназначено для пользователей от 1
 
 Оператор может обновлять условия при изменении приложения или применимого законодательства. Существенные изменения и дата их вступления в силу должны быть указаны по адресу [ПУБЛИЧНЫЙ URL УСЛОВИЙ].
 
-Вопросы: soulcompass.support@gmail.com.
+Вопросы: Soul Compass Support <soulcompass.support@gmail.com>.
 
 ## Юридическая проверка перед публикацией
 

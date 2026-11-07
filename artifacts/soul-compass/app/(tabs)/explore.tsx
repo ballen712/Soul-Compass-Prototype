@@ -2,16 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useScrollToTop } from 'expo-router';
 import React, { useRef } from 'react';
-import { Image, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
-import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
+import { CelestialHeader } from '@/components/CelestialHeader';
+import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 import { screenTypography } from '@/constants/typography';
 import { useColors } from '@/hooks/useColors';
 import { useAppText } from '@/localization';
-import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
 
 const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
   x: ((index * 41 + 19) % 97) / 97,
@@ -52,12 +51,12 @@ export default function ExploreScreen() {
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const pageWidth = Math.min(windowWidth - 48, 480);
   const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
-  const heroHeight = Math.round(windowHeight * 0.38);
+  const heroHeight = Math.round(windowHeight * 0.42);
 
   return (
     <TabEdgeSwipe tabIndex={3} testID="tab-edge-swipe-explore">
       <SafeAreaView edges={[]} style={[styles.safeArea, { backgroundColor: colors.cosmos.homeBackground }]}>
-        <StatusBar style="light" />
+        <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
         <View pointerEvents="none" accessible={false} style={styles.starLayer}>
           {backgroundStars.map((star, index) => (
             <View
@@ -65,7 +64,7 @@ export default function ExploreScreen() {
               style={[
                 styles.starDot,
                 {
-                  backgroundColor: colors.cosmos.foreground,
+                  backgroundColor: colors.cosmos.star,
                   height: star.size,
                   left: `${star.x * 100}%`,
                   opacity: star.opacity,
@@ -83,39 +82,25 @@ export default function ExploreScreen() {
             styles.scrollContent,
             {
               paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18,
-              paddingBottom: Math.max(insets.bottom, 34) + 48,
             },
           ]}
           alwaysBounceVertical={false}
           bounces={false}
+          overScrollMode="never"
           contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.page}>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.heroArt,
-                {
-                  top: -(topInset + 18),
-                  left: -heroBleed,
-                  right: -heroBleed,
-                  height: heroHeight,
-                },
-              ]}
-            >
-              <Image
-                source={cosmosArt}
-                accessibilityLabel="A quiet field of stars in a deep navy sky"
-                resizeMode="cover"
-                style={styles.heroImage}
-              />
-              <LinearGradient
-                colors={['transparent', 'transparent', colors.cosmos.homeBackground]}
-                locations={[0, 0.46, 1]}
-                style={styles.heroFade}
-              />
-            </View>
+            <CelestialHeader
+              width={windowWidth}
+              testID="explore-celestial-header"
+              height={heroHeight}
+              style={{
+                top: -(topInset + 18),
+                left: -heroBleed,
+                right: -heroBleed,
+              }}
+            />
 
             <TabScreenHeader
               title="Explore"
@@ -173,13 +158,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   starLayer: { ...StyleSheet.absoluteFill },
   starDot: { borderRadius: 2, position: 'absolute' },
-  heroArt: { overflow: 'hidden', position: 'absolute' },
-  heroImage: { height: '100%', position: 'absolute', top: 0, width: '100%' },
-  heroFade: { ...StyleSheet.absoluteFill },
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
-    paddingBottom: 34,
+    paddingBottom: TAB_SCREEN_SCROLL_BOTTOM_GUTTER,
   },
   page: { width: '100%', maxWidth: 480 },
   sectionLabel: {

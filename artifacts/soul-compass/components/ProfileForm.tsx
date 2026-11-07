@@ -5,6 +5,7 @@ import { HomeCityPicker } from '@/components/HomeCityPicker';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ProfileSchema } from '@/profile/local';
 import { useAppText } from '@/localization';
+import { useColors } from '@/hooks/useColors';
 import type { HomeLocation, ProfileFormDraft, UserProfile } from '@/profile/profile';
 import {
   formatBirthInputChange,
@@ -15,6 +16,7 @@ import {
 type Props = {
   initialProfile?: UserProfile | null;
   initialDraft?: ProfileFormDraft | null;
+  includeResidence?: boolean;
   submitLabel: string;
   onSubmit: (profile: UserProfile) => Promise<void>;
 };
@@ -81,10 +83,11 @@ function useFormattedBirthInput(initialValue: string, kind: BirthInputKind) {
 }
 
 export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function ProfileForm(
-  { initialProfile, initialDraft, submitLabel, onSubmit },
+  { initialProfile, initialDraft, includeResidence = true, submitLabel, onSubmit },
   ref,
 ) {
   const t = useAppText();
+  const colors = useColors();
   const initialBirthTime = initialProfile?.birthTime ?? initialDraft?.birthTime;
   const birthDateInput = useFormattedBirthInput(
     initialProfile?.birthDate ?? initialDraft?.birthDate ?? '',
@@ -144,7 +147,9 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         ? { status: 'known', localTime: birthTime }
         : { status: 'unknown' },
       birthPlace,
-      currentResidence: residenceEnabled ? currentResidence : null,
+      currentResidence: includeResidence
+        ? (residenceEnabled ? currentResidence : null)
+        : (initialProfile?.currentResidence ?? initialDraft?.currentResidence ?? null),
     };
     const parsed = ProfileSchema.safeParse(candidate);
     if (!parsed.success) {
@@ -176,23 +181,24 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
     birthTime,
     birthTimeKnown,
     currentResidence,
+    includeResidence,
     onSubmit,
     residenceEnabled,
   ]);
 
   return (
     <KeyboardAwareScrollViewCompat
-      style={styles.scroll}
+      style={[styles.scroll, { backgroundColor: colors.background }]}
       bottomOffset={72}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 34) + 48 }]}
     >
-      <Text style={styles.title}>{t('A little about you.')}</Text>
-      <Text style={styles.description}>
+      <Text style={[styles.title, { color: colors.foreground }]}>{t('A little about you.')}</Text>
+      <Text style={[styles.description, { color: colors.mutedForeground }]}>
         {t('Add your birth date and birthplace for your chart. Your birth time is optional.')}
       </Text>
 
-      <Text style={styles.label}>{t('DATE OF BIRTH')}</Text>
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('DATE OF BIRTH')}</Text>
       <TextInput
         accessibilityLabel={t('Date of birth')}
         keyboardType="number-pad"
@@ -200,13 +206,13 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         onChangeText={birthDateInput.onChangeText}
         onSelectionChange={(event) => birthDateInput.onSelectionChange(event.nativeEvent.selection)}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor="#8B877F"
+        placeholderTextColor={colors.mutedForeground}
         selection={birthDateInput.selection}
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
         value={birthDate}
       />
 
-      <Text style={styles.label}>{t('BIRTH TIME')}</Text>
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>{t('BIRTH TIME')}</Text>
       <TextInput
         accessibilityLabel={t('Birth time')}
         editable={birthTimeKnown}
@@ -215,9 +221,9 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         onChangeText={birthTimeInput.onChangeText}
         onSelectionChange={(event) => birthTimeInput.onSelectionChange(event.nativeEvent.selection)}
         placeholder="HH:MM"
-        placeholderTextColor="#8B877F"
+        placeholderTextColor={colors.mutedForeground}
         selection={birthTimeInput.selection}
-        style={[styles.input, !birthTimeKnown && styles.disabledInput]}
+        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }, !birthTimeKnown && styles.disabledInput]}
         value={birthTime}
       />
       <Pressable
@@ -229,66 +235,70 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
         }}
         style={styles.unknownOption}
       >
-        <View style={[styles.checkbox, !birthTimeKnown && styles.checkboxChecked]}>
-          {!birthTimeKnown && <View style={styles.checkmark} />}
+        <View style={[styles.checkbox, { borderColor: colors.border }, !birthTimeKnown && [styles.checkboxChecked, { backgroundColor: colors.primary, borderColor: colors.primary }]]}>
+          {!birthTimeKnown && <View style={[styles.checkmark, { backgroundColor: colors.primaryForeground }]} />}
         </View>
-        <Text style={styles.unknownText}>{t('I don’t know my birth time')}</Text>
+        <Text style={[styles.unknownText, { color: colors.foreground }]}>{t('I don’t know my birth time')}</Text>
       </Pressable>
       {!birthTimeKnown && (
-        <Text style={styles.precisionNote}>
+        <Text style={[styles.precisionNote, { color: colors.mutedForeground }]}>
           {t('You can continue without it. Your chart will leave out details that depend on birth time.')}
         </Text>
       )}
 
-      <Text style={styles.sectionTitle}>{t(initialProfile ? 'Edit Place of Birth' : 'Place of Birth')}</Text>
-      <Text style={styles.sectionDescription}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t('Place of birth')}</Text>
+      <Text style={[styles.sectionDescription, { color: colors.mutedForeground }]}>
         {t('We use this for your birth chart. It is different from where you live now.')}
       </Text>
       <HomeCityPicker label="Place of birth" value={birthPlace} onSelect={setBirthPlace} />
 
-      <View style={styles.sectionDivider} />
-      <Text style={styles.sectionTitle}>
-        {t(initialProfile ? 'Edit Current Residence' : 'Current Residence')}
-      </Text>
-      <Text style={styles.sectionDescription}>
-        {t('Add where you live so daily readings use your local date. You can do this later in Settings.')}
-      </Text>
-      {residenceEnabled ? (
+      {includeResidence ? (
         <>
-          <HomeCityPicker
-            label="Current residence"
-            value={currentResidence}
-            onSelect={setCurrentResidence}
-          />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setResidenceEnabled(false);
-              setCurrentResidence(null);
-            }}
-            style={styles.skipResidence}
-          >
-            <Text style={styles.skipResidenceText}>{t('Skip current residence for now')}</Text>
-          </Pressable>
+          <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {t('Current residence')}
+          </Text>
+          <Text style={[styles.sectionDescription, { color: colors.mutedForeground }]}>
+            {t('Optional city for daily readings')}
+          </Text>
+          {residenceEnabled ? (
+            <>
+              <HomeCityPicker
+                label="Current residence"
+                value={currentResidence}
+                onSelect={setCurrentResidence}
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setResidenceEnabled(false);
+                  setCurrentResidence(null);
+                }}
+                style={styles.skipResidence}
+              >
+                <Text style={[styles.skipResidenceText, { color: colors.tint }]}>{t('Skip current residence for now')}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setResidenceEnabled(true)}
+              style={styles.addResidence}
+            >
+              <Text style={[styles.addResidenceText, { color: colors.tint }]}>{t('Add current residence')}</Text>
+            </Pressable>
+          )}
         </>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setResidenceEnabled(true)}
-          style={styles.addResidence}
-        >
-          <Text style={styles.addResidenceText}>{t('Add current residence')}</Text>
-        </Pressable>
-      )}
+      ) : null}
 
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+      {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
       <Pressable
         accessibilityRole="button"
         disabled={saving}
         onPress={save}
-        style={[styles.submit, saving && styles.submitDisabled]}
+        style={[styles.submit, { backgroundColor: colors.primary }, saving && styles.submitDisabled]}
       >
-        <Text style={styles.submitText}>{saving ? t('Saving…') : t(submitLabel)}</Text>
+        <Text style={[styles.submitText, { color: colors.primaryForeground }]}>{saving ? t('Saving…') : t(submitLabel)}</Text>
       </Pressable>
     </KeyboardAwareScrollViewCompat>
   );
@@ -297,35 +307,32 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48, gap: 12 },
-  title: { color: '#22241F', fontSize: 32, lineHeight: 40, fontWeight: '400', marginTop: 6 },
-  description: { color: '#77756F', fontSize: 15, lineHeight: 23, marginBottom: 12 },
-  label: { color: '#55574F', fontSize: 11, letterSpacing: 1.4, marginTop: 12 },
-  sectionTitle: { color: '#30352D', fontSize: 18, fontWeight: '600', marginTop: 14 },
-  sectionDescription: { color: '#77756F', fontSize: 13, lineHeight: 19 },
-  sectionDivider: { height: 1, backgroundColor: '#DED9CE', marginTop: 10 },
+  title: { fontSize: 32, lineHeight: 40, fontWeight: '400', marginTop: 6 },
+  description: { fontSize: 15, lineHeight: 23, marginBottom: 12 },
+  label: { fontSize: 11, letterSpacing: 1.4, marginTop: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginTop: 14 },
+  sectionDescription: { fontSize: 13, lineHeight: 19 },
+  sectionDivider: { height: 1, marginTop: 10 },
   input: {
     minHeight: 48,
     borderWidth: 1,
-    borderColor: '#D9D3C7',
     borderRadius: 12,
     paddingHorizontal: 14,
-    color: '#25251F',
-    backgroundColor: '#FFFEFB',
     fontSize: 15,
   },
   disabledInput: { opacity: 0.5 },
   unknownOption: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  checkbox: { width: 20, height: 20, borderWidth: 1, borderColor: '#7D806E', borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: '#58664F', borderColor: '#58664F' },
-  checkmark: { width: 8, height: 8, borderRadius: 2, backgroundColor: '#FFFFFF' },
-  unknownText: { color: '#45473F', fontSize: 14 },
-  precisionNote: { color: '#77756F', fontSize: 13, lineHeight: 19, marginTop: -4 },
+  checkbox: { width: 20, height: 20, borderWidth: 1, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: {},
+  checkmark: { width: 8, height: 8, borderRadius: 2 },
+  unknownText: { fontSize: 14 },
+  precisionNote: { fontSize: 13, lineHeight: 19, marginTop: -4 },
   skipResidence: { alignSelf: 'flex-start', paddingVertical: 6 },
-  skipResidenceText: { color: '#58664F', fontSize: 13, textDecorationLine: 'underline' },
-  addResidence: { minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#D9D3C7', alignItems: 'center', justifyContent: 'center' },
-  addResidenceText: { color: '#58664F', fontSize: 14, fontWeight: '600' },
-  error: { color: '#9C423B', fontSize: 13 },
-  submit: { minHeight: 52, borderRadius: 14, backgroundColor: '#25344D', alignItems: 'center', justifyContent: 'center', marginTop: 18 },
+  skipResidenceText: { fontSize: 13, textDecorationLine: 'underline' },
+  addResidence: { minHeight: 46, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  addResidenceText: { fontSize: 14, fontWeight: '600' },
+  error: { fontSize: 13 },
+  submit: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
   submitDisabled: { opacity: 0.6 },
-  submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', letterSpacing: 0.5 },
+  submitText: { fontSize: 14, fontWeight: '600', letterSpacing: 0.5 },
 });

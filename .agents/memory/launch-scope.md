@@ -9,11 +9,17 @@ Finish important existing product gaps and preserve the Soul Compass design iden
 
 **How to apply:** implement safe scoped corrections, but request approval before major new functionality, paid services, architecture changes, data deletion or external-infrastructure changes. Do not publish or incur costs without explicit approval. Keep traditional astrology/crystal meanings separate from scientifically established facts, and never present sample content or incomplete translations as finished personalized functionality.
 
-The owner selected 13+ as Soul Compass's intended minimum audience.
+The owner selected 13+ as Soul Compass's intended minimum audience. A later launch brief suggested 4+ only as a possible App Store content rating if Apple's questionnaire supports it; that is not a change to the intended audience.
 
-**Why:** the owner supplied this age choice while preparing the app's privacy and terms drafts.
+**Why:** the owner supplied 13+ for the legal drafts, then separately asked to assess a possible 4+ App Store content rating.
 
-**How to apply:** use 13+ as the current draft audience, but do not imply age verification or legal compliance; have qualified counsel review minor-consent rules and align store ratings before release.
+**How to apply:** keep 13+ in legal drafts unless the owner changes it. Treat 4+ as unconfirmed; complete Apple's current questionnaire against the release build and have qualified counsel review minor-consent rules before submission.
+
+Store listings must describe only features present and working in the release build. Keep planned Tarot, longer-term transits, Life Directions and other future ideas out of claims that imply current availability.
+
+**Why:** the owner explicitly asked that App Store copy prioritize implemented functionality and not advertise planned features.
+
+**How to apply:** audit each store claim against the current build before submission; revise the description whenever scope changes.
 
 Keep Cosmos copy concise—one reflection heading, one short daily message, then “A moment to keep”—but keep the page complete and intentional rather than visually stripped down. Let the selected daily feeling, available transit theme, and saved intentions inform crystal suggestions; describe stones as symbolic prompts, not as having guaranteed effects.
 

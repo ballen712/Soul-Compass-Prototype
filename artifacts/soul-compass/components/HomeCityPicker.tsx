@@ -4,6 +4,7 @@ import type { HomeLocation } from '@/profile/profile';
 import { searchHomeCities } from '@/services/geocoding';
 import type { HomeCitySearchResult } from '@/services/geocoding';
 import { useAppText } from '@/localization';
+import { useColors } from '@/hooks/useColors';
 
 type Props = {
   label: string;
@@ -14,6 +15,7 @@ type Props = {
 
 export function HomeCityPicker({ label, value, onSelect }: Props) {
   const t = useAppText();
+  const colors = useColors();
   const [query, setQuery] = useState(value?.city ?? '');
   const [results, setResults] = useState<HomeCitySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,21 +81,21 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
           }}
           onSubmitEditing={searchCities}
           placeholder={`${t('Search')} ${t(label).toLocaleLowerCase()}`}
-          placeholderTextColor="#8B877F"
+          placeholderTextColor={colors.mutedForeground}
           returnKeyType="search"
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
           value={query}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel={t('Search cities')} accessibilityState={{ busy: loading }} onPress={searchCities} style={styles.searchButton}>
-          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.searchText}>{t('Search')}</Text>}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Search cities')} accessibilityState={{ busy: loading }} onPress={searchCities} style={[styles.searchButton, { backgroundColor: colors.primary }]}>
+          {loading ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.searchText, { color: colors.primaryForeground }]}>{t('Search')}</Text>}
         </Pressable>
       </View>
       {value && (
-        <Text style={styles.selected}>
+        <Text style={[styles.selected, { color: colors.tint }]}>
           {t('Selected')}: {value.city}, {value.country} · {value.timeZone}
         </Text>
       )}
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+      {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
       {results.map((result) => {
         const location: HomeLocation = {
           city: result.city,
@@ -113,20 +115,20 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
               setResults([]);
               setLoading(false);
             }}
-            style={styles.result}
+            style={[styles.result, { borderBottomColor: colors.border }]}
           >
-            <Text style={styles.city}>{result.city}{result.admin1 ? `, ${result.admin1}` : ''}</Text>
-            <Text style={styles.country}>{result.country} · {result.timeZone}</Text>
+            <Text style={[styles.city, { color: colors.foreground }]}>{result.city}{result.admin1 ? `, ${result.admin1}` : ''}</Text>
+            <Text style={[styles.country, { color: colors.mutedForeground }]}>{result.country} · {result.timeZone}</Text>
           </Pressable>
         );
       })}
-      <Text testID="city-search-attribution" style={styles.attribution}>
+      <Text testID="city-search-attribution" style={[styles.attribution, { color: colors.mutedForeground }]}>
         {t('Powered by')}{' '}
         <Text
           accessibilityRole="link"
           accessibilityLabel="Geoapify"
           onPress={() => Linking.openURL('https://www.geoapify.com/')}
-          style={styles.attributionLink}
+          style={[styles.attributionLink, { color: colors.tint }]}
         >
           Geoapify
         </Text>
@@ -135,7 +137,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
           accessibilityRole="link"
           accessibilityLabel="OpenStreetMap contributors"
           onPress={() => Linking.openURL('https://www.openstreetmap.org/copyright')}
-          style={styles.attributionLink}
+          style={[styles.attributionLink, { color: colors.tint }]}
         >
           OpenStreetMap contributors
         </Text>
@@ -144,7 +146,7 @@ export function HomeCityPicker({ label, value, onSelect }: Props) {
           accessibilityRole="link"
           accessibilityLabel={t('Geoapify privacy policy')}
           onPress={() => Linking.openURL('https://www.geoapify.com/privacy-policy/')}
-          style={styles.attributionLink}
+          style={[styles.attributionLink, { color: colors.tint }]}
         >
           {t('Privacy')}
         </Text>
@@ -160,11 +162,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderWidth: 1,
-    borderColor: '#D9D3C7',
     borderRadius: 12,
     paddingHorizontal: 14,
-    color: '#25251F',
-    backgroundColor: '#FFFEFB',
     fontSize: 15,
   },
   searchButton: {
@@ -173,15 +172,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: '#25344D',
     paddingHorizontal: 12,
   },
-  searchText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
-  selected: { color: '#52604F', fontSize: 12, lineHeight: 18 },
-  error: { color: '#9C423B', fontSize: 13 },
-  result: { borderBottomWidth: 1, borderBottomColor: '#E5E0D7', paddingVertical: 10 },
-  city: { color: '#242720', fontSize: 15, fontWeight: '600' },
-  country: { color: '#77756F', fontSize: 12, marginTop: 3 },
-  attribution: { color: '#89867E', fontSize: 9, lineHeight: 13, marginTop: 2 },
-  attributionLink: { color: '#77756F', textDecorationLine: 'underline' },
+  searchText: { fontSize: 13, fontWeight: '600' },
+  selected: { fontSize: 12, lineHeight: 18 },
+  error: { fontSize: 13 },
+  result: { borderBottomWidth: 1, paddingVertical: 10 },
+  city: { fontSize: 15, fontWeight: '600' },
+  country: { fontSize: 12, marginTop: 3 },
+  attribution: { fontSize: 9, lineHeight: 13, marginTop: 2 },
+  attributionLink: { textDecorationLine: 'underline' },
 });

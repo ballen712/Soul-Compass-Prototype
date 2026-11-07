@@ -339,6 +339,62 @@ function chartConnection(astrology: Calculated | undefined, crystal: Crystal) {
   return matches[0] ?? null;
 }
 
+const DIVERSITY_PENALTY = 1.8;
+
+function symbolicSimilarity(first: Crystal, second: Crystal) {
+  const firstThemes = new Set(first.themes);
+  const secondThemes = new Set(second.themes);
+  const unionSize = new Set([...firstThemes, ...secondThemes]).size;
+  const sharedThemeRatio = unionSize
+    ? [...firstThemes].filter((theme) => secondThemes.has(theme)).length / unionSize
+    : 0;
+  const sameGuideCategory = normalize(first.note) === normalize(second.note);
+
+  // The note is the catalog's concise symbolic category; themes provide its
+  // finer-grained tags. Tone is visual and is not treated as a meaning.
+  return sameGuideCategory ? 1 : sharedThemeRatio;
+}
+
+function selectDiverseCandidates<T extends { crystal: Crystal; score: number }>(
+  rankedCandidates: readonly T[],
+  limit: number,
+) {
+  const remaining = [...rankedCandidates];
+  const selected: T[] = [];
+
+  while (remaining.length && selected.length < limit) {
+    if (selected.length === 0) {
+      selected.push(remaining.shift()!);
+      continue;
+    }
+
+    let bestIndex = 0;
+    let bestAdjustedScore = Number.NEGATIVE_INFINITY;
+    let bestOriginalScore = Number.NEGATIVE_INFINITY;
+    for (let index = 0; index < remaining.length; index += 1) {
+      const candidate = remaining[index];
+      const strongestOverlap = selected.reduce(
+        (maximum, chosen) => Math.max(maximum, symbolicSimilarity(candidate.crystal, chosen.crystal)),
+        0,
+      );
+      const adjustedScore = candidate.score - DIVERSITY_PENALTY * strongestOverlap;
+
+      // Original ranking wins ties, so results stay deterministic.
+      if (
+        adjustedScore > bestAdjustedScore
+        || (adjustedScore === bestAdjustedScore && candidate.score > bestOriginalScore)
+      ) {
+        bestIndex = index;
+        bestAdjustedScore = adjustedScore;
+        bestOriginalScore = candidate.score;
+      }
+    }
+    selected.push(remaining.splice(bestIndex, 1)[0]);
+  }
+
+  return selected;
+}
+
 function labelThemes(themes: readonly string[], translate: CopyTranslator) {
   return joinCopy(
     themes.slice(0, 2).map((theme) => translate(plainTheme[theme] ?? theme.replaceAll('-', ' '))),
@@ -374,7 +430,7 @@ function rank(
     astrology?.natalPlacements.map((placement) => `${placement.body}:${placement.sign}`).join('|') ?? '',
   ].join(':');
 
-  return crystalCatalog
+  const rankedCandidates = crystalCatalog
     .filter((crystal) => !hidden.has(slugOf(crystal.name)))
     .map((crystal) => {
       const matched = getMatchedIntentions(crystal, uniqueIntentions);
@@ -401,8 +457,9 @@ function rank(
       };
     })
     .filter((candidate) => candidate.suitable)
-    .sort((first, second) => second.score - first.score)
-    .slice(0, limit)
+    .sort((first, second) => second.score - first.score);
+
+  return selectDiverseCandidates(rankedCandidates, limit)
     .map(({ crystal, matched, chartMatchCount, feelingMatchCount }) => {
       const stoneName = translateStoneName(crystal.name);
       const selectedMeaning = translate(crystal.note).toLocaleLowerCase();

@@ -145,11 +145,17 @@ test('current-city coordinates do not change geocentric factors or stone matches
   );
 });
 
-test('daily calculation does not substitute birthplace when residence is unset', () => {
-  const result = calculateDailyAstrology(makeProfile({ currentResidence: null }));
-  assert.equal(result.status, 'unavailable');
-  if (result.status === 'unavailable') {
-    assert.match(result.message, /birth city is not used as a substitute/i);
+test('daily calculation uses birthplace timezone when no current residence is saved', () => {
+  const result = calculateDailyAstrology(
+    makeProfile({
+      currentResidence: null,
+      birthPlace: { ...london, timeZone: 'Pacific/Kiritimati' },
+    }),
+    new Date('2026-06-01T12:00:00.000Z'),
+  );
+  assert.equal(result.status, 'calculated');
+  if (result.status === 'calculated') {
+    assert.equal(result.calculationDate, 'June 2, 2026');
   }
 });
 test('intentions change crystal ranking without requiring a collection', () => {
@@ -215,6 +221,47 @@ test('daily transit selection can be empty and can return only one or two visibl
     const hiddenCrystals = crystalCatalog.filter((stone) => !visible.has(stone.name)).map((stone) => slug(stone.name));
     assert.equal(getCrystalSuggestions(matchingDay, { hiddenCrystals }).length, count);
   }
+});
+test('daily picks diversify repeated qualities across synthetic birth charts without changing the strongest match', () => {
+  const examples = [
+    { birthDate: '1964-07-17', strongest: 'Rose Quartz' },
+    { birthDate: '1977-11-25', strongest: 'Pyrite' },
+    { birthDate: '1988-04-09', strongest: 'Dendritic Agate' },
+    { birthDate: '2000-01-01', strongest: 'Spessartine' },
+    { birthDate: '1997-12-21', strongest: 'Ruby' },
+  ];
+  const date = new Date('2026-11-05T12:00:00Z');
+
+  for (const example of examples) {
+    const chart = calculateDailyAstrology(makeProfile({ birthDate: example.birthDate }), date);
+    assert.equal(chart.status, 'calculated');
+    if (chart.status !== 'calculated') continue;
+
+    const suggestions = getCrystalSuggestions(chart, {}, 3);
+    assert.equal(suggestions.length, 3, `${example.birthDate} should keep three suitable suggestions`);
+    assert.equal(suggestions[0].crystal.name, example.strongest);
+    assert.ok(suggestions.every((suggestion) => suggestion.basis === 'chart'));
+    assert.ok(
+      new Set(suggestions.map((suggestion) => suggestion.crystal.note)).size >= 2,
+      `${example.birthDate} should avoid a list of three identical guide categories`,
+    );
+    assert.deepEqual(getCrystalSuggestions(chart, {}, 3), suggestions);
+  }
+});
+test('a strong chart match can still share a guide category when its relevance justifies it', () => {
+  const chart = calculateDailyAstrology(
+    makeProfile({ birthDate: '1992-09-12' }),
+    new Date('2026-11-05T12:00:00Z'),
+  );
+  assert.equal(chart.status, 'calculated');
+  if (chart.status !== 'calculated') return;
+
+  const suggestions = getCrystalSuggestions(chart, {}, 3);
+  assert.equal(suggestions.length, 3);
+  assert.equal(suggestions[0].crystal.name, 'Pyrite');
+  assert.equal(suggestions[1].crystal.note, 'Change · new perspective');
+  assert.equal(suggestions[2].crystal.note, suggestions[0].crystal.note);
+  assert.ok(suggestions.every((suggestion) => suggestion.basis === 'chart'));
 });
 test('two connected chart themes produce a main stone and two alternatives', () => {
   const chart = calculateDailyAstrology(
@@ -302,6 +349,34 @@ test('different birth profiles can change the recommended stones', () => {
     for (const suggestion of suggestions) seen.add(suggestion.crystal.name);
   }
   assert.ok(seen.size > 3, `Birth profiles should not be limited to the original three stones; got ${seen.size}`);
+});
+test('a saved change to birth date and birthplace recalculates daily stone recommendations', () => {
+  const now = new Date('2026-11-05T12:00:00.000Z');
+  const previousProfile = makeProfile({
+    birthDate: '1951-02-03',
+    birthPlace: { ...london, timeZone: 'Europe/London' },
+    currentResidence: null,
+  });
+  const updatedProfile = makeProfile({
+    birthDate: '2005-06-30',
+    birthPlace: {
+      city: 'Sydney',
+      country: 'Australia',
+      latitude: -33.8688,
+      longitude: 151.2093,
+      timeZone: 'Australia/Sydney',
+    },
+    currentResidence: null,
+  });
+  const previousChart = getDailyAstrology(previousProfile, now);
+  const updatedChart = getDailyAstrology(updatedProfile, now);
+  assert.equal(previousChart.status, 'calculated');
+  assert.equal(updatedChart.status, 'calculated');
+  if (previousChart.status !== 'calculated' || updatedChart.status !== 'calculated') return;
+
+  const previousStones = getCrystalSuggestions(previousChart).map(({ crystal }) => crystal.name);
+  const updatedStones = getCrystalSuggestions(updatedChart).map(({ crystal }) => crystal.name);
+  assert.notDeepEqual(updatedStones, previousStones);
 });
 test('natal element summary works locally without a current residence and omits uncertain unknown-time signs', () => {
   const timed = calculateNatalElementBalance(makeProfile({ currentResidence: null }));

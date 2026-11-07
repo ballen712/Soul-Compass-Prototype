@@ -55,7 +55,12 @@ test('Explore previews all three planned features without a paywall', async () =
   const copy = root.findAllByType('Text' as any).map((node) => node.props.children);
 
   expect(root.findByProps({ testID: 'tab-edge-swipe-explore' })).toBeDefined();
-  expect(root.findByProps({ testID: 'explore-main-scroll' })).toBeDefined();
+  const mainScroll = root.findByProps({ testID: 'explore-main-scroll' });
+  expect(mainScroll).toBeDefined();
+  expect(mainScroll.props.contentContainerStyle[0].paddingBottom).toBe(24);
+  expect(mainScroll.props.bounces).toBe(false);
+  expect(mainScroll.props.alwaysBounceVertical).toBe(false);
+  expect(mainScroll.props.overScrollMode).toBe('never');
   expect(root.findByProps({ testID: 'explore-feature-tarot' })).toBeDefined();
   expect(root.findByProps({ testID: 'explore-feature-transits' })).toBeDefined();
   expect(root.findByProps({ testID: 'explore-feature-life-directions' })).toBeDefined();

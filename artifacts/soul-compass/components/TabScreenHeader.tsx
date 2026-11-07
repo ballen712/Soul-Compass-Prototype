@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type TextStyle } from 'react-native';
 import { screenTypography } from '@/constants/typography';
 import { SettingsButton } from '@/components/SettingsButton';
 import { useAppText } from '@/localization';
@@ -10,6 +10,7 @@ type TabScreenHeaderProps = {
   subtitleColor?: string;
   subtitle?: ReactNode;
   titleAccessory?: ReactNode;
+  titleStyle?: TextStyle;
   afterSpacing: number;
 };
 
@@ -19,6 +20,7 @@ export function TabScreenHeader({
   subtitleColor,
   subtitle,
   titleAccessory,
+  titleStyle,
   afterSpacing,
 }: TabScreenHeaderProps) {
   const t = useAppText();
@@ -35,7 +37,7 @@ export function TabScreenHeader({
         <View style={styles.titleRow}>
           <Text
             accessibilityRole="header"
-            style={[styles.title, { color: titleColor }]}
+            style={[styles.title, { color: titleColor }, titleStyle]}
           >
             {t(title)}
           </Text>

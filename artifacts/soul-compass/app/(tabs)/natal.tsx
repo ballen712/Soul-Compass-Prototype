@@ -4,17 +4,17 @@ import type { NatalChartResponse } from '@workspace/api-client-react';
 import { useFocusEffect, useRouter, useScrollToTop } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
-import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
+import { CelestialHeader } from '@/components/CelestialHeader';
 import { useColors } from '@/hooks/useColors';
 import { screenTypography } from '@/constants/typography';
-import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
+import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 import { useProfile } from '@/profile/ProfileContext';
+import { formatAppText, useAppLocale, useAppText } from '@/localization';
 
 type Disambiguation = 'earlier' | 'later';
 type Palette = ReturnType<typeof useColors>['cosmos'];
@@ -28,6 +28,36 @@ const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
 }));
 const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 type ChartExplanation = { title: string; body: string; example?: string };
+type CopyTranslator = (source: string) => string;
+const russianSignGenitives: Record<string, string> = {
+  aries: 'Овна',
+  taurus: 'Тельца',
+  gemini: 'Близнецов',
+  cancer: 'Рака',
+  leo: 'Льва',
+  virgo: 'Девы',
+  libra: 'Весов',
+  scorpio: 'Скорпиона',
+  sagittarius: 'Стрельца',
+  capricorn: 'Козерога',
+  aquarius: 'Водолея',
+  pisces: 'Рыб',
+};
+
+function signForCopy(sign: string, translate: CopyTranslator): string {
+  if (translate('in') === 'в') {
+    return russianSignGenitives[sign.toLowerCase()] ?? translate(cap(sign));
+  }
+  return translate(cap(sign));
+}
+const identityCopy: CopyTranslator = (source) => source;
+
+function fillCopy(translate: CopyTranslator, template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
+    translate(template),
+  );
+}
 
 const planetThemes: Record<string, string> = {
   sun: 'confidence and your sense of self',
@@ -40,6 +70,18 @@ const planetThemes: Record<string, string> = {
   uranus: 'independence and the changes you need',
   neptune: 'imagination and sensitivity',
   pluto: 'trust and deep personal change',
+};
+const planetDetails: Record<string, string> = {
+  sun: 'It can point to what gives you direction and where you want to express yourself, rather than only meeting other people’s expectations.',
+  moon: 'It can point to the comfort, closeness, and familiar routines you reach for when you feel tired or uncertain.',
+  mercury: 'It can show how you take in information, sort through ideas, and find words for what you think.',
+  venus: 'It can show what feels worthwhile, how you build closeness, and what makes a relationship feel balanced to you.',
+  mars: 'It can show what gets you moving, how you meet obstacles, and how you express frustration or desire.',
+  jupiter: 'It can point to where experience helps you grow, what gives you hope, and which possibilities you want to explore.',
+  saturn: 'It can show where you take obligations seriously, where patience is needed, and what you can build through steady effort.',
+  uranus: 'It can point to where you need room to do things your own way and where a fresh approach can help you feel unstuck.',
+  neptune: 'It can point to where you are imaginative or sensitive, and how art, empathy, or quiet can help you make sense of feelings.',
+  pluto: 'It can show where you want to look beneath the surface, build trust, and make changes that last.',
 };
 const signStyles: Record<string, string> = {
   aries: 'directly and with urgency',
@@ -81,6 +123,18 @@ const planetExampleSituations: Record<string, string> = {
   neptune: 'having a chance to make something creative',
   pluto: 'facing a change you did not choose',
 };
+const planetExampleScenes: Record<string, string> = {
+  sun: 'you are choosing how to spend an afternoon that is yours',
+  moon: 'you are coming home after a busy day',
+  mercury: 'you are hearing an idea you want to understand',
+  venus: 'you are deciding how to spend time with someone you care about',
+  mars: 'you are deciding whether to start a task now',
+  jupiter: 'you are getting a chance to try something unfamiliar',
+  saturn: 'you are starting a goal that will take practice',
+  uranus: 'you are noticing that a familiar routine no longer works',
+  neptune: 'you are having a chance to make something creative',
+  pluto: 'you are facing a change you did not choose',
+};
 const planetExampleActions: Record<string, string> = {
   sun: 'give your time to the activity you genuinely care about',
   moon: 'check what would help you feel settled before responding',
@@ -93,13 +147,19 @@ const planetExampleActions: Record<string, string> = {
   neptune: 'turn an idea or feeling into something creative',
   pluto: 'be honest about what needs to change',
 };
-const signTones: Record<string, string> = {
-  aries: 'taking initiative', taurus: 'steadily and practically',
-  gemini: 'with curiosity', cancer: 'with care and a need for security',
-  leo: 'with warmth and creativity', virgo: 'with care and attention to detail',
-  libra: 'looking for balance and connection', scorpio: 'with depth and a wish to understand',
-  sagittarius: 'openly and in search of meaning', capricorn: 'patiently and with a clear goal',
-  aquarius: 'independently and with fresh ideas', pisces: 'with imagination and sensitivity',
+const angleSignStyles: Record<string, string> = {
+  aries: 'take initiative before every detail is settled',
+  taurus: 'move at a steady pace and choose what feels dependable',
+  gemini: 'ask questions, exchange ideas, and adapt as a conversation shifts',
+  cancer: 'notice the mood and respond with care',
+  leo: 'bring warmth and show what matters to you',
+  virgo: 'notice details and look for a practical improvement',
+  libra: 'look for common ground and make room for a fair exchange',
+  scorpio: 'observe closely, share gradually, and look for sincerity',
+  sagittarius: 'look for the wider meaning and stay open to new experiences',
+  capricorn: 'take responsibility and plan a few steps ahead',
+  aquarius: 'think independently and suggest a fresh approach',
+  pisces: 'notice the mood and respond with imagination and sensitivity',
 };
 const aspectMeanings: Record<string, string> = {
   conjunction: 'These themes blend, so one can bring the other to the surface.',
@@ -124,95 +184,138 @@ export function explainPlanet(
   sign: string,
   house?: number,
   uncertainMoonRange?: string[],
+  translate: CopyTranslator = identityCopy,
 ): ChartExplanation {
-  const name = cap(planet);
+  const name = translate(cap(planet));
+  const localizedSign = signForCopy(sign, translate);
   if (planet.toLowerCase() === 'moon' && uncertainMoonRange && uncertainMoonRange.length > 1) {
     return {
-      title: 'Moon sign range',
-    body: `The Moon changed signs on your birth date and could be in ${uncertainMoonRange.join(' or ')}. Without a birth time, we cannot tell which one applies. The Moon is about your emotional needs and what helps you feel safe.`,
-      example: 'After a demanding day, a quiet moment or a trusted conversation might help you feel settled again.',
+      title: translate('Moon sign range'),
+      body: fillCopy(translate, 'The Moon changed signs on your birth date and could be in {signs}. Without a birth time, we cannot tell which one applies. The Moon is about your emotional needs and what helps you feel safe.', {
+        signs: uncertainMoonRange.map((item) => signForCopy(item, translate)).join(` ${translate('or')} `),
+      }),
+      example: translate('After a demanding day, a quiet moment or a trusted conversation might help you feel settled again.'),
     };
   }
   const key = planet.toLowerCase();
   const theme = planetThemes[key] ?? 'a personal theme in your life';
   const signStyle = signStyles[sign.toLowerCase()];
-  const signAction = signActions[sign.toLowerCase()] ?? 'approach things in your own way';
+  const signAction = signActions[sign.toLowerCase()];
   const houseGuide = typeof house === 'number' ? houseGuides[house] : undefined;
   const houseIsKnown = houseGuide !== undefined;
+  const signDescription = signStyle && signAction
+    ? fillCopy(translate, 'In {sign}, you may approach this part of life {style}. In everyday life, this might look like: {action}.', {
+      sign: localizedSign,
+      style: translate(signStyle),
+      action: translate(signAction),
+    })
+    : translate('You may approach this part of life in a way that feels natural to you.');
   const bodyParts = [
-    `Your ${name} is about ${theme}.`,
-    signStyle
-      ? `In ${cap(sign)}, you may approach this part of life ${signStyle}.`
-      : `In ${cap(sign)}, you may approach this part of life in your own way.`,
+    fillCopy(translate, 'This planet relates to {theme}. {detail}', {
+      theme: translate(theme),
+      detail: translate(planetDetails[key] ?? 'It can help you notice what matters to you in this part of life.'),
+    }),
+    signDescription,
     ...(houseGuide
-      ? [`In your ${ordinalHouse(house!)} House, this theme is most connected to ${houseGuide.area}.`]
+      ? [fillCopy(translate, 'In your {ordinal} House, this theme is most connected to {area}.', {
+        ordinal: houseOrdinalForCopy(house!, translate),
+        number: house!,
+        area: translate(houseGuide.area),
+      })]
       : []),
   ];
   const body = bodyParts.join('\n\n');
+  const houseSuffix = houseIsKnown ? ` · ${fillCopy(translate, 'House {number}', { number: house! })}` : '';
   return {
-    title: `${name} in ${cap(sign)}${houseIsKnown ? ` · House ${house}` : ''}`,
+    title: fillCopy(translate, '{planet} in {sign}{houseSuffix}', { planet: name, sign: localizedSign, houseSuffix }),
     body,
-    example: makePlanetExample(key, houseGuide),
+    example: makePlanetExample(key, signStyle ?? 'with curiosity', houseGuide, translate),
   };
 }
 
 function makePlanetExample(
   planet: string,
-  houseGuide?: { exampleSituation: string },
+  signStyle: string,
+  houseGuide?: { area: string; exampleSituation: string; exampleScene: string },
+  translate: CopyTranslator = identityCopy,
 ): string {
-  const situation = houseGuide?.exampleSituation ?? planetExampleSituations[planet] ?? 'making an everyday choice';
+  const scene = houseGuide?.exampleScene ?? planetExampleScenes[planet] ?? 'you are making an everyday choice';
   const action = planetExampleActions[planet] ?? 'choose one practical next step';
-  return `Imagine you're ${situation}; you might ${action}.`;
+  const values = {
+    scene: translate(scene),
+    style: translate(signStyle),
+    action: translate(action),
+    area: translate(houseGuide?.area ?? 'everyday life'),
+  };
+  return fillCopy(
+    translate,
+    houseGuide
+      ? 'Imagine this situation: {scene}. You might approach it {style}, then choose to {action}. That is one possible way this placement may show up in {area}.'
+      : 'Imagine this situation: {scene}. You might approach it {style}, then choose to {action}. That is one possible way this planet’s theme may show up in everyday life.',
+    values,
+  );
 }
 
-const houseGuides: Record<number, { area: string; exampleSituation: string }> = {
+const houseGuides: Record<number, { area: string; exampleSituation: string; exampleScene: string }> = {
   1: {
-    area: 'first impressions and the way you begin things',
+    area: 'first impressions, new situations, and how you choose to present yourself as you begin',
     exampleSituation: 'introducing yourself in a new place',
+    exampleScene: 'you are introducing yourself in a new place',
   },
   2: {
-    area: 'money, personal values, and security',
+    area: 'money and belongings, your personal values, and the choices that help you build security',
     exampleSituation: 'deciding whether a purchase is worth it',
+    exampleScene: 'you are deciding whether a purchase is worth it',
   },
   3: {
-    area: 'everyday conversations and learning',
+    area: 'everyday conversations, learning new skills, and exchanging ideas with people around you',
     exampleSituation: 'explaining a new idea to someone',
+    exampleScene: 'you are explaining a new idea to someone',
   },
   4: {
-    area: 'home, family, and belonging',
+    area: 'home, family, your roots, and the routines that help you feel you belong',
     exampleSituation: 'making one corner of home more comfortable',
+    exampleScene: 'you are making one corner of your home more comfortable',
   },
   5: {
-    area: 'creativity, romance, and fun',
+    area: 'creativity, romance, fun, and the things you enjoy making or sharing',
     exampleSituation: 'showing someone a project you have made',
+    exampleScene: 'you are showing someone a project you made',
   },
   6: {
-    area: 'daily routines, work, and self-care',
+    area: 'daily routines, work, practical responsibilities, and the ways you look after yourself',
     exampleSituation: 'simplifying a task you repeat every day',
+    exampleScene: 'you are simplifying a task you repeat every day',
   },
   7: {
-    area: 'close relationships and shared decisions',
+    area: 'close one-to-one relationships, cooperation, and the decisions you make with another person',
     exampleSituation: 'making plans with someone close',
+    exampleScene: 'you are making plans with someone close',
   },
   8: {
-    area: 'trust, shared responsibilities, and deep change',
+    area: 'trust, shared money or responsibilities, and the deeper changes that ask you to adapt',
     exampleSituation: 'deciding what responsibility to share',
+    exampleScene: 'you are deciding what responsibility to share',
   },
   9: {
-    area: 'learning, travel, and the beliefs that guide you',
+    area: 'learning, travel, new experiences, and the beliefs that guide how you see the world',
     exampleSituation: 'comparing two different viewpoints',
+    exampleScene: 'you are comparing two different viewpoints',
   },
   10: {
-    area: 'work, long-term goals, and your public role',
+    area: 'work, long-term goals, the responsibilities you take on, and how others see your contribution',
     exampleSituation: 'taking responsibility for an important goal',
+    exampleScene: 'you are taking responsibility for an important goal',
   },
   11: {
-    area: 'friendships, communities, and future plans',
+    area: 'friendships, communities, shared causes, and the future plans you build with other people',
     exampleSituation: 'organizing a plan with friends',
+    exampleScene: 'you are organizing a plan with friends',
   },
   12: {
-    area: 'rest, private feelings, and time alone',
+    area: 'rest, private feelings, time alone, and the quiet moments you need to process life',
     exampleSituation: 'working quietly on something just for yourself',
+    exampleScene: 'you are working quietly on something just for yourself',
   },
 };
 
@@ -223,11 +326,18 @@ function ordinalHouse(house: number): string {
   if (house % 10 === 3) return `${house}rd`;
   return `${house}th`;
 }
+
+function houseOrdinalForCopy(house: number, translate: CopyTranslator): string {
+  if (translate('in') === 'в') return `${house}-м`;
+  return translate(ordinalHouse(house));
+}
+
 export function explainAspect(
   first: string,
   second: string,
   type: string,
   context: AspectExplanationContext = {},
+  translate: CopyTranslator = identityCopy,
 ): ChartExplanation {
   const kind = type.toLowerCase();
   const firstKey = first.toLowerCase();
@@ -236,23 +346,42 @@ export function explainAspect(
   const secondPlacement = context.second ?? {};
   const describe = (planet: string, placement: AspectPlacementContext) => {
     const key = planet.toLowerCase();
-    const name = cap(planet);
-    const focus = planetThemes[key] ?? 'this part of your life';
+    const name = translate(cap(planet));
+    const focus = translate(planetThemes[key] ?? 'this part of your life');
     const houseGuide = typeof placement.house === 'number' ? houseGuides[placement.house] : undefined;
     const signStyle = placement.sign ? signStyles[placement.sign.toLowerCase()] : undefined;
-    const signText = placement.sign ? ` in ${cap(placement.sign)}` : '';
-    const houseText = houseGuide && placement.house
-      ? ` in your ${ordinalHouse(placement.house)} House`
+    const signName = placement.sign ? signForCopy(placement.sign, translate) : '';
+    const houseSuffix = houseGuide && placement.house
+      ? fillCopy(translate, ' in your {ordinal} House', {
+        ordinal: houseOrdinalForCopy(placement.house, translate),
+        number: placement.house,
+      })
       : '';
-    const area = houseGuide ? ` with ${houseGuide.area}` : '';
-    const focusSentence = houseGuide
-      ? `Your ${name}${signText}${houseText} connects ${focus}${area}.`
-      : `Your ${name}${signText}${houseText} is about ${focus}.`;
+    const area = houseGuide
+      ? fillCopy(translate, ' with {area}', { area: translate(houseGuide.area) })
+      : '';
+    const focusSentence = placement.sign && houseGuide
+      ? fillCopy(translate, 'Your {planet} in {sign}{houseSuffix} connects {focus}{area}.', {
+        planet: name, sign: signName, houseSuffix, focus, area,
+      })
+      : placement.sign
+        ? fillCopy(translate, 'Your {planet} in {sign} is about {focus}.', {
+          planet: name, sign: signName, focus,
+        })
+        : houseGuide
+          ? fillCopy(translate, 'Your {planet}{houseSuffix} is about {focus}{area}.', {
+            planet: name, houseSuffix, focus, area,
+          })
+          : fillCopy(translate, 'Your {planet} is about {focus}.', {
+        planet: name, focus, area,
+      });
     const signDetail = placement.sign && signStyle
-      ? ` You may approach this part of life ${signStyle}.`
+      ? ` ${fillCopy(translate, 'You may approach this part of life {style}.', { style: translate(signStyle) })}`
       : '';
     const uncertainMoonDetail = placement.possibleSigns && placement.possibleSigns.length > 1
-      ? ` Its sign could be ${placement.possibleSigns.join(' or ')}.`
+      ? ` ${fillCopy(translate, 'Its sign could be {signs}.', {
+        signs: placement.possibleSigns.map((item) => translate(cap(item))).join(` ${translate('or')} `),
+      })}`
       : '';
     return `${focusSentence}${signDetail}${uncertainMoonDetail}`;
   };
@@ -262,32 +391,56 @@ export function explainAspect(
   const secondSituation = secondPlacement.house
     ? houseGuides[secondPlacement.house]?.exampleSituation
     : undefined;
-  const firstAction = planetExampleActions[firstKey] ?? 'choose one practical next step';
-  const secondAction = planetExampleActions[secondKey] ?? 'make room for another need';
-  const firstExampleSituation = firstSituation ?? planetExampleSituations[firstKey] ?? 'making an everyday choice';
-  const secondExampleSituation = secondSituation ?? planetExampleSituations[secondKey] ?? 'responding to another need';
+  const firstAction = translate(planetExampleActions[firstKey] ?? 'choose one practical next step');
+  const secondAction = translate(planetExampleActions[secondKey] ?? 'make room for another need');
+  const firstExampleSituation = translate(firstSituation ?? planetExampleSituations[firstKey] ?? 'making an everyday choice');
+  const secondExampleSituation = translate(secondSituation ?? planetExampleSituations[secondKey] ?? 'responding to another need');
   const tenseAspect = kind === 'opposition' || kind === 'square';
   const example = tenseAspect
-    ? `You might feel pulled between wanting to ${firstAction} when you're ${firstExampleSituation} and needing to ${secondAction} when you're ${secondExampleSituation}.`
-    : `You might ${firstAction} when you're ${firstExampleSituation}, then ${secondAction} when you're ${secondExampleSituation}.`;
+    ? fillCopy(translate, 'You may want to {firstAction} in {firstSituation}, while also needing to {secondAction} in {secondSituation}. Both needs can matter.', {
+      firstAction, firstSituation: firstExampleSituation, secondAction, secondSituation: secondExampleSituation,
+    })
+    : fillCopy(translate, 'For instance, in {firstSituation}, you might {firstAction}. Later, in {secondSituation}, you could {secondAction}.', {
+      firstAction, firstSituation: firstExampleSituation, secondAction, secondSituation: secondExampleSituation,
+    });
   const referenceNote = context.referenceOnly
-    ? ' For an unknown birth time, these calculations use local noon as a reference and may shift.'
+    ? ` ${translate('For an unknown birth time, these calculations use local noon as a reference and may shift.')}`
     : '';
   const personalLink = aspectMeanings[kind]
     ?? 'These two themes are connected and may affect each other in everyday life.';
   return {
-    title: `${cap(first)} ${type.toLowerCase()} ${cap(second)}`,
-    body: `${describe(first, firstPlacement)}\n\n${describe(second, secondPlacement)}\n\n${personalLink}${referenceNote}`,
+    title: fillCopy(translate, '{first} {aspect} {second}', {
+      first: translate(cap(first)),
+      aspect: translate(kind),
+      second: translate(cap(second)),
+    }),
+    body: `${describe(first, firstPlacement)}\n\n${describe(second, secondPlacement)}\n\n${translate(personalLink)}${referenceNote}`,
     example,
   };
 }
 
-export function explainAngle(label: string, sign: string): ChartExplanation {
+export function explainAngle(label: string, sign: string, translate: CopyTranslator = identityCopy): ChartExplanation {
   const isAscendant = label.toLowerCase() === 'ascendant';
+  const angle = translate(label);
+  const signName = signForCopy(sign, translate);
+  const signStyle = translate(angleSignStyles[sign.toLowerCase()] ?? 'approach things in your own way');
+  const exampleAction = translate(signActions[sign.toLowerCase()] ?? 'make one practical adjustment');
   return {
-    title: `${label} in ${cap(sign)}`,
-    body: `In astrology, the ${label} is linked with ${isAscendant ? 'how you approach new situations' : 'your long-term direction, work, and public life'}. ${cap(sign)} is often described as doing this ${signTones[sign.toLowerCase()] ?? 'in its own way'}. Treat it as a prompt, not a fixed description.`,
-    example: `When ${isAscendant ? 'meeting someone new' : 'thinking about a long-term goal'}, you might ${signActions[sign.toLowerCase()] ?? 'approach it in your own way'}.`,
+    title: fillCopy(translate, '{angle} in {sign}', { angle, sign: signName }),
+    body: fillCopy(
+      translate,
+      isAscendant
+        ? 'Your Ascendant in {sign} describes how you tend to enter unfamiliar situations and the first impression you may give. With {sign} here, you may tend to {style}. You may notice this in how you begin conversations, settle into a new place, or respond when plans change. It is your opening style, not the whole of your personality.'
+        : 'Your Midheaven in {sign} points to the direction you may want to build over time: the work you do, the responsibilities you choose, and the contribution you want to make. With {sign} here, you may work toward long-term goals by {style}. This can shape many kinds of work or projects; it does not point to one required job. You may feel more engaged where this approach is useful.',
+      { sign: signName, style: signStyle },
+    ),
+    example: fillCopy(
+      translate,
+      isAscendant
+        ? 'Imagine joining a group where you know no one. A possible first response is: “{action}.” This small moment can show how your {sign} Ascendant shapes a first impression; as you feel at ease, other sides of you can come forward.'
+        : 'Imagine a team project has become difficult. A possible next step is: “{action}.” This shows one way your {sign} Midheaven could shape your contribution, without naming one exact career.',
+      { sign: signName, action: exampleAction },
+    ),
   };
 }
 
@@ -299,13 +452,13 @@ function dms(deg: number) {
   const m = Math.floor((deg - d) * 60);
   return `${d}\u00B0 ${String(m).padStart(2, '0')}\u2032`;
 }
-function lonLabel(lon: number) {
+function lonLabel(lon: number, translate: CopyTranslator = identityCopy) {
   const n = ((lon % 360) + 360) % 360;
-  return `${dms(n % 30)} ${SIGNS[Math.floor(n / 30)]}`;
+  return `${dms(n % 30)} ${translate(SIGNS[Math.floor(n / 30)])}`;
 }
-function signAt(lon: number) {
+function signAt(lon: number, translate: CopyTranslator = identityCopy) {
   const n = ((lon % 360) + 360) % 360;
-  return SIGNS[Math.floor(n / 30)];
+  return translate(SIGNS[Math.floor(n / 30)]);
 }
 function errorMessage(err: unknown): string {
   if (err && typeof err === 'object') {
@@ -321,6 +474,8 @@ function errorMessage(err: unknown): string {
 }
 
 export default function NatalScreen() {
+  const t = useAppText();
+  const locale = useAppLocale();
   const scrollRef = useRef<ScrollViewInstance | null>(null);
   useScrollToTop(scrollRef);
   const colors = useColors();
@@ -375,7 +530,7 @@ export default function NatalScreen() {
       edges={[]}
       style={[styles.safeArea, { backgroundColor: c.homeBackground }]}
     >
-      <StatusBar style="light" />
+      <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
       <View pointerEvents="none" accessible={false} style={styles.starLayer}>
         {backgroundStars.map((star, index) => (
           <View
@@ -383,7 +538,7 @@ export default function NatalScreen() {
             style={[
               styles.starDot,
               {
-                backgroundColor: c.foreground,
+                backgroundColor: c.star,
                 height: star.size,
                 left: `${star.x * 100}%`,
                 opacity: star.opacity,
@@ -397,44 +552,30 @@ export default function NatalScreen() {
       <ScrollView
         ref={scrollRef}
         testID="natal-main-scroll"
-        accessibilityLabel="Natal chart"
+        accessibilityLabel={t('Natal chart')}
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18,
-            paddingBottom: Platform.OS === 'ios' ? 32 : 34,
           },
         ]}
         alwaysBounceVertical={false}
         bounces={false}
+        overScrollMode="never"
         contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.page}>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.heroArt,
-              {
-                top: -(topInset + 18),
-                left: -heroBleed,
-                right: -heroBleed,
-                height: heroHeight,
-              },
-            ]}
-          >
-            <Image
-              source={cosmosArt}
-              accessibilityLabel="A quiet field of stars in a deep navy sky"
-              resizeMode="cover"
-              style={styles.heroImage}
-            />
-            <LinearGradient
-              colors={['transparent', 'transparent', c.homeBackground]}
-              locations={[0, 0.46, 1]}
-              style={styles.heroFade}
-            />
-          </View>
+          <CelestialHeader
+            width={windowWidth}
+            testID="natal-celestial-header"
+            height={heroHeight}
+            style={{
+              top: -(topInset + 18),
+              left: -heroBleed,
+              right: -heroBleed,
+            }}
+          />
           <TabScreenHeader
             title={'The Sky of the Day\nYou Arrived'}
             titleColor={c.foreground}
@@ -442,9 +583,11 @@ export default function NatalScreen() {
             subtitle={profile ? (
               <>
                 {profile.birthDate}
-                {profile.birthTime.status === 'known' ? ` at ${profile.birthTime.localTime}` : ', time unknown'}
+                {profile.birthTime.status === 'known'
+                  ? formatAppText(' at {time}', locale, { time: profile.birthTime.localTime })
+                  : `, ${t('time unknown')}`}
                 {` \u00B7 ${profile.birthPlace.city}, ${profile.birthPlace.country}`}
-                {'\n'}Tropical zodiac.
+                {'\n'}{t('Tropical zodiac.')}
               </>
             ) : undefined}
             afterSpacing={7}
@@ -456,15 +599,15 @@ export default function NatalScreen() {
             <ChartLoading c={c} />
           ) : !profile ? (
             <Card c={c}>
-              <Text style={[styles.cardTitle, { color: c.foreground }]}>No birth details yet</Text>
-              <Text style={[styles.body, { color: c.mutedForeground }]}>Add your birth date, time and place to calculate a chart.</Text>
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>{t('No birth details yet')}</Text>
+              <Text style={[styles.body, { color: c.mutedForeground }]}>{t('Add your birth date, time and place to calculate a chart.')}</Text>
               <Btn c={c} label="Open settings" icon="settings" onPress={() => router.push('/settings')} />
             </Card>
           ) : data ? (
             <>
               {chart.cacheWarning ? (
                 <Card c={c}>
-                  <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{chart.cacheWarning}</Text>
+                  <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{t(chart.cacheWarning)}</Text>
                 </Card>
               ) : null}
               <ChartView
@@ -477,21 +620,21 @@ export default function NatalScreen() {
             </>
           ) : !privacy.astrologyApiConsent || !canCalculate() ? (
             <Card c={c}>
-              <Text style={[styles.cardTitle, { color: c.foreground }]}>Your permission comes first</Text>
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>{t('Your permission comes first')}</Text>
               <Text style={[styles.body, { color: c.foreground }]}>
-                If you agree, we send your birth date, your birth time if you know it, and your birthplace coordinates and time zone to calculate your Natal Chart. We do not send your name, current home, language, intentions, or collection. The chart is saved on this device, so opening the app does not send the same details again. If you change your birth details, we may calculate a new chart.
+                {t('We send your birth date, time if known, and birthplace details to our server only to calculate your chart. We do not create an online profile with them. If your chart is saved on this device, we use it instead of sending the same details again.')}
               </Text>
               <Text style={[styles.body, { color: c.mutedForeground }]}>
-                You can withdraw permission in Settings. Your saved chart stays on this device. If you are offline, the request is not saved for later.
+                {t('Your profile and chart stay on this device. You can withdraw permission or delete your saved data in Settings at any time. If your birth details change, we may send the updated details for a new calculation.')}
               </Text>
-              {consentError ? <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{consentError}</Text> : null}
+              {consentError ? <Text accessibilityRole="alert" style={[styles.body, { color: c.foreground }]}>{t(consentError)}</Text> : null}
               {declined ? (
                 <>
-                  <Text style={[styles.body, { color: c.foreground }]}>No birth details were sent. Your local profile and collection still work.</Text>
+                  <Text style={[styles.body, { color: c.foreground }]}>{t('No birth details were sent. Your local profile and collection still work.')}</Text>
                   <Btn c={c} label="Review permission" onPress={() => setDeclined(false)} />
                 </>
               ) : consentBusy ? (
-                <Text style={[styles.body, { color: c.foreground }]}>Saving permission…</Text>
+                <Text style={[styles.body, { color: c.foreground }]}>{t('Saving permission…')}</Text>
               ) : (
                 <>
                   <Btn c={c} label="Agree" onPress={() => void agree()} />
@@ -502,11 +645,13 @@ export default function NatalScreen() {
           ) : chart.isError ? (
             <Card c={c}>
               <Label c={c} icon="alert-circle" text={twice ? 'CLOCK CHANGE' : 'COULD NOT CALCULATE'} />
-              <Text style={[styles.body, { color: c.foreground }]} testID="natal-error-message">{msg}</Text>
+              <Text style={[styles.body, { color: c.foreground }]} testID="natal-error-message">{t(msg)}</Text>
               {twice ? (
                 <>
                   <Text style={[styles.body, { color: c.mutedForeground }]}>
-                    The clocks changed that night, so {profile.birthTime.status === 'known' ? profile.birthTime.localTime : 'this time'} happened twice. Choose which time to use for this chart. Your saved profile will not change.
+                    {formatAppText('The clocks changed that night, so {time} happened twice. Choose which time to use for this chart. Your saved profile will not change.', locale, {
+                      time: profile.birthTime.status === 'known' ? profile.birthTime.localTime : t('this time'),
+                    })}
                   </Text>
                   <View style={styles.choiceRow}>
                     <Btn c={c} label="Earlier occurrence" onPress={() => choose('earlier')} active={disambiguation === 'earlier'} />
@@ -522,9 +667,9 @@ export default function NatalScreen() {
             </Card>
           ) : (
             <Card c={c}>
-              <Text style={[styles.cardTitle, { color: c.foreground }]}>Your chart hasn’t loaded yet</Text>
+              <Text style={[styles.cardTitle, { color: c.foreground }]}>{t('Your chart hasn’t loaded yet')}</Text>
               <Text style={[styles.body, { color: c.mutedForeground }]}>
-                Check your connection and try again.
+                {t('Check your connection and try again.')}
               </Text>
               <Btn c={c} label="Try again" icon="refresh-cw" onPress={() => submit(null)} />
             </Card>
@@ -543,7 +688,7 @@ export default function NatalScreen() {
           onBack={() => setActiveExplanation(null)}
         >
         <SafeAreaView edges={['top', 'bottom']} style={styles.explanationSafeArea} testID="natal-explanation-stage">
-          <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: c.background }]} />
+          <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: colors.scrim }]} />
           {activeExplanation ? (
             <View
               accessibilityViewIsModal
@@ -557,7 +702,7 @@ export default function NatalScreen() {
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Close chart explanation"
+                  accessibilityLabel={t('Close chart explanation')}
                   testID="natal-explanation-close"
                   hitSlop={8}
                   onPress={() => setActiveExplanation(null)}
@@ -571,7 +716,7 @@ export default function NatalScreen() {
                 {activeExplanation.example ? (
                   <>
                     <Text style={[styles.explanationExampleLabel, { color: c.secondary }]}>
-                      A hypothetical example
+                      {t('A hypothetical example')}
                     </Text>
                     <Text style={[styles.explanationExample, { color: c.foreground }]}>
                       {activeExplanation.example}
@@ -592,6 +737,8 @@ export default function NatalScreen() {
 function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
 }) {
+  const t = useAppText();
+  const locale = useAppLocale();
   const [guideOpen, setGuideOpen] = useState(false);
   const [infoTopic, setInfoTopic] = useState<'chart-details' | 'house-cusps' | null>(null);
   const infoCopy = infoTopic ? chartInfoCopy[infoTopic] : null;
@@ -624,6 +771,20 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       possibleSigns: uncertainMoon ? data.moonSignRange : undefined,
     };
   };
+  const localizeWarning = (warning: string) => {
+    const repeated = /^Repeated local time: the (earlier|later) occurrence was explicitly selected\.$/.exec(warning);
+    if (repeated) {
+      return formatAppText('Repeated local time: the {occurrence} occurrence was explicitly selected.', locale, {
+        occurrence: t(repeated[1] === 'earlier' ? 'first' : 'second'),
+      });
+    }
+    const moonRange = /^The Moon changes sign during this local birth day; possible signs: (.+)\.$/.exec(warning);
+    if (moonRange) {
+      const signs = moonRange[1].split(', ').map((sign) => t(sign)).join(', ');
+      return formatAppText('The Moon changes sign during this local birth day; possible signs: {signs}.', locale, { signs });
+    }
+    return t(warning);
+  };
   const aspects = data.aspects.filter((a) => MAJOR.has(a.type.toLowerCase()));
   const angles = hasKnownBirthMoment ? data.angles : null;
 
@@ -641,7 +802,9 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       {disambiguation ? (
         <Card c={c}>
           <Text style={[styles.body, { color: c.mutedForeground }]}>
-            Using the {disambiguation} occurrence of your birth time for this chart only.
+            {formatAppText('Using the {occurrence} occurrence of your birth time for this chart only.', locale, {
+              occurrence: t(disambiguation === 'earlier' ? 'first' : 'second'),
+            })}
           </Text>
         </Card>
       ) : null}
@@ -650,11 +813,13 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
         <Card c={c}>
           <Label c={c} icon="clock" text="BIRTH TIME UNKNOWN" />
           <Text style={[styles.body, { color: c.mutedForeground }]}>
-            Since your birth time is unknown, noon is used only as a reference. Your rising sign, Midheaven, and houses are left out because they depend on the exact time.
+            {t('Since your birth time is unknown, noon is used only as a reference. Your rising sign, Midheaven, and houses are left out because they depend on the exact time.')}
           </Text>
           {data.moonSignRange.length > 1 ? (
             <Text style={[styles.body, { color: c.foreground }]}>
-              The Moon changed signs during your birth date: {data.moonSignRange.join(' or ')}. Without a birth time, we cannot tell which sign applies.
+              {formatAppText('The Moon changed signs during your birth date: {signs}. Without a birth time, we cannot tell which sign applies.', locale, {
+                signs: data.moonSignRange.map((sign) => t(sign)).join(t(' or ')),
+              })}
             </Text>
           ) : null}
         </Card>
@@ -666,17 +831,17 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
             c={c}
             label="ASCENDANT"
             hint="Rising sign"
-            value={lonLabel(angles.ascendant)}
+            value={lonLabel(angles.ascendant, t)}
             testID="natal-angle-ascendant"
-            onPress={() => onExplain(explainAngle('Ascendant', signAt(angles.ascendant)))}
+            onPress={() => onExplain(explainAngle('Ascendant', signAt(angles.ascendant), t))}
           />
           <AngleTile
             c={c}
             label="MIDHEAVEN"
             hint="MC"
-            value={lonLabel(angles.midheaven)}
+            value={lonLabel(angles.midheaven, t)}
             testID="natal-angle-midheaven"
-            onPress={() => onExplain(explainAngle('Midheaven', signAt(angles.midheaven)))}
+            onPress={() => onExplain(explainAngle('Midheaven', signAt(angles.midheaven), t))}
           />
         </View>
       ) : null}
@@ -690,19 +855,30 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
             <Pressable
               key={p.planet}
               accessibilityRole="button"
-              accessibilityLabel={`Explain ${cap(p.planet)} in ${uncertainMoon ? data.moonSignRange.join(' or ') : cap(p.sign)}${house ? `, house ${house}` : ''}`}
-              accessibilityHint="Opens a short, reflective explanation"
+              accessibilityLabel={formatAppText('Explain {item}', locale, {
+                item: fillCopy(t, '{planet} in {sign}{houseSuffix}', {
+                  planet: t(cap(p.planet)),
+                  sign: uncertainMoon
+                    ? data.moonSignRange.map((sign) => t(sign)).join(t(' or '))
+                    : signForCopy(p.sign, t),
+                  houseSuffix: house ? ` · ${formatAppText('House {number}', locale, { number: house })}` : '',
+                }),
+              })}
+              accessibilityHint={t('Opens a short, reflective explanation')}
               testID={`natal-planet-${p.planet.toLowerCase()}`}
-              onPress={() => onExplain(explainPlanet(p.planet, p.sign, house, uncertainMoon ? data.moonSignRange : undefined))}
+              onPress={() => onExplain(explainPlanet(p.planet, p.sign, house, uncertainMoon ? data.moonSignRange : undefined, t))}
               style={({ pressed }) => [styles.rowPressable, i > 0 && { borderTopWidth: 1, borderTopColor: c.border }, { opacity: pressed ? 0.72 : 1 }]}
             >
-              <Text style={[styles.rowName, { color: c.foreground }]}>{cap(p.planet)}</Text>
+              <Text style={[styles.rowName, { color: c.foreground }]}>{t(cap(p.planet))}</Text>
               <View style={{ flex: 1, alignItems: 'flex-end' }}>
                 <Text style={[styles.rowValue, { color: c.foreground }]}>
-                  {uncertainMoon ? data.moonSignRange.join(' / ') : `${dms(p.degreeInSign)} ${cap(p.sign)}`}
+                  {uncertainMoon ? data.moonSignRange.map((sign) => t(sign)).join(` ${t('or')} `) : `${dms(p.degreeInSign)} ${t(cap(p.sign))}`}
                 </Text>
                 <Text style={[styles.rowMeta, { color: c.mutedForeground }]}>
-                  {[house ? `House ${house}` : null, p.retrograde ? 'Retrograde' : null].filter(Boolean).join(' \u00B7 ') || '\u2014'}
+                  {[
+                    house ? formatAppText('House {number}', locale, { number: house }) : null,
+                    p.retrograde ? t('Retrograde') : null,
+                  ].filter(Boolean).join(' \u00B7 ') || '\u2014'}
                 </Text>
               </View>
               <Feather name="chevron-right" size={14} color={c.secondary} />
@@ -714,24 +890,32 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       <Card c={c}>
         <Label c={c} icon="git-merge" text="MAJOR ASPECTS" />
         {aspects.length === 0 ? (
-          <Text style={[styles.body, { color: c.mutedForeground }]}>No major planetary connections are close to your birth chart today.</Text>
+          <Text style={[styles.body, { color: c.mutedForeground }]}>{t('No major planetary connections are close to your birth chart today.')}</Text>
         ) : aspects.map((a, i) => (
           <Pressable
             key={`${a.first}-${a.second}-${a.type}`}
             accessibilityRole="button"
-            accessibilityLabel={`Explain ${cap(a.first)} ${a.type.toLowerCase()} ${cap(a.second)}`}
-            accessibilityHint="Opens a plain-language explanation using your chart"
+            accessibilityLabel={formatAppText('Explain {item}', locale, {
+              item: fillCopy(t, '{first} {aspect} {second}', {
+                first: t(cap(a.first)), aspect: t(a.type.toLowerCase()), second: t(cap(a.second)),
+              }),
+            })}
+            accessibilityHint={t('Opens a plain-language explanation using your chart')}
             testID={`natal-aspect-${a.first.toLowerCase()}-${a.type.toLowerCase()}-${a.second.toLowerCase()}`}
             onPress={() => onExplain(explainAspect(a.first, a.second, a.type, {
               first: aspectPlacement(a.first),
               second: aspectPlacement(a.second),
               referenceOnly: !hasKnownBirthMoment,
-            }))}
+            }, t))}
             style={({ pressed }) => [styles.rowPressable, i > 0 && { borderTopWidth: 1, borderTopColor: c.border }, { opacity: pressed ? 0.72 : 1 }]}
           >
-            <Text style={[styles.rowName, { color: c.foreground, flex: 1 }]}>{cap(a.first)} {a.type.toLowerCase()} {cap(a.second)}</Text>
+            <Text style={[styles.rowName, { color: c.foreground, flex: 1 }]}>
+              {fillCopy(t, '{first} {aspect} {second}', {
+                first: t(cap(a.first)), aspect: t(a.type.toLowerCase()), second: t(cap(a.second)),
+              })}
+            </Text>
             <Text style={[styles.rowMeta, { color: c.mutedForeground }]}>
-              orb {a.orb.toFixed(1)}°{a.exact ? ' \u00B7 exact' : ''}{a.applying === null ? '' : a.applying ? ' \u00B7 applying' : ' \u00B7 separating'}
+              {t('orb')} {a.orb.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}°{a.exact ? ` · ${t('Exact').toLocaleLowerCase(locale)}` : ''}{a.applying === null ? '' : a.applying ? ` · ${t('Applying').toLocaleLowerCase(locale)}` : ` · ${t('Separating').toLocaleLowerCase(locale)}`}
             </Text>
             <Feather name="chevron-right" size={14} color={c.secondary} />
           </Pressable>
@@ -741,7 +925,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
       {data.warnings.length > 0 ? (
         <Card c={c}>
           <Label c={c} icon="info" text="NOTES FROM THE CALCULATION" />
-          {data.warnings.map((w) => <Text key={w} style={[styles.body, { color: c.mutedForeground }]}>{w}</Text>)}
+          {data.warnings.map((w) => <Text key={w} style={[styles.body, { color: c.mutedForeground }]}>{localizeWarning(w)}</Text>)}
         </Card>
       ) : null}
 
@@ -755,9 +939,9 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
         />
         {data.planets.map((p) => (
           <View key={p.planet} style={styles.detailRow}>
-            <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{cap(p.planet)}</Text>
+            <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{t(cap(p.planet))}</Text>
             <Text style={[styles.mono, { color: c.mutedForeground }]}>
-              lon {p.longitude.toFixed(2)}°  lat {p.latitude.toFixed(2)}°  {p.speedDegreesPerDay.toFixed(3)}°/d
+              {t('longitude')} {p.longitude.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}°  {t('latitude')} {p.latitude.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}°  {p.speedDegreesPerDay.toLocaleString(locale, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}°/d
             </Text>
           </View>
         ))}
@@ -773,15 +957,15 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
             />
             {data.houseCusps.map((h) => (
               <View key={h.house} testID={`natal-house-cusp-${h.house}`} style={styles.detailRow}>
-                <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>House {h.house}</Text>
-                <Text style={[styles.mono, { color: c.mutedForeground }]}>{lonLabel(h.longitude)}</Text>
+                <Text style={[styles.rowMeta, { color: c.foreground, flex: 1 }]}>{formatAppText('House {number}', locale, { number: h.house })}</Text>
+                <Text style={[styles.mono, { color: c.mutedForeground }]}>{lonLabel(h.longitude, t)}</Text>
               </View>
             ))}
           </>
         ) : null}
         {angles ? (
           <Text style={[styles.mono, { color: c.mutedForeground, marginTop: 10 }]}>
-            DSC {lonLabel(angles.descendant)}  IC {lonLabel(angles.imumCoeli)}
+            DSC {lonLabel(angles.descendant, t)}  IC {lonLabel(angles.imumCoeli, t)}
           </Text>
         ) : null}
       </Card>
@@ -797,7 +981,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
           onBack={() => setInfoTopic(null)}
         >
           <SafeAreaView edges={['top', 'bottom']} style={styles.explanationSafeArea}>
-            <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: c.background }]} />
+            <View pointerEvents="none" style={[styles.explanationScrim, { backgroundColor: c.scrim }]} />
             {infoCopy ? (
               <View
                 accessibilityViewIsModal
@@ -807,11 +991,11 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
               >
                 <View style={styles.explanationHeader}>
                   <Text accessibilityRole="header" style={[styles.explanationTitle, { color: c.foreground }]}>
-                    {infoCopy.title}
+                    {t(infoCopy.title)}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Close chart details explanation"
+                    accessibilityLabel={t('Close chart details explanation')}
                     testID="natal-technical-info-close"
                     hitSlop={8}
                     onPress={() => setInfoTopic(null)}
@@ -821,7 +1005,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
                   </Pressable>
                 </View>
                 <Text style={[styles.body, { color: c.mutedForeground, marginTop: 12 }]} testID="natal-technical-info-body">
-                  {infoCopy.body}
+                  {t(infoCopy.body)}
                 </Text>
               </View>
             ) : null}
@@ -858,6 +1042,7 @@ function Guide({
   open: boolean;
   onToggle: () => void;
 }) {
+  const t = useAppText();
   const items: [string, string][] = [
     ['Chart method', !timeKnown
       ? 'This chart uses the tropical zodiac. Placidus houses depend on your exact birth time, so they are omitted.'
@@ -884,14 +1069,14 @@ function Guide({
       <Pressable
         testID="natal-guide-toggle"
         accessibilityRole="button"
-        accessibilityLabel="How to read this"
+        accessibilityLabel={t('How to read this')}
         accessibilityState={{ expanded: open }}
         onPress={onToggle}
         style={styles.guideHead}
       >
         <View testID="natal-guide-title" style={styles.guideTitleCenter}>
           <Feather name="book-open" size={14} color={c.secondary} />
-          <Text style={[styles.label, { color: c.secondary }]}>HOW TO READ THIS</Text>
+          <Text style={[styles.label, { color: c.secondary }]}>{t('HOW TO READ THIS')}</Text>
         </View>
         <View pointerEvents="none" style={styles.guideChevronWrap}>
           <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={c.secondary} />
@@ -900,11 +1085,11 @@ function Guide({
       {open ? (
         <>
           <Text style={[styles.body, { color: c.foreground }]}>
-            Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.
+            {t('Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')}
           </Text>
           {items.map(([k, v]) => (
-            <Text key={k} style={[styles.body, { color: c.mutedForeground }]}>
-              <Text style={{ color: c.foreground, fontFamily: 'Inter_600SemiBold' }}>{k}. </Text>{v}
+              <Text key={k} style={[styles.body, { color: c.mutedForeground }]}>
+                <Text style={{ color: c.foreground, fontFamily: 'Inter_600SemiBold' }}>{t(k)}. </Text>{t(v)}
             </Text>
           ))}
         </>
@@ -928,16 +1113,18 @@ function Label({
   onInfo?: () => void;
   infoTestID?: string;
 }) {
+  const t = useAppText();
+  const locale = useAppLocale();
   return (
     <View style={styles.labelRow}>
       <Feather name={icon} size={14} color={c.secondary} />
-      <Text style={[styles.label, { color: c.secondary }]}>{text}</Text>
+      <Text style={[styles.label, { color: c.secondary }]}>{t(text)}</Text>
       {onInfo ? (
         <Pressable
           testID={infoTestID}
           accessibilityRole="button"
-          accessibilityLabel={`About ${text.toLowerCase()}`}
-          accessibilityHint="Opens a short explanation"
+          accessibilityLabel={formatAppText('About {item}', locale, { item: t(text) })}
+          accessibilityHint={t('Opens a short explanation')}
           hitSlop={8}
           onPress={onInfo}
           style={styles.labelInfoButton}
@@ -949,29 +1136,31 @@ function Label({
   );
 }
 function AngleTile({ c, label, hint, value, onPress, testID }: { c: Palette; label: string; hint: string; value: string; onPress: () => void; testID: string }) {
+  const t = useAppText();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Explain ${label.toLowerCase()} in ${value.split(' ').slice(-1)[0]}`}
-      accessibilityHint="Opens a short, reflective explanation"
+      accessibilityLabel={`${t(hint)}: ${value.split(' ').slice(-1)[0]}`}
+      accessibilityHint={t('Opens a short, reflective explanation')}
       testID={testID}
       onPress={onPress}
       style={({ pressed }) => [styles.card, styles.angleTile, { backgroundColor: c.card, borderColor: c.border, opacity: pressed ? 0.72 : 1 }]}
     >
       <View style={styles.angleTileHeader}>
-        <Text style={[styles.label, { color: c.secondary }]}>{label}</Text>
+        <Text style={[styles.label, { color: c.secondary }]}>{t(label)}</Text>
         <Feather name="chevron-right" size={13} color={c.secondary} />
       </View>
       <Text style={[styles.angleValue, { color: c.foreground }]}>{value}</Text>
-      <Text style={[styles.rowMeta, { color: c.mutedForeground }]}>{hint}</Text>
+      <Text style={[styles.rowMeta, { color: c.mutedForeground }]}>{t(hint)}</Text>
     </Pressable>
   );
 }
 function Btn({ c, label, icon, onPress, active }: { c: Palette; label: string; icon?: React.ComponentProps<typeof Feather>['name']; onPress: () => void; active?: boolean }) {
+  const t = useAppText();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.btn, { borderColor: c.secondary, backgroundColor: active ? c.secondary : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
       {icon ? <Feather name={icon} size={13} color={active ? c.background : c.secondary} /> : null}
-      <Text style={[styles.btnText, { color: active ? c.background : c.secondary }]}>{label}</Text>
+      <Text style={[styles.btnText, { color: active ? c.background : c.secondary }]}>{t(label)}</Text>
     </Pressable>
   );
 }
@@ -985,12 +1174,13 @@ function Skeleton({ c }: { c: Palette }) {
   );
 }
 function ChartLoading({ c }: { c: Palette }) {
+  const t = useAppText();
   return (
     <Card c={c}>
       <View style={styles.loadingRow}>
         <ActivityIndicator color={c.secondary} />
         <Text style={[styles.body, { color: c.foreground, marginBottom: 0 }]}>
-          Preparing your Natal Chart…
+          {t('Preparing your Natal Chart…')}
         </Text>
       </View>
     </Card>
@@ -1001,13 +1191,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   starLayer: { ...StyleSheet.absoluteFill },
   starDot: { borderRadius: 2, position: 'absolute' },
-  heroArt: { overflow: 'hidden', position: 'absolute' },
-  heroImage: { height: '100%', position: 'absolute', top: 0, width: '100%' },
-  heroFade: { ...StyleSheet.absoluteFill },
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
-    paddingBottom: 34,
+    paddingBottom: TAB_SCREEN_SCROLL_BOTTOM_GUTTER,
   },
   page: { width: '100%', maxWidth: 480 },
   card: { borderRadius: 28, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },

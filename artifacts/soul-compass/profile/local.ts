@@ -28,8 +28,11 @@ export const ProfileSchema = z.object({
 }).strict();
 const ids = z.array(z.string().regex(/^[a-z0-9-]{1,64}$/)).max(128)
   .refine(items => new Set(items).size === items.length, 'Remove duplicate crystal IDs.');
+export const AppearanceSchema = z.enum(['system', 'light', 'dark']);
+export type AppearancePreference = z.infer<typeof AppearanceSchema>;
 export const PreferencesSchema = z.object({
   language: z.string().regex(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/).max(35),
+  appearance: AppearanceSchema.default('system'),
   crystalCollection: ids,
   crystalPreferences: z.object({
     intentions: z.array(z.string().trim().min(1).max(40)).max(20),
@@ -40,7 +43,7 @@ export const PreferencesSchema = z.object({
 }).strict();
 export type LocalPreferences = z.infer<typeof PreferencesSchema>;
 export const defaultPreferences = (): LocalPreferences => ({
-  language: 'en', crystalCollection: [], crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
+  language: 'en', appearance: 'system', crystalCollection: [], crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
 });
 /** Device calendar days, not a rolling 24-hour lifetime or UTC dates. */
 export function localDayKey(now = new Date()): string {

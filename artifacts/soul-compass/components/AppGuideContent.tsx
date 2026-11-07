@@ -35,7 +35,7 @@ export function AppGuideCards({ variant = 'settings' }: { variant?: 'modal' | 's
               { color: muted },
             ]}
           >
-            {t(item.description)}
+            {t(isModal || !('settingsDescription' in item) ? item.description : item.settingsDescription)}
           </Text>
         </View>
       ))}

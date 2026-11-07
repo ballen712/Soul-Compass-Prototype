@@ -6,6 +6,7 @@ import type { NatalChartResponse } from '@workspace/api-client-react';
 import { LocalProfileStore } from '../profile/storage';
 import { CONSENT_VERSION, LEGACY_KEY, LOCAL_KEY, ProfileSchema, emptyRecord, localDayKey } from '../profile/local';
 import type { UserProfile } from '../profile/profile';
+import { resolveAppColorMode } from '../hooks/useColors';
 
 const state = vi.hoisted(() => ({ data: new Map<string, string>() }));
 const appEvents = vi.hoisted(() => ({ listener: undefined as undefined | ((state: string) => void) }));
@@ -58,17 +59,37 @@ test('fresh startup works without auth or any cloud request', async () => {
   expect(view.privacy.astrologyApiConsent).toBe(false);
   expect(fetchSpy).not.toHaveBeenCalled(); fetchSpy.mockRestore();
 });
+test('appearance follows the device in System mode and honors explicit themes', () => {
+  expect(resolveAppColorMode('system', 'dark')).toBe('dark');
+  expect(resolveAppColorMode('system', 'light')).toBe('light');
+  expect(resolveAppColorMode('light', 'dark')).toBe('light');
+  expect(resolveAppColorMode('dark', 'light')).toBe('dark');
+  expect(resolveAppColorMode('system', null)).toBe('light');
+});
+test('older local settings default to System appearance without losing profile data', async () => {
+  const { data, store } = adapter();
+  const record = emptyRecord();
+  record.profile = profile;
+  const { appearance: _appearance, ...oldPreferences } = record.preferences;
+  data.set(LOCAL_KEY, JSON.stringify({ ...record, preferences: oldPreferences }));
+  await store.load();
+  expect(store.getSnapshot().record.profile).toEqual(profile);
+  expect(store.getSnapshot().record.preferences).toMatchObject({
+    appearance: 'system',
+    language: 'en',
+  });
+});
 test('profile, residence and all preferences survive provider restart', async () => {
   await render();
   await act(async () => view.saveProfile(profile));
   await act(async () => view.savePreferences({
-    language: 'hu', crystalCollection: ['amethyst'],
+    language: 'hu', appearance: 'dark', crystalCollection: ['amethyst'],
     crystalPreferences: { intentions: ['calm'], hiddenCrystals: ['moonstone'], feeling: 'tired' },
   }));
   await act(async () => renderer?.unmount()); await render();
   expect(view.profile).toEqual(profile);
   expect(view.preferences).toEqual({
-    language: 'hu', crystalCollection: ['amethyst'],
+    language: 'hu', appearance: 'dark', crystalCollection: ['amethyst'],
     crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired', feelingDate: localDayKey() },
   });
   await act(async () => view.saveProfile({ ...profile, birthTime: { status: 'known', localTime: '00:01' } }));
@@ -79,7 +100,7 @@ test('the Settings delete action resets the shared app profile to first-run defa
   await render();
   await act(async () => view.saveProfile(profile));
   await act(async () => view.savePreferences({
-    language: 'ru', crystalCollection: ['amethyst'],
+    language: 'ru', appearance: 'system', crystalCollection: ['amethyst'],
     crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired' },
   }));
   await act(async () => view.setConsent(true));
@@ -137,14 +158,14 @@ test('reopening on a later day expires only the feeling and removes retired inte
   const { store, storage } = adapter();
   await store.load(); await store.saveProfile(profile);
   await store.savePreferences({
-    language: 'hu', crystalCollection: ['amethyst'],
+    language: 'hu', appearance: 'light', crystalCollection: ['amethyst'],
     crystalPreferences: { feeling: 'tired', intentions: ['Focus'], hiddenCrystals: ['moonstone'] },
   });
   vi.setSystemTime(new Date(2026, 10, 6, 8));
   const reopened = new LocalProfileStore(storage); await reopened.load();
   expect(reopened.getSnapshot().record.profile).toEqual(profile);
   expect(reopened.getSnapshot().record.preferences).toEqual({
-    language: 'hu', crystalCollection: ['amethyst'],
+    language: 'hu', appearance: 'light', crystalCollection: ['amethyst'],
     crystalPreferences: { feeling: null, feelingDate: null, intentions: [], hiddenCrystals: ['moonstone'] },
   });
   // An unrelated save must not silently extend yesterday's mood.
@@ -273,7 +294,7 @@ test('deleting local data removes profile, legacy data and cached chart and rest
   await store.load();
   await store.saveProfile(profile);
   await store.savePreferences({
-    language: 'ru', crystalCollection: ['amethyst'],
+    language: 'ru', appearance: 'system', crystalCollection: ['amethyst'],
     crystalPreferences: { intentions: [], hiddenCrystals: ['moonstone'], feeling: 'tired' },
   });
   await store.setConsent(true);

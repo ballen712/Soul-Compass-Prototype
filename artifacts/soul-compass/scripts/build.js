@@ -65,6 +65,13 @@ function getDeploymentDomain() {
     return stripProtocol(process.env.REPLIT_INTERNAL_APP_DOMAIN);
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    console.error(
+      'ERROR: Production builds require REPLIT_INTERNAL_APP_DOMAIN. Refusing to embed a development or preview URL.',
+    );
+    process.exit(1);
+  }
+
   if (process.env.REPLIT_DEV_DOMAIN) {
     return stripProtocol(process.env.REPLIT_DEV_DOMAIN);
   }
@@ -136,8 +143,9 @@ function getExpoPublicReplId() {
 async function startMetro(expoPublicDomain, expoPublicReplId) {
   const isRunning = await checkMetroHealth();
   if (isRunning) {
-    console.log('Metro already running');
-    return;
+    throw new Error(
+      `Metro is already running on port ${metroPort}. Refusing to reuse a server whose EXPO_PUBLIC_DOMAIN cannot be verified; choose a free EXPO_BUILD_METRO_PORT for this build.`,
+    );
   }
 
   console.log('Starting Metro...');
@@ -499,10 +507,60 @@ function getStaticAssetDirectory(relativePath) {
   return normalized;
 }
 
-function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
+function copyExpoGoIcon(timestamp, baseUrl) {
+  const appConfig = JSON.parse(
+    fs.readFileSync(path.join(projectRoot, 'app.json'), 'utf8'),
+  );
+  const configuredIcon = appConfig.expo?.icon;
+  if (typeof configuredIcon !== 'string' || !configuredIcon.trim()) {
+    throw new Error('Expo app.json must define an icon for the static manifest');
+  }
+
+  const iconRelativePath = path.posix
+    .normalize(configuredIcon.replace(/\\/g, '/').replace(/^\.\//, ''));
+  if (
+    path.posix.isAbsolute(iconRelativePath) ||
+    iconRelativePath === '.' ||
+    iconRelativePath === '..' ||
+    iconRelativePath.startsWith('../')
+  ) {
+    throw new Error('Expo app icon path must stay inside the app project');
+  }
+
+  const source = path.resolve(projectRoot, iconRelativePath);
+  const relativeSource = path.relative(projectRoot, source);
+  if (
+    relativeSource.startsWith(`..${path.sep}`) ||
+    relativeSource === '..' ||
+    path.isAbsolute(relativeSource) ||
+    !fs.existsSync(source) ||
+    !fs.statSync(source).isFile()
+  ) {
+    throw new Error('Configured Expo app icon does not exist inside the app project');
+  }
+
+  const relativeOutput = path.posix.join('assets', iconRelativePath);
+  const output = path.join(
+    projectRoot,
+    'static-build',
+    timestamp,
+    ...relativeOutput.split('/'),
+  );
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  fs.copyFileSync(source, output);
+  return `${baseUrl}${basePath}/${timestamp}/${relativeOutput
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/')}`;
+}
+
+function updateManifests(manifests, timestamp, baseUrl, assetsByHash, iconUrl) {
   const updateForPlatform = (platform, manifest) => {
     if (!manifest.launchAsset || !manifest.extra) {
       exitWithError(`Malformed manifest for ${platform}`);
+    }
+    if (!manifest.extra.expoClient || !iconUrl) {
+      exitWithError(`Missing Expo Go icon metadata for ${platform}`);
     }
 
     manifest.launchAsset.url = `${baseUrl}${basePath}/${timestamp}/_expo/static/js/${platform}/bundle.js`;
@@ -515,6 +573,7 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
     manifest.extra.expoGo.debuggerHost =
       baseUrl.replace('https://', '') + '/' + platform;
     manifest.extra.expoGo.packagerOpts.dev = false;
+    manifest.extra.expoClient.iconUrl = iconUrl;
 
     if (manifest.assets && manifest.assets.length > 0) {
       manifest.assets.forEach((asset) => {
@@ -584,17 +643,19 @@ async function main() {
   }
 
   const assetCount = await downloadAssets(assets, timestamp);
+  const iconUrl = copyExpoGoIcon(timestamp, baseUrl);
 
   if (assetCount > 0) {
     updateBundleUrls(timestamp, baseUrl);
   }
 
   console.log('Updating manifests and creating landing page...');
-  updateManifests(manifests, timestamp, baseUrl, assetsByHash);
+  updateManifests(manifests, timestamp, baseUrl, assetsByHash, iconUrl);
 
   validateStaticBuild({
     staticBuildDir: path.join(projectRoot, 'static-build'),
     timestamp,
+    expectedApiOrigin: baseUrl,
   });
   console.log('Static build integrity check passed');
 

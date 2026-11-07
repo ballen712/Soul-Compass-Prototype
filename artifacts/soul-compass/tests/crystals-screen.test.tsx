@@ -7,13 +7,18 @@ const state = vi.hoisted(() => ({
   push: vi.fn(),
   navigate: vi.fn(),
   guideScrollTo: vi.fn(),
+  scrollToTopRef: null as null | { current: unknown },
   collectionScrollToOffset: vi.fn(),
   collectionScrollToIndex: vi.fn(),
   suggestions: [] as Array<{ crystal: Record<string, unknown>; reason: string; basis: string; matchedIntentions: string[] }>,
   crystalOptions: null as null | Record<string, unknown>,
+  dailyProfile: null as null | Record<string, unknown>,
+  crystalAstrology: null as null | Record<string, unknown>,
   homeLocalDate: vi.fn(() => '2026-11-06'),
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
+  pinchGestures: [] as Array<Record<string, (...args: any[]) => void>>,
+  zoomScales: [] as Array<{ value: number }>,
   profileContext: {
     profile: null as null | Record<string, unknown>,
     preferences: {
@@ -21,6 +26,7 @@ const state = vi.hoisted(() => ({
       crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
     },
     toggleCrystal: vi.fn(),
+    savePreferences: vi.fn(),
   },
   moonstone: {
     id: 'moonstone',
@@ -58,6 +64,8 @@ const state = vi.hoisted(() => ({
     description: 'A good fit for care and connection.',
     guideDescription: 'Keep it nearby for a heart-centered meditation or gratitude practice.',
     specimenDescription: 'A pale pink quartz with a cloudy, translucent finish.',
+    image: 5,
+    imageDescription: 'Rose quartz on linen',
     themes: ['connection', 'empathy'],
     tone: 'pink',
   },
@@ -89,7 +97,11 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ push: state.push, navigate: state.navigate }) }));
+vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
+vi.mock('expo-router', () => ({
+  useRouter: () => ({ push: state.push, navigate: state.navigate }),
+  useScrollToTop: (ref: { current: unknown }) => { state.scrollToTopRef = ref; },
+}));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 59, right: 0, bottom: 34, left: 0 }),
@@ -138,6 +150,27 @@ vi.mock('react-native', () => ({
   View: 'View',
   useWindowDimensions: () => ({ width: 402, height: 874 }),
 }));
+vi.mock('react-native-reanimated', () => ({
+  default: { createAnimatedComponent: (component: unknown) => component },
+  useAnimatedStyle: (factory: () => unknown) => factory(),
+  useSharedValue: (value: number) => {
+    const sharedValue = { value };
+    state.zoomScales.push(sharedValue);
+    return sharedValue;
+  },
+  withTiming: (value: number) => value,
+}));
+vi.mock('react-native-gesture-handler', async () => {
+  const ReactModule = await import('react');
+  return {
+    GestureDetector: ({ children, gesture }: any) =>
+      ReactModule.createElement('GestureDetector', { gesture }, children),
+    usePinchGesture: (config: Record<string, (...args: any[]) => void>) => {
+      state.pinchGestures.push(config);
+      return config;
+    },
+  };
+});
 vi.mock('react-native-keyboard-controller', () => ({
   KeyboardAvoidingView: 'KeyboardAvoidingView',
 }));
@@ -184,7 +217,8 @@ vi.mock('@/profile/ProfileContext', () => ({
 }));
 vi.mock('@/profile/astrology', () => ({
   calculateNatalElementBalance: () => state.natalBalance,
-  getCrystalSuggestions: (_astrology: unknown, options: Record<string, unknown>) => {
+  getCrystalSuggestions: (astrology: Record<string, unknown> | undefined, options: Record<string, unknown>) => {
+    state.crystalAstrology = astrology ?? null;
     state.crystalOptions = options;
     return state.suggestions;
   },
@@ -193,15 +227,19 @@ vi.mock('@/profile/astrology', () => ({
   getSampleAlternatives: () => [state.amethyst, state.labradorite],
   getSampleCrystal: () => state.moonstone,
 }));
-vi.mock('@/profile/crystal-guidance', () => ({
+vi.mock('@/profile/daily-cache', () => ({
+  getDailyAstrology: (profile: Record<string, unknown> | null) => {
+    state.dailyProfile = profile;
+    return profile ? { status: 'calculated', birthDate: profile.birthDate } : null;
+  },
 }));
-vi.mock('@/profile/daily-cache', () => ({ getDailyAstrology: () => null }));
 vi.mock('@/hooks/useLocalClock', () => ({
   useLocalClock: () => new Date('2026-11-05T12:00:00.000Z'),
 }));
 
 import CrystalsScreen from '../app/(tabs)/crystals';
 import { TabEdgeSwipe } from '../components/TabEdgeSwipe';
+import { FEELING_OPTIONS } from '../profile/crystal-guidance';
 
 let renderer: ReactTestRenderer | undefined;
 
@@ -210,16 +248,51 @@ afterEach(async () => {
   renderer = undefined;
   state.push.mockReset();
   state.navigate.mockReset();
+  state.dailyProfile = null;
+  state.crystalAstrology = null;
   state.guideScrollTo.mockReset();
   state.collectionScrollToOffset.mockReset();
   state.collectionScrollToIndex.mockReset();
+  state.scrollToTopRef = null;
   state.profileContext.toggleCrystal.mockReset();
+  state.profileContext.savePreferences.mockReset();
+  state.profileContext.preferences = {
+    crystalCollection: [],
+    crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
+  };
   state.profileContext.profile = null;
   state.crystalOptions = null;
   state.homeLocalDate.mockClear();
   state.suggestions = [];
   state.natalBalance = null;
   state.natalRecommendations = [];
+  state.pinchGestures.length = 0;
+  state.zoomScales.length = 0;
+});
+
+test('crystal artwork zooms during a pinch and resets when the gesture ends', async () => {
+  state.suggestions = [{
+    crystal: state.moonstone,
+    reason: 'A gentle reminder to pause.',
+    basis: 'chart',
+    matchedIntentions: [],
+  }];
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+
+  const root = renderer!.root;
+  const images = root.findAllByType('Image' as any);
+  const gestureDetectors = root.findAllByType('GestureDetector' as any);
+  expect(images.length).toBeGreaterThan(0);
+  expect(gestureDetectors).toHaveLength(images.length);
+
+  const firstGesture = gestureDetectors[0].props.gesture;
+  const zoomScale = state.zoomScales[0];
+  act(() => firstGesture.onUpdate({ scale: 1.8 }));
+  expect(zoomScale.value).toBe(1.8);
+  act(() => firstGesture.onUpdate({ scale: 8 }));
+  expect(zoomScale.value).toBe(2.5);
+  act(() => firstGesture.onFinalize());
+  expect(zoomScale.value).toBe(1);
 });
 
 test('feeling-based crystal suggestions use the saved city local date without a chart', async () => {
@@ -240,12 +313,67 @@ test('feeling-based crystal suggestions use the saved city local date without a 
   expect(state.homeLocalDate).toHaveBeenCalledWith(new Date('2026-11-05T12:00:00.000Z'), residence);
 });
 
+test('saving different birth details refreshes the crystal guide input', async () => {
+  const originalProfile = {
+    birthDate: '1951-02-03',
+    birthTime: { status: 'known', localTime: '12:00' },
+    birthPlace: {
+      city: 'London',
+      country: 'United Kingdom',
+      latitude: 51.5072,
+      longitude: -0.1276,
+      timeZone: 'Europe/London',
+    },
+    currentResidence: null,
+  };
+  const updatedProfile = {
+    ...originalProfile,
+    birthDate: '2005-06-30',
+    birthPlace: {
+      city: 'Sydney',
+      country: 'Australia',
+      latitude: -33.8688,
+      longitude: 151.2093,
+      timeZone: 'Australia/Sydney',
+    },
+  };
+  state.profileContext.profile = originalProfile;
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  expect(state.dailyProfile).toBe(originalProfile);
+  expect(state.crystalAstrology).toMatchObject({ birthDate: originalProfile.birthDate });
+
+  state.profileContext.profile = updatedProfile;
+  await act(async () => { renderer?.update(<CrystalsScreen />); });
+  expect(state.dailyProfile).toBe(updatedProfile);
+  expect(state.crystalAstrology).toMatchObject({ birthDate: updatedProfile.birthDate });
+});
+
+test('crystal suggestions use birthplace local date when residence is not set', async () => {
+  const birthplace = {
+    city: 'Budapest',
+    country: 'Hungary',
+    latitude: 47.4979,
+    longitude: 19.0402,
+    timeZone: 'Europe/Budapest',
+  };
+  state.profileContext.profile = {
+    birthDate: '2000-01-01',
+    birthPlace: birthplace,
+    currentResidence: null,
+  };
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  expect(state.crystalOptions?.dateKey).toBe('2026-11-06');
+  expect(state.homeLocalDate).toHaveBeenCalledWith(new Date('2026-11-05T12:00:00.000Z'), birthplace);
+});
+
 test('the Stone Guide explains daily companions and opens from its info button', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   await act(async () => {
     renderer = create(<CrystalsScreen />);
   });
   const root = renderer!.root;
+  expect(root.findByProps({ testID: 'crystals-celestial-header' })).toBeDefined();
+  expect(state.scrollToTopRef).not.toBeNull();
   const info = root.findByProps({ testID: 'stone-guide-info' });
   expect(root.findAllByProps({ accessibilityLabel: 'Moonstone on linen' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'collect-moonstone' })).toHaveLength(0);
@@ -443,7 +571,10 @@ test('the collection button clears the tab bar and detail artwork scales to the 
   await act(async () => { renderer = create(<CrystalsScreen />); });
   const root = renderer!.root;
   const mainScroll = root.findByProps({ testID: 'crystals-main-scroll' });
-  expect(mainScroll.props.contentContainerStyle[1].paddingBottom).toBeGreaterThanOrEqual(94);
+  expect(mainScroll.props.contentContainerStyle[0].paddingBottom).toBe(24);
+  expect(mainScroll.props.bounces).toBe(false);
+  expect(mainScroll.props.alwaysBounceVertical).toBe(false);
+  expect(mainScroll.props.overScrollMode).toBe('never');
   await act(async () => {
     root.findByProps({ testID: 'open-crystal-collection' }).props.onPress();
   });
@@ -455,7 +586,7 @@ test('the collection button clears the tab bar and detail artwork scales to the 
     root.findByProps({ testID: 'catalog-stone-moonstone' }).props.onPress();
   });
   const detailImage = root.findAll(
-    (node) => node.type === Image && node.props.accessibilityLabel === 'Moonstone stone illustration',
+    (node) => node.props.accessibilityLabel === 'Moonstone stone illustration',
   ).find((node) => Array.isArray(node.props.style))!;
   expect(detailImage).toBeDefined();
   expect(detailImage.props.resizeMode).toBe('contain');
@@ -523,6 +654,51 @@ test('three daily matches show one main stone, two companions, and the full coll
   expect(root.findByProps({ testID: 'open-crystal-collection' })).toBeDefined();
 });
 
+test('the Crystals feeling picker uses the Settings choices and updates daily suggestions', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.profileContext.savePreferences.mockImplementation(async (nextPreferences: any) => {
+    state.profileContext.preferences = nextPreferences;
+  });
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+  const toggle = root.findByProps({ testID: 'crystal-feeling-picker-toggle' });
+
+  expect(toggle.props.accessibilityState.expanded).toBe(false);
+  expect(root.findAll((node) =>
+    String(node.props.testID ?? '').startsWith('crystal-feeling-option-'),
+  )).toHaveLength(0);
+
+  await act(async () => { toggle.props.onPress(); });
+  const options = root.findAll((node) =>
+    String(node.props.testID ?? '').startsWith('crystal-feeling-option-'),
+  );
+  expect(options).toHaveLength(FEELING_OPTIONS.length);
+  expect(options).toHaveLength(12);
+
+  state.guideScrollTo.mockClear();
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-feeling-option-energized' }).props.onPress();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(state.profileContext.savePreferences).toHaveBeenCalledWith({
+    crystalCollection: [],
+    crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: 'energized' },
+  });
+  expect(state.crystalOptions?.feeling).toBe('energized');
+  expect(state.guideScrollTo).toHaveBeenCalledWith({ y: 0, animated: true });
+  expect(root.findByProps({ testID: 'crystal-feeling-picker-toggle' }).props.accessibilityState.expanded).toBe(false);
+
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-feeling-picker-toggle' }).props.onPress();
+  });
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-feeling-option-energized' }).props.onPress();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(state.profileContext.preferences.crystalPreferences.feeling).toBeNull();
+  expect(state.crystalOptions?.feeling).toBeNull();
+});
+
 test('birth-chart stones open individual explanations and can be added to the collection', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.profileContext.profile = { birthDate: '2000-01-01' };
@@ -539,6 +715,8 @@ test('birth-chart stones open individual explanations and can be added to the co
       name: index === 0 ? 'Rose Quartz' : `Chart Stone ${index + 1}`,
       note: 'Connection · care',
       description: 'A good fit for care and connection.',
+      tone: index === 0 ? 'pink' : 'blue',
+      ...(index === 0 ? { image: 5 } : {}),
     },
     element: index === 0 ? 'Air' : 'Fire',
     reason: index === 0
@@ -554,6 +732,13 @@ test('birth-chart stones open individual explanations and can be added to the co
   )).toHaveLength(8);
 
   await act(async () => { root.findByProps({ testID: 'natal-stone-rose-quartz' }).props.onPress(); });
+  const companionImage = root.findAllByType(Image).find(
+    (node) => node.props.accessibilityLabel === 'Rose Quartz stone illustration',
+  );
+  expect(companionImage).toBeDefined();
+  expect(companionImage?.props.source).toBe(5);
+  expect(companionImage?.props.resizeMode).toBe('contain');
+  expect(root.findByProps({ testID: 'natal-stone-detail-artwork-rose-quartz' })).toBeDefined();
   const detailCopy = root.findByProps({ testID: 'stone-guide-modal' })
     .findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(detailCopy).toContain('fewer air placements');

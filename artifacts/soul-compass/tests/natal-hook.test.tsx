@@ -124,6 +124,56 @@ test('changing saved birth details clears the old chart and calculates for the n
   });
   expect(chart.data).toBeDefined();
 });
+test('a late chart response for the previous profile cannot replace the recalculated chart', async () => {
+  await mount(true);
+  const previousProfile = profile.profile!;
+  const previousKey = natalChartCacheKey(previousProfile);
+  let resolvePrevious!: (result: NatalChartResponse) => void;
+  const staleChart = {
+    ...chartResult,
+    calculation: { ...chartResult.calculation, instantUtc: '1999-01-01T12:00:00.000Z' },
+  };
+  state.calculate.mockImplementationOnce(
+    () => new Promise<NatalChartResponse>(resolve => { resolvePrevious = resolve; }),
+  );
+
+  await act(async () => { await profile.setConsent(true); });
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+  expect(resolvePrevious).toBeTypeOf('function');
+
+  const updatedProfile = {
+    ...previousProfile,
+    birthDate: '2005-06-30',
+    birthTime: { status: 'known' as const, localTime: '12:00' },
+    birthPlace: {
+      city: 'Sydney',
+      country: 'Australia',
+      latitude: -33.8688,
+      longitude: 151.2093,
+      timeZone: 'Australia/Sydney',
+    },
+  };
+  await act(async () => {
+    await profile.saveProfile(updatedProfile);
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  });
+
+  expect(state.calculate).toHaveBeenCalledTimes(2);
+  expect(state.calculate.mock.calls[1][0]).toMatchObject({
+    birthDate: '2005-06-30',
+    birthPlace: { latitude: -33.8688, longitude: 151.2093, timeZone: 'Australia/Sydney' },
+  });
+  expect(chart.data).toEqual(chartResult);
+
+  await act(async () => { resolvePrevious(staleChart as NatalChartResponse); });
+  expect(chart.data).toEqual(chartResult);
+  const updatedCache = await profile.loadNatalChartCache(natalChartCacheKey(updatedProfile));
+  expect(updatedCache).not.toBeNull();
+  expect(new Date(updatedCache!.data.calculation.instantUtc).toISOString())
+    .toBe(new Date(chartResult.calculation.instantUtc).toISOString());
+  expect(await profile.loadNatalChartCache(previousKey)).toBeNull();
+});
+
 test('a saved chart remains local after permission is withdrawn', async () => {
   await mount(true);
   await act(async () => profile.setConsent(true));

@@ -116,7 +116,7 @@ function assertNoSourceMaps(staticBuildDir) {
   visit(staticBuildDir);
 }
 
-function validatePlatform(staticBuildDir, timestamp, platform) {
+function validatePlatform(staticBuildDir, timestamp, platform, expectedApiOrigin) {
   const manifestPath = path.join(staticBuildDir, platform, 'manifest.json');
   let manifest;
   try {
@@ -152,6 +152,19 @@ function validatePlatform(staticBuildDir, timestamp, platform) {
   if (/sourceMappingURL\s*=/i.test(bundle)) {
     fail(`${platform} bundle contains a source map reference`);
   }
+  if (expectedApiOrigin && !bundle.includes(expectedApiOrigin)) {
+    fail(`${platform} bundle does not contain the configured production API origin`);
+  }
+  const iconUrl = manifest.extra?.expoClient?.iconUrl;
+  if (typeof iconUrl !== 'string' || !iconUrl.trim()) {
+    fail(`${platform} manifest has no Expo Go icon URL`);
+  }
+  resolveReference(
+    staticBuildDir,
+    timestamp,
+    iconUrl,
+    `${platform} Expo Go icon`,
+  );
 
   if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) {
     fail(`${platform} manifest assets must be an array`);
@@ -198,7 +211,7 @@ function validatePlatform(staticBuildDir, timestamp, platform) {
   }
 }
 
-function validateStaticBuild({ staticBuildDir, timestamp }) {
+function validateStaticBuild({ staticBuildDir, timestamp, expectedApiOrigin }) {
   if (!staticBuildDir || !timestamp) {
     throw new TypeError('staticBuildDir and timestamp are required');
   }
@@ -209,7 +222,7 @@ function validateStaticBuild({ staticBuildDir, timestamp }) {
 
   assertNoSourceMaps(outputDir);
   for (const platform of PLATFORMS) {
-    validatePlatform(outputDir, timestamp, platform);
+    validatePlatform(outputDir, timestamp, platform, expectedApiOrigin);
   }
   return true;
 }

@@ -1,10 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useScrollToTop } from 'expo-router';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
+import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import {
@@ -23,16 +25,21 @@ import {
   getHomeLocalDate,
   getNatalCrystalSuggestions,
 } from '@/profile/astrology';
-import { type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
+import { FEELING_OPTIONS, type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
 import { TabScreenHeader } from '@/components/TabScreenHeader';
-import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
+import { CelestialHeader } from '@/components/CelestialHeader';
+import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+const MAX_CRYSTAL_IMAGE_ZOOM = 2.5;
+const CRYSTAL_IMAGE_ZOOM_RESET_DURATION = 160;
+const AnimatedCrystalImage = Animated.createAnimatedComponent(Image);
 
 function localizeCrystal(crystal: Crystal, locale: CrystalLocale): LocalizedCrystalCopy {
   return getLocalizedCrystalCopy(crystal.name, locale) ?? {
@@ -75,6 +82,20 @@ function CrystalArtwork({ crystal, size, detailSize }: {
   const responsiveDetailStyle = size === 'detail' && detailSize !== undefined
     ? { width: detailSize, height: detailSize, alignSelf: 'center' as const }
     : null;
+  const zoomScale = useSharedValue(1);
+  const zoomStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: zoomScale.value }],
+    zIndex: zoomScale.value > 1.01 ? 10 : 0,
+    elevation: zoomScale.value > 1.01 ? 10 : 0,
+  }));
+  const pinchGesture = usePinchGesture({
+    onUpdate: ({ scale }) => {
+      zoomScale.value = Math.min(MAX_CRYSTAL_IMAGE_ZOOM, Math.max(1, scale));
+    },
+    onFinalize: () => {
+      zoomScale.value = withTiming(1, { duration: CRYSTAL_IMAGE_ZOOM_RESET_DURATION });
+    },
+  });
   const imageStyle = size === 'feature'
     ? styles.featureImage
     : size === 'alternative'
@@ -84,12 +105,20 @@ function CrystalArtwork({ crystal, size, detailSize }: {
         : styles.detailImage;
   if (crystal.image !== undefined) {
     return (
-      <Image
-        source={crystal.image}
-        style={responsiveDetailStyle ? [imageStyle, responsiveDetailStyle] : imageStyle}
-        resizeMode={size === 'detail' ? 'contain' : 'cover'}
-        accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
-      />
+      <GestureDetector gesture={pinchGesture}>
+        <AnimatedCrystalImage
+          testID={`crystal-artwork-${slugOf(crystal.name)}-${size}`}
+          source={crystal.image}
+          style={[
+            imageStyle,
+            responsiveDetailStyle,
+            zoomStyle,
+          ]}
+          resizeMode={size === 'detail' ? 'contain' : 'cover'}
+          accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
+          collapsable={false}
+        />
+      </GestureDetector>
     );
   }
   return (
@@ -203,13 +232,21 @@ export default function CrystalsScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const detailImageSize = Math.max(1, Math.min(320, windowWidth - 56, windowHeight * 0.34));
+  const pageWidth = Math.min(windowWidth - SCREEN_HORIZONTAL_GUTTER * 2, 480);
+  const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
+  const heroHeight = Math.round(windowHeight * 0.42);
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
-  const { preferences, profile } = useProfile();
+  const { preferences, profile, savePreferences } = useProfile();
   const [guideOpen, setGuideOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [collectionSearch, setCollectionSearch] = useState('');
   const [selectedCollectionStone, setSelectedCollectionStone] = useState<Crystal | null>(null);
   const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
+  const [feelingPickerOpen, setFeelingPickerOpen] = useState(false);
+  const [feelingSaving, setFeelingSaving] = useState(false);
+  const [feelingSaveError, setFeelingSaveError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
+  useScrollToTop(scrollRef);
   const collectionListRef = useRef<FlatList<Crystal> | null>(null);
   const collectionScrollOffsetRef = useRef(0);
   const restoreCollectionIndexRef = useRef<number | null>(null);
@@ -221,6 +258,27 @@ export default function CrystalsScreen() {
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
+  const selectedFeeling = FEELING_OPTIONS.find(
+    (option) => option.id === preferences.crystalPreferences.feeling,
+  );
+  const chooseFeeling = async (id: string) => {
+    if (feelingSaving) return;
+    const feeling = preferences.crystalPreferences.feeling === id ? null : id;
+    setFeelingSaving(true);
+    setFeelingSaveError(null);
+    try {
+      await savePreferences({
+        ...preferences,
+        crystalPreferences: { ...preferences.crystalPreferences, feeling },
+      });
+      setFeelingPickerOpen(false);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    } catch {
+      setFeelingSaveError(t('That change could not be saved on this device. Please try again.'));
+    } finally {
+      setFeelingSaving(false);
+    }
+  };
   const translateStoneName = (name: string) =>
     getLocalizedCrystalCopy(name, locale)?.name ?? name;
   const natalElementResult = useMemo(
@@ -243,8 +301,8 @@ export default function CrystalsScreen() {
       {
         hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
         feeling: preferences.crystalPreferences.feeling,
-        dateKey: profile?.currentResidence
-          ? getHomeLocalDate(now, profile.currentResidence)
+        dateKey: profile
+          ? getHomeLocalDate(now, profile.currentResidence ?? profile.birthPlace)
           : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
       },
       3,
@@ -330,20 +388,34 @@ export default function CrystalsScreen() {
         { backgroundColor: colors.crystals.background },
       ]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
       <ScrollView
+        ref={scrollRef}
         testID="crystals-main-scroll"
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: Platform.OS === 'ios' ? 18 : topInset + 18,
-            paddingBottom: Math.max(insets.bottom, 0) + 60,
           },
         ]}
         contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : 'never'}
+        alwaysBounceVertical={false}
+        bounces={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.page}>
+          <CelestialHeader
+            width={windowWidth}
+            height={heroHeight}
+            fadeColor={colors.crystals.background}
+            testID="crystals-celestial-header"
+            style={{
+              top: -(topInset + 18),
+              left: -heroBleed,
+              right: -heroBleed,
+            }}
+          />
           <TabScreenHeader
             title="The Stone Guide"
             titleColor={colors.crystals.foreground}
@@ -569,6 +641,96 @@ export default function CrystalsScreen() {
             <Feather name="chevron-right" size={19} color={colors.cosmos.secondary} />
           </Pressable>
 
+          <View
+            testID="crystal-feeling-section"
+            style={[
+              styles.feelingSection,
+              {
+                backgroundColor: colors.crystals.card,
+                borderColor: colors.crystals.border,
+              },
+            ]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                selectedFeeling
+                  ? `${t('How are you feeling today?')}: ${t(selectedFeeling.label)}`
+                  : t('How are you feeling today?')
+              }
+              accessibilityState={{ expanded: feelingPickerOpen }}
+              testID="crystal-feeling-picker-toggle"
+              onPress={() => setFeelingPickerOpen((open) => !open)}
+              style={styles.feelingSectionHeader}
+            >
+              <View style={styles.feelingSectionCopy}>
+                <Text style={[styles.feelingSectionTitle, { color: colors.crystals.foreground }]}>
+                  {t('How are you feeling today?')}
+                </Text>
+                {selectedFeeling ? (
+                  <Text style={[styles.feelingSelectedLabel, { color: colors.crystals.secondary }]}>
+                    {t(selectedFeeling.label)}
+                  </Text>
+                ) : null}
+              </View>
+              {feelingSaving ? (
+                <ActivityIndicator size="small" color={colors.crystals.secondary} />
+              ) : (
+                <Feather
+                  name={feelingPickerOpen ? 'chevron-up' : 'chevron-down'}
+                  size={19}
+                  color={colors.crystals.secondary}
+                />
+              )}
+            </Pressable>
+            {feelingPickerOpen ? (
+              <View style={styles.feelingPickerContent}>
+                <Text style={[styles.feelingPickerHint, { color: colors.crystals.mutedForeground }]}>
+                  {t('Choose how you feel today, or leave this blank for the usual chart-based suggestions. Your choice resets at midnight on your device. You can change or clear it at any time.')}
+                </Text>
+                <View style={styles.feelingOptionsGrid}>
+                  {FEELING_OPTIONS.map((option) => {
+                    const selected = preferences.crystalPreferences.feeling === option.id;
+                    return (
+                      <Pressable
+                        key={option.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: selected, disabled: feelingSaving }}
+                        disabled={feelingSaving}
+                        testID={`crystal-feeling-option-${option.id}`}
+                        onPress={() => { void chooseFeeling(option.id); }}
+                        style={[
+                          styles.feelingOption,
+                          {
+                            backgroundColor: selected ? colors.crystals.background : colors.crystals.card,
+                            borderColor: selected ? colors.crystals.secondary : colors.crystals.border,
+                          },
+                        ]}
+                      >
+                        <View style={styles.feelingOptionHeader}>
+                          <Text style={[styles.feelingOptionTitle, { color: colors.crystals.foreground }]}>
+                            {t(option.label)}
+                          </Text>
+                          {selected ? (
+                            <Feather name="check-circle" size={14} color={colors.crystals.secondary} />
+                          ) : null}
+                        </View>
+                        <Text style={[styles.feelingOptionDescription, { color: colors.crystals.mutedForeground }]}>
+                          {t(option.description)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {feelingSaveError ? (
+                  <Text accessibilityRole="alert" style={[styles.feelingSaveError, { color: colors.destructive }]}>
+                    {feelingSaveError}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
         </View>
       </ScrollView>
       <Modal
@@ -593,7 +755,7 @@ export default function CrystalsScreen() {
             pointerEvents="none"
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: colors.cosmos.homeBackground, opacity: 0.72 },
+              { backgroundColor: colors.scrim },
             ]}
           />
           <View
@@ -657,6 +819,23 @@ export default function CrystalsScreen() {
             >
               {selectedNatalStone ? (
                 <View style={styles.natalStoneDetail}>
+                  <View
+                    testID={`natal-stone-detail-artwork-${slugOf(selectedNatalStone.crystal.name)}`}
+                    style={[
+                      styles.natalStoneDetailArtwork,
+                      {
+                        backgroundColor: colors.crystals.imageSurface,
+                        width: detailImageSize,
+                        height: detailImageSize,
+                      },
+                    ]}
+                  >
+                    <CrystalArtwork
+                      crystal={selectedNatalStone.crystal}
+                      size="detail"
+                      detailSize={detailImageSize}
+                    />
+                  </View>
                   <Text style={[styles.natalStoneDetailTitle, { color: colors.cosmos.foreground }]}>
                     {localizeCrystal(selectedNatalStone.crystal, locale).name}
                   </Text>
@@ -1006,7 +1185,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
-    paddingBottom: 34,
+    paddingBottom: TAB_SCREEN_SCROLL_BOTTOM_GUTTER,
   },
   page: {
     width: '100%',
@@ -1110,6 +1289,11 @@ const styles = StyleSheet.create({
   natalStoneDetail: {
     gap: 13,
   },
+  natalStoneDetailArtwork: {
+    alignSelf: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
   natalStoneDetailTitle: {
     fontFamily: 'Georgia',
     fontSize: 28,
@@ -1132,6 +1316,72 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     width: 36,
+  },
+  feelingSection: {
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 12,
+    marginTop: 14,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+  },
+  feelingSectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 38,
+  },
+  feelingSectionCopy: { flex: 1, gap: 3 },
+  feelingSectionTitle: {
+    fontFamily: 'Georgia',
+    fontSize: 18,
+    lineHeight: 23,
+  },
+  feelingSelectedLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  feelingPickerContent: { gap: 12 },
+  feelingPickerHint: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  feelingOptionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  feelingOption: {
+    borderRadius: 15,
+    borderWidth: 1,
+    gap: 6,
+    minHeight: 88,
+    padding: 10,
+    width: '48%',
+  },
+  feelingOptionHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 5,
+    justifyContent: 'space-between',
+  },
+  feelingOptionTitle: {
+    flex: 1,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  feelingOptionDescription: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  feelingSaveError: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    lineHeight: 17,
   },
   catalogButtonCopy: {
     flex: 1,

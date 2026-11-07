@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileForm } from '@/components/ProfileForm';
 import { useProfile } from '@/profile/ProfileContext';
@@ -22,6 +23,7 @@ import {
   type AppLocale,
 } from '@/localization';
 import { useColors } from '@/hooks/useColors';
+import { TabScreenHeader } from '@/components/TabScreenHeader';
 
 export default function OnboardingScreen() {
   const { saveProfile, onboardingDraft, preferences, savePreferences } = useProfile();
@@ -54,24 +56,28 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView
         edges={['top', 'bottom']}
-        style={[styles.safeArea, { backgroundColor: colors.background }]}
+        style={[
+          styles.safeArea,
+          { backgroundColor: colors.cosmos.homeBackground },
+          Platform.OS === 'web' && { paddingTop: 67 },
+        ]}
       >
         <ScrollView
           contentContainerStyle={styles.languageContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.languageBrand}>
-            <Feather name="star" size={15} color={colors.tint} />
-            <Text style={[styles.languageBrandText, { color: colors.foreground }]}>
-              SOUL COMPASS
-            </Text>
-          </View>
-          <Text style={[styles.languageTitle, { color: colors.foreground }]}>
-            {t('Choose your language')}
-          </Text>
-          <Text style={[styles.languageDescription, { color: colors.mutedForeground }]}>
-            {t('Tap a language to continue')} {t('You can change this later in Settings.')}
-          </Text>
+          <TabScreenHeader
+            title="Choose your language"
+            titleColor={colors.cosmos.foreground}
+            subtitleColor={colors.cosmos.mutedForeground}
+            titleStyle={styles.languageTitle}
+            subtitle={
+              <Text>
+                {t('Tap a language to continue')}. {t('You can change this later in Settings.')}
+              </Text>
+            }
+            afterSpacing={0}
+          />
 
           <View style={styles.languageGrid}>
             {APP_LOCALES.map((locale) => {
@@ -83,30 +89,36 @@ export default function OnboardingScreen() {
                   testID={`language-option-${locale}`}
                   accessibilityRole="button"
                   accessibilityLabel={`${t('Select language')}: ${APP_LANGUAGE_LABELS[locale]}`}
+                  accessibilityHint={t('Select this language to continue')}
                   accessibilityState={{ selected, disabled: savingLanguage }}
                   disabled={savingLanguage}
                   onPress={() => void chooseLanguage(locale)}
                   style={({ pressed }) => [
                     styles.languageOption,
                     {
-                      backgroundColor: colors.card,
-                      borderColor: selected ? colors.tint : colors.border,
-                      borderRadius: colors.radius / 2,
+                      backgroundColor: colors.cosmos.card,
+                      borderColor: selected ? colors.cosmos.secondary : colors.cosmos.border,
                       opacity: pressed || savingLanguage ? 0.78 : 1,
                     },
                   ]}
                 >
                   <LanguageFlag locale={locale} />
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.languageOptionText, { color: colors.foreground }]}
-                  >
-                    {APP_LANGUAGE_LABELS[locale]}
-                  </Text>
                   {savingThis ? (
-                    <ActivityIndicator size="small" color={colors.tint} />
+                    <View style={[styles.languageStatus, { backgroundColor: colors.cosmos.homeBackground }]}>
+                      <ActivityIndicator size="small" color={colors.cosmos.secondary} />
+                    </View>
                   ) : selected ? (
-                    <Feather name="check" size={16} color={colors.tint} />
+                    <View
+                      style={[
+                        styles.languageStatus,
+                        {
+                          backgroundColor: colors.cosmos.homeBackground,
+                          borderColor: colors.cosmos.secondary,
+                        },
+                      ]}
+                    >
+                      <Feather name="check" size={11} color={colors.cosmos.secondary} />
+                    </View>
                   ) : null}
                 </Pressable>
               );
@@ -131,35 +143,35 @@ export default function OnboardingScreen() {
         Platform.OS === 'web' && { paddingTop: 67 },
       ]}
     >
-      <View style={styles.welcome}>
-        <Text style={styles.welcomeEyebrow}>{t('WELCOME')}</Text>
-        <Text style={styles.welcomeText}>
+      <View style={[styles.welcome, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.welcomeEyebrow, { color: colors.tint }]}>{t('WELCOME')}</Text>
+        <Text style={[styles.welcomeText, { color: colors.foreground }]}>
           {t('Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.')}
         </Text>
-        <Text style={styles.welcomeText}>
+        <Text style={[styles.welcomeText, { color: colors.foreground }]}>
           {t('Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.')}
         </Text>
-        <Text style={styles.welcomeNote}>
+        <Text style={[styles.welcomeNote, { color: colors.mutedForeground }]}>
           {t('No account is needed. Your profile, preferences, and stone collection stay on this device. Daily readings are worked out here. City search uses the internet. The Natal Chart is optional: if you agree, your birth details are sent to calculate it. The chart is saved here and updated only if you change those details.')}
         </Text>
       </View>
-      <ProfileForm initialDraft={onboardingDraft} submitLabel="Enter Soul Compass" onSubmit={submit} />
+      <ProfileForm initialDraft={onboardingDraft} includeResidence={false} submitLabel="Enter Soul Compass" onSubmit={submit} />
     </SafeAreaView>
   );
 }
 
 function LanguageFlag({ locale }: { locale: AppLocale }) {
+  const colors = useColors();
   if (locale === 'en') {
     return (
-      <View style={[styles.flag, { backgroundColor: '#012169' }]} accessibilityElementsHidden>
-        <View style={[styles.flagDiagonal, { backgroundColor: '#FFFFFF', transform: [{ rotate: '32deg' }] }]} />
-        <View style={[styles.flagDiagonal, { backgroundColor: '#FFFFFF', transform: [{ rotate: '-32deg' }] }]} />
-        <View style={[styles.flagDiagonalRed, { transform: [{ rotate: '32deg' }] }]} />
-        <View style={[styles.flagDiagonalRed, { transform: [{ rotate: '-32deg' }] }]} />
-        <View style={[styles.flagCrossHorizontal, { height: 7, backgroundColor: '#FFFFFF' }]} />
-        <View style={[styles.flagCrossVertical, { width: 7, backgroundColor: '#FFFFFF' }]} />
-        <View style={[styles.flagCrossHorizontal, { height: 3, backgroundColor: '#C8102E' }]} />
-        <View style={[styles.flagCrossVertical, { width: 3, backgroundColor: '#C8102E' }]} />
+      <View style={[styles.flagFrame, { borderColor: colors.border }]} accessibilityElementsHidden>
+        <Svg width={48} height={24} viewBox="0 0 60 30">
+          <Rect width="60" height="30" fill="#012169" />
+          <Path d="M0 0L60 30H47L0 6ZM60 0L0 30H13L60 6Z" fill="#FFFFFF" />
+          <Path d="M0 0L60 30H54L0 3ZM60 0L0 30H6L60 3Z" fill="#C8102E" />
+          <Path d="M30 0V30M0 15H60" stroke="#FFFFFF" strokeWidth="10" />
+          <Path d="M30 0V30M0 15H60" stroke="#C8102E" strokeWidth="6" />
+        </Svg>
       </View>
     );
   }
@@ -175,7 +187,7 @@ function LanguageFlag({ locale }: { locale: AppLocale }) {
   const design = bands[locale];
   return (
     <View
-      style={[styles.flag, { flexDirection: design.direction }]}
+      style={[styles.flag, { flexDirection: design.direction, borderColor: colors.border }]}
       accessibilityElementsHidden
     >
       {design.colors.map((color, index) => (
@@ -190,37 +202,50 @@ function LanguageFlag({ locale }: { locale: AppLocale }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  languageContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 30 },
-  languageBrand: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 22 },
-  languageBrandText: { fontSize: 11, letterSpacing: 2.1, fontWeight: '600' },
-  languageTitle: { fontSize: 30, lineHeight: 37, fontWeight: '400' },
-  languageDescription: { fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 24 },
-  languageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 },
+  languageContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 30 },
+  languageTitle: { fontSize: 32, lineHeight: 39, letterSpacing: -0.6 },
+  languageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 30 },
   languageOption: {
-    width: '48%',
-    minHeight: 62,
-    paddingHorizontal: 11,
-    flexDirection: 'row',
+    width: 64,
+    height: 64,
     alignItems: 'center',
-    gap: 9,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 18,
+    position: 'relative',
+  },
+  languageStatus: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
   },
-  languageOptionText: { flex: 1, fontSize: 14, fontWeight: '500' },
   languageError: { marginTop: 16, fontSize: 13, lineHeight: 19 },
   flag: {
-    width: 28,
-    height: 19,
+    width: 48,
+    height: 24,
     overflow: 'hidden',
-    borderRadius: 3,
+    borderRadius: 5,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(48, 52, 47, 0.18)',
   },
-  flagDiagonal: { position: 'absolute', width: 38, height: 4, top: 7, left: -5 },
-  flagDiagonalRed: { position: 'absolute', width: 38, height: 1.5, top: 8.2, left: -5, backgroundColor: '#C8102E' },
-  flagCrossHorizontal: { position: 'absolute', top: 6, left: 0, right: 0 },
-  flagCrossVertical: { position: 'absolute', top: 0, bottom: 0, left: 10 },
-  welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#DED9CE', backgroundColor: '#FBF8F1', gap: 6 },
-  welcomeEyebrow: { color: '#8A815F', fontSize: 10, letterSpacing: 1.8 },
-  welcomeText: { color: '#55574F', fontSize: 13, lineHeight: 19 },
-  welcomeNote: { color: '#77756F', fontSize: 12, lineHeight: 17 },
+  flagFrame: {
+    width: 48,
+    height: 24,
+    overflow: 'hidden',
+    borderRadius: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  flagDiagonal: { position: 'absolute', width: 62, height: 4, top: 10, left: -7 },
+  flagDiagonalRed: { position: 'absolute', width: 62, height: 1.8, top: 11.1, left: -7, backgroundColor: '#C8102E' },
+  flagCrossHorizontal: { position: 'absolute', top: 8, left: 0, right: 0 },
+  flagCrossVertical: { position: 'absolute', top: 0, bottom: 0, left: 20 },
+  welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
+  welcomeEyebrow: { fontSize: 10, letterSpacing: 1.8 },
+  welcomeText: { fontSize: 13, lineHeight: 19 },
+  welcomeNote: { fontSize: 12, lineHeight: 17 },
 });

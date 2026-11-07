@@ -3,13 +3,13 @@ name: Astrology profile rules
 description: Confirmed Soul Compass requirements for home location and unknown birth times.
 ---
 
-Collect a mandatory birthplace and store its city, country, coordinates, and IANA time zone separately from an optional current residence. Use birthplace for natal-chart inputs only; use current residence for local dates and location-dependent daily readings, never as a birthplace substitute. Do not infer or collect GPS location; the user chose a public city lookup initiated by typing a city, and only that city name is sent to the provider. Keep both locations independently editable. The current Open-Meteo free geocoding endpoint is limited to non-commercial use and has daily/hourly/minute request caps; retain GeoNames/Open-Meteo attribution and CC BY 4.0 notice. A commercial app must use an appropriately licensed provider plan.
+Collect a mandatory birthplace and store its city, country, coordinates, and IANA time zone separately from an optional current residence. Ask for birthplace during onboarding; manage current residence separately in Settings. Use birthplace only for natal-chart inputs. For daily readings, use the current residence time zone when set, otherwise fall back to the birthplace time zone so daily guidance and crystal suggestions remain available. Do not infer or collect GPS location. Keep both locations independently editable and retain the approved city-search provider’s attribution and privacy notice.
 
 Birth time is optional. Onboarding must include an explicit “I don't know my birth time” choice and permit continuing without a time. Store whether birth time is known instead of assigning an assumed time. Support timed and untimed charts throughout the astrology engine, horoscope generation, and crystal recommendations. For untimed charts, calculate and present only placements and transit relationships that remain reliable; do not claim accurate Ascendant, Midheaven, houses, or other time-sensitive interpretations. Explain the reduced precision, and let users add or correct their birth time later in profile settings.
 
-**Why:** the user confirmed these product and architecture decisions.
+**Why:** the user asked to keep first-run setup simple and make residence optional, while ensuring daily crystal guidance still appears without a residence.
 
-**How to apply:** carry these constraints through onboarding, profile storage and editing, calculation inputs, reading language, and crystal recommendation rules. Test both known-time and unknown-time profiles, ensuring natal inputs use birthplace and local reading dates use current residence only.
+**How to apply:** carry these constraints through onboarding, profile storage and Settings. Test that no residence is requested during onboarding, it can be edited or cleared in Settings, natal inputs always use birthplace, and daily local dates fall back to birthplace only when residence is unset.
 
 Retain MIT-licensed Astronomy Engine behind the existing provider boundary unless there is a compelling technical reason to replace it. Do not add Swiss Ephemeris, GPL/AGPL dependencies, paid APIs/datasets, or commercial ephemeris licensing. A limited independent comparison is not permission to claim universal precision or JPL DE-file usage.
 
@@ -29,11 +29,11 @@ When saved birth date, time, or birthplace changes, invalidate the old chart by 
 
 **How to apply:** keep chart refreshes keyed to birth date, time, and birthplace; refresh after a valid local save only while consent remains active, and test changes while a previous chart request is still in flight.
 
-For daily crystal suggestions, the current residence's time zone sets the local calendar date and stable daily tie-break. Planetary factors remain geocentric at the current instant; residence coordinates do not directly affect the stone score. Do not add location-specific crystal scoring without an evidence-backed method and a product decision.
+For daily crystal suggestions, the current residence's time zone sets the local calendar date when available; otherwise use the birthplace time zone. Planetary factors remain geocentric at the current instant, and neither city's coordinates directly affect the stone score. Do not add location-specific crystal scoring without an evidence-backed method and a product decision.
 
-**Why:** the product decision is to keep city coordinates out of crystal matching rather than imply that local horizons or other location-based astrological factors are part of the current method.
+**Why:** the user wants crystal guidance available without requiring a residence, while the existing method keeps city coordinates out of crystal matching.
 
-**How to apply:** describe the time-zone/date role plainly in the Stone Guide and product documentation; test that changing city coordinates without changing time zone does not change planetary factors or crystal matches.
+**How to apply:** describe the time-zone/date role plainly; test birthplace fallback, residence override, and that changing city coordinates without changing time zone does not change planetary factors or crystal matches.
 
 Natal Chart interpretation copy should be simple, personal, and understandable to people unfamiliar with astrology. Explain placements through recognizable qualities and everyday behavior instead of relying on astrology jargon.
 

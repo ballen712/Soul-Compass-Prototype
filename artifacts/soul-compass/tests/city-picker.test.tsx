@@ -6,6 +6,7 @@ vi.mock('../services/geocoding', () => ({ searchHomeCities: lookup }));
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator', Pressable: 'Pressable', Text: 'Text', TextInput: 'TextInput', View: 'View',
   StyleSheet: { create: (styles: unknown) => styles }, Linking: { openURL: vi.fn() },
+  useColorScheme: () => 'light',
 }));
 import { HomeCityPicker } from '../components/HomeCityPicker';
 let renderer: ReactTestRenderer;

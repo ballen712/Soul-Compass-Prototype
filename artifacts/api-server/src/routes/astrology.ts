@@ -5,6 +5,11 @@ import { calculateNatalChart } from "../astrology/natal";
 const router: IRouter = Router();
 
 router.get("/astrology/health", (_req, res) => {
+  if (process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production") {
+    res.json({ status: "ok" });
+    return;
+  }
+
   res.json({
     status: "ok",
     provider: "astronomy-engine",

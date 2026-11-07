@@ -175,6 +175,7 @@ export class LocalProfileStore {
     const baseline = this.snapshot.record.preferences;
     const different = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
     const languageChanged = different(baseline.language, preferences.language);
+    const appearanceChanged = different(baseline.appearance, preferences.appearance);
     const collectionChanged = different(baseline.crystalCollection, preferences.crystalCollection);
     const hiddenChanged = different(baseline.crystalPreferences.hiddenCrystals, preferences.crystalPreferences.hiddenCrystals);
     const feelingChanged = different(baseline.crystalPreferences.feeling, preferences.crystalPreferences.feeling);
@@ -182,6 +183,7 @@ export class LocalProfileStore {
     return this.update(record => ({
       ...record, preferences: PreferencesSchema.parse({
         language: languageChanged ? preferences.language : record.preferences.language,
+        appearance: appearanceChanged ? preferences.appearance : record.preferences.appearance,
         crystalCollection: collectionChanged ? preferences.crystalCollection : record.preferences.crystalCollection,
         crystalPreferences: {
           intentions: [],

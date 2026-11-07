@@ -55,7 +55,7 @@ export function FirstRunAppGuide() {
       statusBarTranslucent
       onRequestClose={() => void dismiss()}
     >
-      <View style={[styles.backdrop, { backgroundColor: 'rgba(7, 11, 19, 0.78)' }]}>
+      <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
         <SafeAreaView style={styles.safeArea}>
           <View
             accessibilityViewIsModal
@@ -98,9 +98,9 @@ export function FirstRunAppGuide() {
               testID="first-run-guide-start"
               accessibilityRole="button"
               onPress={() => void dismiss()}
-              style={[styles.action, { backgroundColor: colors.cosmos.secondary }]}
+              style={[styles.action, { backgroundColor: colors.primary }]}
             >
-              <Text style={[styles.actionText, { color: colors.cosmos.background }]}>
+              <Text style={[styles.actionText, { color: colors.primaryForeground }]}>
                 {t('Explore the app')}
               </Text>
             </Pressable>

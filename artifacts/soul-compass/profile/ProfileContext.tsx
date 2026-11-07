@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useContext, useEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { LocalProfileStore } from './storage';
-import { ProfileContext } from './context';
+import { AppearanceContext, ProfileContext } from './context';
 
 function useLocalStore() {
   const ref = useRef<LocalProfileStore | null>(null);
@@ -41,7 +41,11 @@ export function ProfileProvider({ children }: PropsWithChildren) {
     });
     return () => { clearTimeout(timer); subscription.remove(); };
   }, [store]);
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <AppearanceContext.Provider value={value.preferences.appearance}>
+      <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
+    </AppearanceContext.Provider>
+  );
 }
 export function useProfile() {
   const value = useContext(ProfileContext);

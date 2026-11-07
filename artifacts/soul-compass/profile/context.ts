@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 import type { ProfileFormDraft, UserProfile } from './profile';
 import type { LocalPreferences, LocalPrivacy } from './local';
+import type { AppearancePreference } from './local';
 import type { LocalProfileStore } from './storage';
 
 export type ProfileContextValue = {
@@ -23,3 +24,4 @@ export type ProfileContextValue = {
 };
 // Keep context identity outside the refreshable component/hook module.
 export const ProfileContext = createContext<ProfileContextValue | null>(null);
+export const AppearanceContext = createContext<AppearancePreference>('system');

@@ -11,6 +11,9 @@ function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'soul-compass-static-build-'));
   temporaryDirectories.push(root);
   const output = path.join(root, 'static-build');
+  const iconPath = path.join(output, timestamp, 'assets', 'assets', 'images', 'icon.png');
+  fs.mkdirSync(path.dirname(iconPath), { recursive: true });
+  fs.writeFileSync(iconPath, 'fixture-icon');
   for (const platform of ['ios', 'android']) {
     const bundleDirectory = path.join(output, timestamp, '_expo', 'static', 'js', platform);
     fs.mkdirSync(bundleDirectory, { recursive: true });
@@ -21,6 +24,11 @@ function createFixture() {
         url: `https://example.test/${timestamp}/_expo/static/js/${platform}/bundle.js`,
       },
       assets: [],
+      extra: {
+        expoClient: {
+          iconUrl: `https://example.test/${timestamp}/assets/assets/images/icon.png`,
+        },
+      },
     };
     fs.mkdirSync(path.join(output, platform), { recursive: true });
     fs.writeFileSync(path.join(output, platform, 'manifest.json'), JSON.stringify(manifest));
@@ -29,7 +37,11 @@ function createFixture() {
 }
 
 function validate(output: string) {
-  return validateStaticBuild({ staticBuildDir: output, timestamp });
+  return validateStaticBuild({
+    staticBuildDir: output,
+    timestamp,
+    expectedApiOrigin: undefined,
+  });
 }
 
 afterEach(() => {
@@ -77,6 +89,29 @@ describe('native static-build integrity', () => {
     expect(validate(output)).toBe(true);
   });
 
+  test('rejects a native bundle without its configured production API origin', () => {
+    const output = createFixture();
+    expect(() =>
+      validateStaticBuild({
+        staticBuildDir: output,
+        timestamp,
+        expectedApiOrigin: 'https://example.test',
+      }),
+    ).toThrow(/does not contain the configured production API origin/);
+
+    for (const platform of ['ios', 'android']) {
+      const bundlePath = path.join(output, timestamp, '_expo', 'static', 'js', platform, 'bundle.js');
+      fs.writeFileSync(bundlePath, `const apiOrigin="https://example.test";`);
+    }
+    expect(
+      validateStaticBuild({
+        staticBuildDir: output,
+        timestamp,
+        expectedApiOrigin: 'https://example.test',
+      }),
+    ).toBe(true);
+  });
+
   test('rejects an empty or missing platform bundle', () => {
     const emptyOutput = createFixture();
     fs.writeFileSync(
@@ -88,6 +123,16 @@ describe('native static-build integrity', () => {
     const missingOutput = createFixture();
     fs.rmSync(path.join(missingOutput, timestamp, '_expo', 'static', 'js', 'android', 'bundle.js'));
     expect(() => validate(missingOutput)).toThrow(/does not resolve to a generated file/);
+  });
+
+  test('rejects a manifest icon that does not resolve to a generated file', () => {
+    const output = createFixture();
+    const manifestPath = path.join(output, 'ios', 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest.extra.expoClient.iconUrl =
+      `https://example.test/${timestamp}/assets/assets/images/missing.png`;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+    expect(() => validate(output)).toThrow(/Expo Go icon does not resolve to a generated file/);
   });
 
   test('rejects missing, traversal, and escaped asset references', () => {

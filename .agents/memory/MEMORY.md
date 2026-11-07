@@ -1,13 +1,14 @@
 - [Expo Go tunnels](expo-go-tunnels.md) — Use a public Expo tunnel for iPhone testing; Replit development hostnames may not resolve on-device.
-- [Astrology profile rules](astrology-profile-rules.md) — Preserve birth-time precision; current-city coordinates do not directly affect crystal matching.
+- [Astrology profile rules](astrology-profile-rules.md) — Residence is optional in Settings; daily dates use its time zone when set, otherwise the birthplace time zone.
 - [Security boundaries](security-boundaries.md) — No paid security products, unnecessary third-party birth-data disclosure, or weakened protections to clear scans.
 - [Local-first product](local-first-product.md) — Registration-free AsyncStorage app; birth-data requests require revocable consent; dormant Supabase infrastructure stays untouched.
 - [Post-merge verification](post-merge-verification.md) — Setup success alone does not guarantee services started; check actual workflow status and logs.
 - [Launch boundaries](launch-scope.md) — Keep Cosmos grounded: full-page stars, blue cards, a concise header, and no blank footer.
 - [City-provider scope](city-provider-scope.md) — Geoapify Free is owner-approved; keep keys server-only and distinguish public terms from unverified account-wide usage.
-- [Quota storage scope](quota-storage-scope.md) — Usage-based PostgreSQL approved for operational counters only; test distinct real processes and keep production verification separate.
+- [Quota storage scope](quota-storage-scope.md) — Usage-based PostgreSQL is approved for Geoapify quotas and global astrology limits; test distinct processes and verify production separately.
 - [Workspace dependency links](workspace-dependency-links.md) — Check pnpm links and catalog compatibility before interpreting missing test/type packages as source errors.
 - [Birth input cursor behavior](birth-input-cursor.md) — Keep date and time digit-first formatting automatic without cursor jumps during typing, editing, deletion, or paste.
 - [Onboarding-gated visual checks](onboarding-gated-visual-tests.md) — Use an isolated browser profile with synthetic local data and revoked consent; this does not replace native device testing.
 - [Crystal catalog return position](crystal-catalog-return.md) — Keep the list mounted under details and center the opened stone; remounting can lose virtualized row measurements.
 - [Equal-width tab navigation](equal-width-tab-navigation.md) — Keep four localized tabs in equal-width Classic Tabs; consistency outweighs iOS 26 Liquid Glass.
+- [Localization dictionary precedence](localization-dictionary-precedence.md) — Keep established locale maps ahead of supplemental screen, natal, and daily-copy dictionaries to avoid overwriting reviewed wording.

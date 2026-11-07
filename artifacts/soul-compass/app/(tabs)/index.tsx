@@ -1,22 +1,21 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useRef, useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions, type ScrollViewInstance } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Modal, ScrollView, StyleSheet, Text, View, Platform, Pressable, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
+import { CelestialHeader } from '@/components/CelestialHeader';
 import { dailyReading } from '@/constants/content';
 import { getDailyRituals } from '@/constants/daily-rituals';
-import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
-import cosmosArt from '../../assets/images/cosmos-starfield.jpg';
+import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
-import { useAppText } from '@/localization';
+import { formatAppText, useAppLocale, useAppText } from '@/localization';
 
 const reflectionExplanations: Record<string, string> = {
   'Focus on one thing at a time.':
@@ -67,6 +66,7 @@ export default function CosmosScreen() {
   useScrollToTop(scrollRef);
   const colors = useColors();
   const t = useAppText();
+  const locale = useAppLocale();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const { profile } = useProfile();
@@ -80,11 +80,29 @@ export default function CosmosScreen() {
   const calculatedReading =
     astrology?.status === 'calculated' ? astrology.reading : null;
   const reading = calculatedReading ?? dailyReading;
+  const readingBody = (() => {
+    const transitBody = /^Today highlights (.+?)\. (.+)$/.exec(reading.body);
+    if (transitBody) {
+      return formatAppText('Today highlights {theme}. {explanation}', locale, {
+        theme: t(transitBody[1]),
+        explanation: t(transitBody[2]),
+      });
+    }
+    const natalBody = /^Your (.+) (sun|moon|mercury|venus|mars|jupiter|saturn|uranus|neptune|pluto) themes offer a starting point for noticing what feels familiar\. You still choose the direction\.$/i.exec(reading.body);
+    if (natalBody) {
+      const planet = natalBody[2].charAt(0).toUpperCase() + natalBody[2].slice(1).toLowerCase();
+      return formatAppText('Your {sign} {planet} themes offer a starting point for noticing what feels familiar. You still choose the direction.', locale, {
+        sign: t(natalBody[1]),
+        planet: t(planet),
+      });
+    }
+    return t(reading.body);
+  })();
   const ritualChoices = getDailyRituals(now, 4);
   const dailyRitual = ritualChoices[0] ?? 'Take three easy breaths before beginning a task.';
   const pageWidth = Math.min(windowWidth - SCREEN_HORIZONTAL_GUTTER * 2, 480);
   const heroBleed = Math.max(0, (windowWidth - pageWidth) / 2);
-  const heroHeight = Math.round(windowHeight * 0.46);
+  const heroHeight = Math.round(windowHeight * 0.42);
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const detail: Detail | null = activeDetail === 'reflection'
     ? {
@@ -114,7 +132,7 @@ export default function CosmosScreen() {
         { backgroundColor: colors.cosmos.homeBackground },
       ]}
     >
-      <StatusBar style="light" />
+      <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
       <View
         pointerEvents="none"
         accessible={false}
@@ -127,7 +145,7 @@ export default function CosmosScreen() {
             style={[
               styles.starDot,
               {
-                backgroundColor: colors.cosmos.foreground,
+                 backgroundColor: colors.cosmos.star,
                 height: star.size,
                 left: `${star.x * 100}%`,
                 opacity: star.opacity,
@@ -153,30 +171,16 @@ export default function CosmosScreen() {
         accessibilityLabel={t('Daily reflection')}
       >
         <View style={styles.page}>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.heroArt,
-              {
-                top: -(topInset + 18),
-                left: -heroBleed,
-                right: -heroBleed,
-                height: heroHeight,
-              },
-            ]}
-          >
-            <Image
-              source={cosmosArt}
-              accessibilityLabel={t('A quiet field of stars in a deep navy sky')}
-              resizeMode="cover"
-              style={styles.heroImage}
-            />
-            <LinearGradient
-              colors={['transparent', 'transparent', colors.cosmos.homeBackground]}
-              locations={[0, 0.46, 1]}
-              style={styles.heroFade}
-            />
-          </View>
+          <CelestialHeader
+            width={windowWidth}
+            testID="cosmos-celestial-header"
+            height={heroHeight}
+            style={{
+              top: -(topInset + 18),
+              left: -heroBleed,
+              right: -heroBleed,
+            }}
+          />
           <TabScreenHeader
             title="Today’s reflection"
             titleColor={colors.cosmos.foreground}
@@ -218,7 +222,7 @@ export default function CosmosScreen() {
                   { color: colors.cosmos.mutedForeground },
                 ]}
               >
-                {t(reading.body)}
+                {readingBody}
               </Text>
             </Pressable>
             {astrology?.status === 'unavailable' ? (
@@ -367,7 +371,7 @@ export default function CosmosScreen() {
             pointerEvents="none"
             style={[
               styles.modalScrim,
-              { backgroundColor: colors.cosmos.foreground },
+              { backgroundColor: colors.scrim },
             ]}
           />
           {detail ? (
@@ -434,24 +438,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: SCREEN_HORIZONTAL_GUTTER,
-    paddingBottom: 24,
+    paddingBottom: TAB_SCREEN_SCROLL_BOTTOM_GUTTER,
   },
   page: {
     width: '100%',
     maxWidth: 480,
-  },
-  heroArt: {
-    overflow: 'hidden',
-    position: 'absolute',
-  },
-  heroImage: {
-    height: '100%',
-    position: 'absolute',
-    width: '100%',
-    top: 0,
-  },
-  heroFade: {
-    ...StyleSheet.absoluteFill,
   },
   starLayer: {
     ...StyleSheet.absoluteFill,
@@ -647,7 +638,6 @@ const styles = StyleSheet.create({
   },
   modalScrim: {
     ...StyleSheet.absoluteFill,
-    opacity: 0.28,
   },
   detailCard: {
     alignSelf: 'center',

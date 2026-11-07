@@ -1,13 +1,14 @@
 import type { RequestHandler } from "express";
 
-/** Bounded per-process limiter. Proxy peers deliberately share a bucket:
- * untrusted X-Forwarded-For must never let clients mint new identities. */
-export function calculationRateLimit(maxRequests = 120, windowMs = 60_000): RequestHandler {
+/** Bounded per-process limiter for legacy authenticated profile routes only.
+ * Do not use a proxy socket address as a calculation identity: many app users
+ * can share that address. Calculation capacity is guarded by the shared DB
+ * limiter instead. */
+export function profileRateLimit(maxRequests = 120, windowMs = 60_000): RequestHandler {
   const buckets = new Map<string, { count: number; expires: number }>();
   return (req, res, next) => {
-    const calculation = req.method === "POST" && ["/api/astrology/positions", "/api/astrology/natal-chart"].includes(req.path);
     const privateRequest = req.path.startsWith("/api/me/") && req.method !== "OPTIONS";
-    if (!calculation && !privateRequest) return next();
+    if (!privateRequest) return next();
     const now = Date.now();
     for (const [key, bucket] of buckets) if (bucket.expires <= now) buckets.delete(key);
     const key = req.socket.remoteAddress ?? "unknown";

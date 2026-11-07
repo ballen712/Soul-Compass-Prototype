@@ -3,6 +3,9 @@ import { useProfile } from '@/profile/ProfileContext';
 import { cosmosTranslations } from './cosmos';
 import crystalUiTranslations from './crystal-ui-translations.json';
 import { onboardingTranslations } from './onboarding';
+import { screenTranslations } from './screen-copy';
+import { natalTranslations } from './natal-copy';
+import { dailyReadingTranslations } from './daily-copy';
 
 export const APP_LOCALES = ['en', 'hu', 'it', 'de', 'fr', 'es', 'ru'] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
@@ -396,7 +399,20 @@ export function translateText(source: string, locale: AppLocale): string {
     ?? cosmosTranslations[locale][source]
     ?? onboardingTranslations[locale][source]
     ?? crystalUiCopy[locale]?.[source]
+    ?? screenTranslations[locale][source]
+    ?? natalTranslations[locale][source]
+    ?? dailyReadingTranslations[locale][source]
     ?? source;
+}
+
+export function formatAppText(
+  source: string,
+  locale: AppLocale,
+  values: Record<string, string | number>,
+): string {
+  return translateText(source, locale).replace(/\{([^}]+)\}/g, (token, key: string) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : token,
+  );
 }
 
 export function AppLocaleProvider({ children }: PropsWithChildren) {

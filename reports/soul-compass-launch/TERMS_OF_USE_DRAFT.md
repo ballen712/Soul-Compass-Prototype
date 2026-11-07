@@ -3,7 +3,7 @@
 > **Working outline only; not for publication or acceptance in the app.** The operator identity, governing law, consumer rights and liability wording require review by a qualified adviser in the relevant jurisdiction.
 
 **Effective date:** [DATE]
-**Operator:** Vadim Shelokhanov
+**Operator:** Vadim Shelokhanov (individual)
 **Country:** Hungary
 **Contact address:** Budapest, Gombocz Zoltan, 1118
 **Support:** soulcompass.support@gmail.com
@@ -55,7 +55,7 @@ Questions: soulcompass.support@gmail.com.
 
 ## Legal review required before publication
 
-- Confirm whether the operator acts as an individual or through a registered business, the completeness of the public address, ownership of app/content, and governing law.
+- Confirm the completeness of the public address, ownership of app/content, and governing law.
 - Confirm consumer information and withdrawal requirements for the chosen distribution countries.
 - Review fair and lawful limitation-of-liability wording; no liability waiver has been drafted here.
 - The owner selected a 13+ intended audience; review child-consent rules and confirm store content ratings and rights to all product content.

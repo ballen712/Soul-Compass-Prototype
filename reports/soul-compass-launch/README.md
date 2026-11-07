@@ -39,7 +39,7 @@ Replit's August 2026 billing documentation describes Autoscale charges as a mont
 
 ## Do not publish until these are resolved
 
-1. The owner supplied the operator name, country, public contact address and selected a 13+ intended audience. Confirm individual-versus-business status, ownership, child-consent rules and age ratings with qualified counsel.
+1. The owner identified as an individual operator and supplied the country, public contact address and 13+ intended audience. Confirm address completeness, app/content ownership, child-consent rules and age ratings with qualified counsel.
 2. Verify Replit, Geoapify and any other provider's data locations, subprocessors, log retention, applicable agreements/DPA and transfer terms. Confirm actual production quota-database retention and backup configuration.
 3. Review the legal bases and user-rights process with an EU/Hungary privacy professional. Do not describe the app as GDPR-compliant based on these drafts.
 4. Confirm the current public deployment has been restricted if private testing is still the goal. Do not share its public URL in the meantime.

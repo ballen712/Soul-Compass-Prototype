@@ -4,7 +4,7 @@
 
 **Last updated:** [PUBLICATION DATE]
 **Effective date:** [EFFECTIVE DATE]
-**Controller / operator:** Vadim Shelokhanov
+**Controller / operator:** Vadim Shelokhanov (individual)
 **Country:** Hungary
 **Postal/contact address:** Budapest, Gombocz Zoltan, 1118
 **Privacy contact:** soulcompass.support@gmail.com
@@ -91,8 +91,8 @@ Privacy and support contact: soulcompass.support@gmail.com. Please do not email 
 
 ## Owner/legal review checklist — remove this block from the public policy
 
-- Confirm whether the operator acts as an individual or through a registered business, and confirm rights to the app and its content.
-- Confirm the public contact address, publication/effective dates and stable policy URL before publication.
+- Confirm the operator's rights to the app and its content.
+- Confirm the supplied public contact address is complete, plus publication/effective dates and stable policy URL before publication.
 - Confirm the supplied postal address is complete and can receive legal notices.
 - The owner selected a 13+ intended audience. Have a qualified adviser review child-consent rules and align store age ratings before release.
 - Verify production Replit logs, database retention/backups, region and provider agreement.

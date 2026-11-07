@@ -58,7 +58,7 @@ Review processor terms/DPA, subprocessors, data regions and transfer safeguards 
 
 ## 6. Facts that must be confirmed before final store disclosures
 
-1. Confirm whether the named operator acts as an individual or through a registered business and who owns the Soul Compass app, brand and content.
+1. Confirm who owns the Soul Compass app, brand and content; the named operator has identified as an individual.
 2. Verify Replit production and edge-log retention, database backup retention and actual deletion behavior.
 3. Verify Geoapify account settings, current terms, applicable DPA/processor role, retention and account-wide quota.
 4. Confirm whether any Supabase Auth provider remains enabled and whether any users have been invited.

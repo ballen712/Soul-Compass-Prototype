@@ -56,13 +56,12 @@ The consent control in the app is a useful product safeguard, not a guarantee of
 
 Review processor terms/DPA, subprocessors, data regions and transfer safeguards for Replit and Geoapify. Confirm how support requests, accountless local data and deletion requests will be handled. Consider a DPIA only if the final scope and scale make the processing likely to create high risk; obtain professional advice rather than assuming one is or is not required.
 
-## 6. Facts that must be supplied or verified before final store disclosures
+## 6. Facts that must be confirmed before final store disclosures
 
-1. Controller/publisher legal name, country and public contact address.
-2. Whether the publisher is an individual or registered business and who owns Soul Compass content/brand.
-3. Intended minimum age / target audience.
-4. Replit production and edge-log retention, database backup retention and actual deletion behavior.
-5. Geoapify account settings, current terms, applicable DPA/processor role, retention and account-wide quota.
-6. Whether any Supabase Auth provider remains enabled and whether any users have been invited.
-7. Final production API hostname and how an App Store user can reach it without embedding a private Replit access token.
-8. Final legal basis, user-rights process, international transfer language and local-language translations.
+1. Confirm whether the named operator acts as an individual or through a registered business and who owns the Soul Compass app, brand and content.
+2. Verify Replit production and edge-log retention, database backup retention and actual deletion behavior.
+3. Verify Geoapify account settings, current terms, applicable DPA/processor role, retention and account-wide quota.
+4. Confirm whether any Supabase Auth provider remains enabled and whether any users have been invited.
+5. Finalize the production API hostname and how an App Store user can reach it without embedding a private Replit access token.
+6. Confirm legal bases, user-rights process, international transfer language and local-language translations with qualified counsel.
+7. The owner selected a 13+ intended audience; review child-consent rules and align the store ratings with qualified counsel.

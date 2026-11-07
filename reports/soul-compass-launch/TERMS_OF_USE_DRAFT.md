@@ -3,8 +3,9 @@
 > **Working outline only; not for publication or acceptance in the app.** The operator identity, governing law, consumer rights and liability wording require review by a qualified adviser in the relevant jurisdiction.
 
 **Effective date:** [DATE]
-**Operator:** [LEGAL NAME / BUSINESS NAME]
-**Contact address:** [ADDRESS]
+**Operator:** Vadim Shelokhanov
+**Country:** Hungary
+**Contact address:** Budapest, Gombocz Zoltan, 1118
 **Support:** soulcompass.support@gmail.com
 **Terms URL:** [PUBLIC HTTPS URL]
 
@@ -44,7 +45,7 @@ No paid features are currently enabled. If paid digital readings, subscriptions 
 
 ## 7. Age suitability
 
-**Minimum age / intended audience:** [OWNER DECISION REQUIRED; ALIGN WITH APP STORE AND GOOGLE PLAY CONTENT-RATING ANSWERS.]
+Soul Compass is intended for users aged 13 and older and is not intended for children under 13. Applicable child-consent requirements and store age ratings must be reviewed before publication.
 
 ## 8. Updates and contact
 
@@ -54,8 +55,8 @@ Questions: soulcompass.support@gmail.com.
 
 ## Legal review required before publication
 
-- Confirm operator identity, legal address and governing law.
+- Confirm whether the operator acts as an individual or through a registered business, the completeness of the public address, ownership of app/content, and governing law.
 - Confirm consumer information and withdrawal requirements for the chosen distribution countries.
 - Review fair and lawful limitation-of-liability wording; no liability waiver has been drafted here.
-- Confirm age audience, content rating and rights to all product content.
+- The owner selected a 13+ intended audience; review child-consent rules and confirm store content ratings and rights to all product content.
 - Add an accessible in-app link and a public HTTPS URL.

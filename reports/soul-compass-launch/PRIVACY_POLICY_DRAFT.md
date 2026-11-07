@@ -4,8 +4,9 @@
 
 **Last updated:** [PUBLICATION DATE]
 **Effective date:** [EFFECTIVE DATE]
-**Controller:** [LEGAL NAME OF THE PERSON OR LEGAL ENTITY OPERATING SOUL COMPASS]
-**Postal/contact address:** [PUBLIC BUSINESS OR CONTROLLER ADDRESS]
+**Controller / operator:** Vadim Shelokhanov
+**Country:** Hungary
+**Postal/contact address:** Budapest, Gombocz Zoltan, 1118
 **Privacy contact:** soulcompass.support@gmail.com
 **Policy URL:** [STABLE PUBLIC HTTPS URL]
 
@@ -78,7 +79,7 @@ Depending on your location and the applicable law, you may have rights to access
 
 ## 10. Children and age suitability
 
-**Minimum age and intended audience:** [OWNER DECISION REQUIRED. Complete the age rating and any child-directed-service assessment before publication.]
+Soul Compass is intended for users aged 13 and older and is not intended for children under 13. This age statement is subject to review of applicable child-consent rules, store age ratings and the final content.
 
 ## 11. Changes and contact
 
@@ -90,7 +91,10 @@ Privacy and support contact: soulcompass.support@gmail.com. Please do not email 
 
 ## Owner/legal review checklist — remove this block from the public policy
 
-- Replace controller, address, date, URL and age placeholders.
+- Confirm whether the operator acts as an individual or through a registered business, and confirm rights to the app and its content.
+- Confirm the public contact address, publication/effective dates and stable policy URL before publication.
+- Confirm the supplied postal address is complete and can receive legal notices.
+- The owner selected a 13+ intended audience. Have a qualified adviser review child-consent rules and align store age ratings before release.
 - Verify production Replit logs, database retention/backups, region and provider agreement.
 - Verify Geoapify retention/role/DPA and current account configuration.
 - Decide and document legal bases; review EU rights and international transfers.

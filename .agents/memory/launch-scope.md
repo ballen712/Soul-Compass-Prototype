@@ -9,6 +9,12 @@ Finish important existing product gaps and preserve the Soul Compass design iden
 
 **How to apply:** implement safe scoped corrections, but request approval before major new functionality, paid services, architecture changes, data deletion or external-infrastructure changes. Do not publish or incur costs without explicit approval. Keep traditional astrology/crystal meanings separate from scientifically established facts, and never present sample content or incomplete translations as finished personalized functionality.
 
+The owner selected 13+ as Soul Compass's intended minimum audience.
+
+**Why:** the owner supplied this age choice while preparing the app's privacy and terms drafts.
+
+**How to apply:** use 13+ as the current draft audience, but do not imply age verification or legal compliance; have qualified counsel review minor-consent rules and align store ratings before release.
+
 Keep Cosmos copy concise—one reflection heading, one short daily message, then “A moment to keep”—but keep the page complete and intentional rather than visually stripped down. Let the selected daily feeling, available transit theme, and saved intentions inform crystal suggestions; describe stones as symbolic prompts, not as having guaranteed effects.
 
 **Why:** the user asked for daily feeling states to affect crystal picks alongside transits, while keeping the reading simple and grounded.

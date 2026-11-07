@@ -13,7 +13,7 @@ paths = [ "/" ]
 localPort = 20060
 
 [services.development]
-run = "pnpm --filter @workspace/soul-compass run dev"
+run = "pnpm --filter @workspace/soul-compass run dev:web"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/soul-compass", "run", "build" ]

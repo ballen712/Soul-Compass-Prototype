@@ -57,9 +57,38 @@ const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
 
 type Detail = {
   title?: string;
-  body: string;
+  lead?: string;
+  body?: string;
   examples: string[];
 };
+
+function InfoButton({
+  testID,
+  label,
+  hint,
+  color,
+  onPress,
+}: {
+  testID: string;
+  label: string;
+  hint: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={hint}
+      hitSlop={6}
+      onPress={onPress}
+      style={styles.infoCircle}
+    >
+      <Feather name="info" size={15} color={color} />
+    </Pressable>
+  );
+}
 
 export default function CosmosScreen() {
   const scrollRef = useRef<ScrollViewInstance | null>(null);
@@ -71,7 +100,9 @@ export default function CosmosScreen() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const { profile } = useProfile();
   const router = useRouter();
-  const [activeDetail, setActiveDetail] = useState<'reflection' | 'moment' | 'ritual' | null>(null);
+  const [activeDetail, setActiveDetail] = useState<
+    'reflection' | 'focus' | 'caution' | 'moment' | 'ritual' | 'ideas' | null
+  >(null);
   const now = useLocalClock();
   const astrology = useMemo(
     () => (profile ? getDailyAstrology(profile, now) : null),
@@ -106,20 +137,38 @@ export default function CosmosScreen() {
   const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
   const detail: Detail | null = activeDetail === 'reflection'
     ? {
+        title: reading.title,
         body: reflectionExplanations[reading.title] ??
           'This reading is one way to think about the day’s theme and how it might connect with your life. It is not a prediction or instruction. Keep what feels useful and leave the rest.',
         examples: [],
       }
+    : activeDetail === 'focus'
+      ? {
+          lead: reading.favorableFocus,
+          body: 'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.',
+          examples: [],
+        }
+      : activeDetail === 'caution'
+        ? {
+            lead: reading.gentleCaution,
+            body: 'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.',
+            examples: [],
+          }
     : activeDetail === 'moment'
       ? {
+            lead: reading.reflection,
           body: 'This prompt connects today’s reflection with something real in your life. Think of a task, conversation, or choice that brings the theme to mind. You can sit with the question, write a few words, or leave it unanswered. There is no right answer and no need to act right away.',
           examples: [],
         }
-      : activeDetail === 'ritual'
+        : activeDetail === 'ritual'
         ? {
-            title: 'Other ideas for today',
-            body: 'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.',
-            examples: ritualChoices.slice(1),
+              lead: dailyRitual,
+              body: 'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.',
+              examples: [],
+            }
+          : activeDetail === 'ideas'
+            ? {
+          examples: ritualChoices.slice(1),
           }
         : null;
 
@@ -188,6 +237,7 @@ export default function CosmosScreen() {
           />
 
           <View
+            testID="cosmos-day-card"
             style={[
               styles.readingCard,
               {
@@ -196,35 +246,41 @@ export default function CosmosScreen() {
               },
             ]}
           >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Read more about today’s reflection')}
-              accessibilityHint={t('Opens a simple explanation of the daily reading')}
-              onPress={() => setActiveDetail('reflection')}
-              style={styles.reflectionPrompt}
-            >
-              <View style={styles.readingHeadingRow}>
-                <Text
-                  style={[
-                    styles.readingTitle,
-                    { color: colors.cosmos.foreground },
-                  ]}
-                >
-                  {t(reading.title)}
-                </Text>
-                <View style={styles.infoCircle}>
-                  <Feather name="info" size={15} color={colors.cosmos.secondary} />
+            <View style={styles.reflectionPrompt}>
+              <View style={styles.readingHeadingRow} testID="cosmos-heading-reflection">
+                <View style={styles.readingHeadingCopy}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setActiveDetail('reflection')}
+                    style={styles.reflectionCopy}
+                  >
+                    <Text
+                      style={[
+                        styles.readingTitle,
+                        { color: colors.cosmos.foreground },
+                      ]}
+                    >
+                      {t(reading.title)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.readingBody,
+                        { color: colors.cosmos.mutedForeground },
+                      ]}
+                    >
+                      {readingBody}
+                    </Text>
+                  </Pressable>
                 </View>
+                <InfoButton
+                  testID="cosmos-info-reflection"
+                  label={t('Read more about today’s reflection')}
+                  hint={t('Opens a simple explanation of the daily reading')}
+                  color={colors.cosmos.secondary}
+                  onPress={() => setActiveDetail('reflection')}
+                />
               </View>
-              <Text
-                style={[
-                  styles.readingBody,
-                  { color: colors.cosmos.mutedForeground },
-                ]}
-              >
-                {readingBody}
-              </Text>
-            </Pressable>
+            </View>
             {astrology?.status === 'unavailable' ? (
               <Text style={[styles.calculationNote, { color: colors.cosmos.mutedForeground }]}>
                 {t('Your personal reading isn’t available right now. Check your saved details in Settings.')}
@@ -257,9 +313,18 @@ export default function CosmosScreen() {
               />
 
               <View style={styles.guidanceSection}>
-                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
-                  {t('FOCUS FOR TODAY')}
-                </Text>
+                <View style={styles.guidanceHeading} testID="cosmos-heading-focus">
+                  <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                    {t('Focus for today')}
+                  </Text>
+                  <InfoButton
+                    testID="cosmos-info-focus"
+                    label={t('Read more about today’s focus')}
+                    hint={t('Opens a deeper note about the daily focus')}
+                    color={colors.cosmos.secondary}
+                    onPress={() => setActiveDetail('focus')}
+                  />
+                </View>
                 <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
                   {t(reading.favorableFocus)}
                 </Text>
@@ -274,9 +339,18 @@ export default function CosmosScreen() {
               />
 
               <View style={styles.guidanceSection}>
-                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
-                  {t('WHAT TO LEAVE FOR LATER')}
-                </Text>
+                <View style={styles.guidanceHeading} testID="cosmos-heading-caution">
+                  <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                    {t('What to leave for later')}
+                  </Text>
+                  <InfoButton
+                    testID="cosmos-info-caution"
+                    label={t('Read more about what to leave for later')}
+                    hint={t('Opens a gentle note about what can wait')}
+                    color={colors.cosmos.secondary}
+                    onPress={() => setActiveDetail('caution')}
+                  />
+                </View>
                 <Text style={[styles.guidanceText, { color: colors.cosmos.foreground }]}>
                   {t(reading.gentleCaution)}
                 </Text>
@@ -289,22 +363,25 @@ export default function CosmosScreen() {
                 { backgroundColor: colors.cosmos.border },
               ]}
             />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Read more about A moment to keep')}
-              accessibilityHint={t('Opens a simple explanation')}
-              onPress={() => setActiveDetail('moment')}
-              style={styles.reflectionRow}
-            >
-              <View style={styles.reflectionCopy}>
-                <Text
-                  style={[
-                    styles.reflectionLabel,
-                    { color: colors.cosmos.secondary },
-                  ]}
-                >
-                  {t('A MOMENT TO KEEP')}
+            <View style={styles.reflectionSection}>
+              <View style={styles.guidanceHeading} testID="cosmos-heading-moment">
+                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                  {t('A moment to keep')}
                 </Text>
+                <InfoButton
+                  testID="cosmos-info-moment"
+                  label={t('Read more about A moment to keep')}
+                  hint={t('Opens a simple explanation')}
+                  color={colors.cosmos.secondary}
+                  onPress={() => setActiveDetail('moment')}
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityHint={t('Opens a simple explanation')}
+                onPress={() => setActiveDetail('moment')}
+                style={styles.reflectionCopy}
+              >
                 <Text
                   style={[
                     styles.reflectionText,
@@ -313,36 +390,37 @@ export default function CosmosScreen() {
                 >
                   “{t(reading.reflection)}”
                 </Text>
+              </Pressable>
+            </View>
+            <View
+              style={[
+                styles.cardRule,
+                styles.ritualRule,
+                { backgroundColor: colors.cosmos.border },
+              ]}
+            />
+            <View style={styles.ritualSection}>
+              <View style={styles.guidanceHeading} testID="cosmos-heading-ritual">
+                <Text style={[styles.guidanceLabel, { color: colors.cosmos.secondary }]}>
+                  {t('A small daily ritual')}
+                </Text>
+                <InfoButton
+                  testID="cosmos-info-ritual"
+                  label={t('Read more about today’s ritual')}
+                  hint={t('Opens a note about the purpose of the ritual')}
+                  color={colors.cosmos.secondary}
+                  onPress={() => setActiveDetail('ritual')}
+                />
               </View>
-              <View style={styles.infoCircle}>
-                <Feather name="info" size={15} color={colors.cosmos.secondary} />
-              </View>
-            </Pressable>
-          </View>
-
-          <View
-            style={[
-              styles.ritualCard,
-              {
-                backgroundColor: colors.cosmos.card,
-                borderColor: colors.cosmos.border,
-              },
-            ]}
-          >
-            <View style={styles.ritualCopy}>
-              <Text style={[styles.ritualTitle, { color: colors.cosmos.foreground }]}>
-                {t('A small daily ritual')}
-              </Text>
               <Text style={[styles.ritualAction, { color: colors.cosmos.foreground }]}>
                 {t(dailyRitual)}
               </Text>
-            </View>
-            <View style={styles.ritualFooter}>
               <Pressable
+                testID="cosmos-ritual-ideas"
                 accessibilityRole="button"
                 accessibilityLabel={t('Explore other daily ritual ideas')}
                 accessibilityHint={t('Opens practical examples')}
-                onPress={() => setActiveDetail('ritual')}
+                onPress={() => setActiveDetail('ideas')}
                 style={({ pressed }) => [
                   styles.ritualButton,
                   { opacity: pressed ? 0.72 : 1 },
@@ -351,9 +429,7 @@ export default function CosmosScreen() {
                 <Text style={[styles.ritualButtonText, { color: colors.cosmos.secondary }]}>
                   {t('Explore other ideas')}
                 </Text>
-                <View style={styles.infoCircle}>
-                  <Feather name="info" size={15} color={colors.cosmos.secondary} />
-                </View>
+                <Feather name="chevron-right" size={16} color={colors.cosmos.secondary} />
               </Pressable>
             </View>
           </View>
@@ -410,16 +486,23 @@ export default function CosmosScreen() {
                   onPress={() => setActiveDetail(null)}
                   style={styles.closeButton}
                 >
-                  <Feather name="x" size={19} color={colors.cosmos.secondary} />
+                  <Feather name="x" size={22} color={colors.cosmos.secondary} />
                 </Pressable>
               </View>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.detailScrollContent}
               >
-                <Text style={[styles.detailBody, { color: colors.cosmos.mutedForeground }]}>
-                  {t(detail.body)}
-                </Text>
+                {detail.lead ? (
+                  <Text style={[styles.detailLead, { color: colors.cosmos.foreground }]}>
+                    {t(detail.lead)}
+                  </Text>
+                ) : null}
+                {detail.body ? (
+                  <Text style={[styles.detailBody, { color: colors.cosmos.mutedForeground }]}>
+                    {t(detail.body)}
+                  </Text>
+                ) : null}
                 {detail.examples.map((example) => (
                   <View key={example} testID="daily-ritual-option" style={styles.exampleRow}>
                     <View style={[styles.exampleMark, { backgroundColor: colors.cosmos.secondary }]} />
@@ -506,9 +589,9 @@ const styles = StyleSheet.create({
   readingCard: {
     borderRadius: 28,
     borderWidth: 1,
-    paddingHorizontal: 23,
-    paddingTop: 25,
-    paddingBottom: 23,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 19,
   },
   readingTitle: {
     fontFamily: 'Georgia',
@@ -522,13 +605,16 @@ const styles = StyleSheet.create({
   readingHeadingRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
+  },
+  readingHeadingCopy: {
+    flex: 1,
   },
   infoCircle: {
     alignItems: 'center',
-    height: 34,
+    height: 44,
     justifyContent: 'center',
-    width: 34,
+    width: 44,
   },
   readingBody: {
     fontFamily: 'Inter_400Regular',
@@ -550,17 +636,26 @@ const styles = StyleSheet.create({
   },
   cardRule: {
     height: 1,
-    marginTop: 25,
-    marginBottom: 24,
+    marginTop: 18,
+    marginBottom: 16,
   },
   guidanceSection: {
-    gap: 7,
-    paddingVertical: 3,
+    gap: 4,
+    paddingVertical: 0,
+  },
+  guidanceHeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 42,
   },
   guidanceLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 9,
-    letterSpacing: 1.35,
+    flex: 1,
+    fontFamily: 'Georgia',
+    fontSize: 16,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 22,
   },
   guidanceText: {
     fontFamily: 'Inter_400Regular',
@@ -568,61 +663,37 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   guidanceRule: {
-    marginTop: 15,
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 10,
   },
   momentRule: {
-    marginTop: 22,
-    marginBottom: 18,
+    marginTop: 14,
+    marginBottom: 12,
   },
-  reflectionRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 12,
-    minHeight: 44,
+  reflectionSection: {
+    gap: 2,
   },
   reflectionCopy: {
-    flex: 1,
-    paddingTop: 2,
-  },
-  reflectionLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 9,
-    letterSpacing: 1.5,
-    marginBottom: 8,
+    alignSelf: 'stretch',
+    paddingTop: 1,
+    paddingBottom: 2,
   },
   reflectionText: {
     fontFamily: 'Georgia',
     fontSize: 18,
     lineHeight: 27,
   },
-  ritualCard: {
-    alignItems: 'stretch',
-    borderRadius: 21,
-    borderWidth: 1,
-    gap: 8,
-    marginTop: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+  ritualRule: {
+    marginTop: 14,
+    marginBottom: 10,
   },
-  ritualCopy: {
-    flex: 1,
-  },
-  ritualTitle: {
-    fontFamily: 'Georgia',
-    fontSize: 17,
-    lineHeight: 23,
+  ritualSection: {
+    gap: 0,
   },
   ritualAction: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
     lineHeight: 20,
-    marginTop: 7,
-  },
-  ritualFooter: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
     marginTop: 2,
   },
   ritualButton: {
@@ -630,9 +701,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     flexDirection: 'row',
     gap: 5,
-    justifyContent: 'center',
+    alignSelf: 'flex-start',
     minHeight: 44,
-    paddingHorizontal: 10,
+    paddingRight: 10,
   },
   ritualButtonText: {
     fontFamily: 'Inter_500Medium',
@@ -654,41 +725,51 @@ const styles = StyleSheet.create({
     maxHeight: '84%',
     maxWidth: 480,
     overflow: 'hidden',
-    paddingHorizontal: 22,
-    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     width: '100%',
   },
   detailHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    minHeight: 38,
+    paddingRight: 42,
+    position: 'relative',
   },
   detailHeaderNoTitle: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minHeight: 44,
+    minHeight: 32,
   },
   detailTitle: {
+    flex: 1,
     fontFamily: 'Georgia',
-    fontSize: 25,
-    lineHeight: 32,
+    fontSize: 22,
+    lineHeight: 28,
   },
   closeButton: {
     alignItems: 'center',
+    height: 44,
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 44,
+    position: 'absolute',
+    right: -10,
+    top: -10,
+    width: 44,
   },
   detailScrollContent: {
-    paddingTop: 12,
-    paddingBottom: 26,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   detailBody: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 14,
+  },
+  detailLead: {
+    fontFamily: 'Georgia',
+    fontSize: 17,
+    lineHeight: 24,
+    marginBottom: 10,
   },
   exampleRow: {
     alignItems: 'flex-start',

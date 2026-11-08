@@ -110,7 +110,7 @@
       "note": "Stabilitás · türelem",
       "description": "A hematit akkor segít, ha kiegyensúlyozottnak, türelmesnek és stabilnak szeretnéd érezni magad.",
       "guideDescription": "Tartsd az íróasztalodon gyakorlati tervezés közben. Súlya és sötét csillogása a rutinról, a kitartásról és a következő feladatra való jelenlétre irányuló földelő gyakorlatokhoz illik.",
-      "specimenDescription": "Csiszolt, fémes, sötétezüst hematit kavics, tükröződő, ágyúgép-fémes fénnyel, nehéz, lekerekített formában."
+      "specimenDescription": "Csiszolt, fémes, sötétezüst hematitkavics, tükörfényű felülettel és súlyos, lekerekített formával."
     },
     "Red Jasper": {
       "name": "Vörös jáspis",
@@ -204,7 +204,7 @@
       "specimenDescription": "Kicsi, fényes, olajzöld peridotkristály, átlátszó, természetes kristály, üveges felületekkel."
     },
     "Sunstone": {
-      "name": "Napkö",
+      "name": "Napkő",
       "note": "Melegség · optimizmus",
       "description": "A napkő akkor jó választás, ha több melegségre, optimizmusra és kapcsolódásra vágysz.",
       "guideDescription": "Vedd elő olyan reggeli rituáléhoz, amely segít észrevenni, mi okoz örömet. Csillogó foltjai az önbizalomról, a háláról és az energia nagylelkű megosztásáról szóló elmélkedéshez illenek.",
@@ -229,7 +229,7 @@
       "note": "Nyugalom · perspektíva",
       "description": "A lepidolit akkor ideális, ha több nyugalomra, pihenésre és gondolkodási térre vágysz.",
       "guideDescription": "Tedd a naplód mellé egy lassú esti áttekintéshez. Lila rétegei a pihenésről, a mentális káosz enyhítéséről és arról szóló döntésről szólnak, hogy mi várhat holnapig.",
-      "specimenDescription": "Nyers, lila-lila lepidolit csillámos példány, finom, réteges, pelyhes, csillogó textúrával."
+      "specimenDescription": "Nyers, lila lepidolitdarab finoman rétegzett, csillogó felülettel."
     },
     "Celestite": {
       "name": "Celesztin",
@@ -459,7 +459,7 @@
       "name": "Fekete opál",
       "note": "Képzelet · kifejezés",
       "description": "A fekete opál akkor jó választás, ha a képzeletedet szeretnéd használni, vagy játékos ötletekre és önkifejezésre vágysz.",
-      "guideDescription": "Használd sötét, változó színeit fókuszpontként kreatív elmélkedéshez. Segíti a saját kifejezésedbe vetett bizalmat és az érzéseid türelmes felfedezését.",
+      "guideDescription": "Használd sötét, változó színeit fókuszpontként kreatív elmélkedéshez. Segíthet jobban bízni az önkifejezésedben, és türelmesebben figyelni az érzéseidre.",
       "specimenDescription": "Egy csiszolt sötét faszénfekete opál kaboson, élethű, finom zöld, kék és vörös színjáték foltokkal."
     },
     "Fire Opal": {
@@ -706,7 +706,7 @@
       "name": "Tormalina Nera",
       "note": "Confini · resilienza",
       "description": "La tormalina nera è indicata per la resilienza, la solidità e per proteggere il tuo tempo.",
-      "guideDescription": "Posizionala accanto alla tua postazione di lavoro prima di decidere dove rivolgere la tua attenzione. È adatta a rituali di radicamento incentrati sui confini, sul risparmio delle energie e sullo scegliere cosa può attendere.",
+      "guideDescription": "Posizionala accanto alla tua postazione prima di decidere a cosa dedicare l’attenzione. È adatta a rituali di radicamento incentrati sui confini, sulla gestione delle energie e sulla scelta di cosa può aspettare.",
       "specimenDescription": "Un cristallo grezzo di tormalina schorl nera, con struttura prismatica allungata striata verticalmente e lucentezza naturale opaca."
     },
     "Green Aventurine": {
@@ -727,7 +727,7 @@
       "name": "Ossidiana",
       "note": "Confini · resilienza",
       "description": "L'ossidiana è indicata per la resilienza, la solidità e per proteggere il tuo tempo.",
-      "guideDescription": "Usa la sua superficie scura e vitrea come promemoria per fermarti e guardare onestamente una situazione. È adatta per scrivere nel diario riguardo ai confini e a ciò che sei pronto a lasciare andare.",
+      "guideDescription": "Usa la sua superficie scura e vitrea come promemoria per fermarti e guardare una situazione con sincerità. È adatta a riflettere sui tuoi confini e su ciò che vuoi lasciar andare.",
       "specimenDescription": "Un pezzo di vetro vulcanico ossidiana nero corvino, con fratture concoidi lisce e bordi naturali taglienti e riflettenti."
     },
     "Tiger's Eye": {
@@ -881,7 +881,7 @@
       "name": "Lepidolite",
       "note": "Calma · prospettiva",
       "description": "La lepidolite è indicata quando desideri maggiore calma, riposo e spazio per pensare.",
-      "guideDescription": "Posizionala accanto al tuo diario per un tranquillo controllo serale. I suoi strati color lilla sono adatti a pratiche su riposo, sul liberarsi dal disordine mentale e sul decidere cosa può attendere domani.",
+      "guideDescription": "Mettila accanto al diario per un bilancio serale senza fretta. Le sue sfumature lilla si prestano a riflettere sul riposo, a fare ordine nei pensieri e a scegliere cosa può aspettare fino a domani.",
       "specimenDescription": "Un esemplare grezzo di lepidolite mica color lilla-viola con una fine trama di mica a strati riflettenti."
     },
     "Celestite": {
@@ -1471,7 +1471,7 @@
       "name": "Rhodonit",
       "note": "Verbundenheit · Fürsorge",
       "description": "Rhodonit passt gut für Fürsorge, Empathie und eine engere Kommunikation.",
-      "guideDescription": "Bringe ihn in eine Reflexion über das Reparieren von Vertrauen oder das Dasein für jemanden ein. Sein rosa-dunkles Muster passt zu Praktiken über Mitgefühl, Vergebung und das Erden von Fürsorge in Handlungen.",
+      "guideDescription": "Beziehe ihn in eine Reflexion darüber ein, wie Vertrauen wachsen kann oder wie du für jemanden da sein möchtest. Sein dunkelrosa Muster passt zu Übungen über Mitgefühl, Vergebung und fürsorgliches Handeln.",
       "specimenDescription": "Ein undurchsichtiger, rosenrosa polierter Rhodonit-Kiesel mit kontrastierenden, verzweigten schwarzen Mangan-Adern."
     },
     "Rhodochrosite": {
@@ -1520,7 +1520,7 @@
       "name": "Apatit",
       "note": "Neugier · Veränderung",
       "description": "Apatit ist passend, wenn du neugierig bleiben und dich an sich ändernde Pläne anpassen möchtest.",
-      "guideDescription": "Nutze ihn neben einem Buch oder Notizbuch, wenn du ein neues Thema erkundest. Sein leuchtend blauer Ton passt zu Übungen über Neugier, Lernen und dem Verfolgen einer Idee, bis etwas Nützliches entdeckt wird.",
+      "guideDescription": "Nutze ihn neben einem Buch oder Notizbuch, wenn du ein neues Thema erkundest. Sein leuchtendes Blau passt zu Übungen, bei denen es um Neugier, Lernen und das Weiterverfolgen einer Idee geht, bis sich etwas Nützliches zeigt.",
       "specimenDescription": "Ein natürlicher, leuchtend türkisblauer hexagonaler Apatit-Kristall, durchscheinender blau-grüner Körper mit natürlichem, unregelmäßigem Ende."
     },
     "Kyanite": {
@@ -1657,9 +1657,9 @@
       "specimenDescription": "Ein polierter Ozeanjaspis-Kiesel mit kreisförmigen, organischen Mustern in Cremeweiß, gedecktem Grün und erdigen Rosatönen."
     },
     "Red Tiger's Eye": {
-      "name": "Roter Tigerauge",
+      "name": "Rotes Tigerauge",
       "note": "Mut · Selbstvertrauen",
-      "description": "Roter Tigerauge passt gut, wenn du dir selbst vertrauen und einen ersten Schritt wagen möchtest.",
+      "description": "Rotes Tigerauge passt gut, wenn du dir selbst vertrauen und einen ersten Schritt wagen möchtest.",
       "guideDescription": "Bringe seine warmen Bänder in ein Ritual ein, um vorsichtig ins Handeln zu kommen. Er eignet sich zur Reflexion über Mut, praktisches Selbstvertrauen und die Wahl eines überlegten nächsten Schritts.",
       "specimenDescription": "Ein polierter Kiesel aus rotem Tigerauge mit seidig schimmernden, kupferroten Fasern und dunkelrotbraunen Bändern."
     },
@@ -1801,7 +1801,7 @@
       "note": "Ausgeglichenheit · Perspektive",
       "description": "Jadeit passt gut dazu, mehr als eine Seite zu sehen und Raum für verschiedene Bedürfnisse zu schaffen.",
       "guideDescription": "Bringe ihn in ein Ritual darüber ein, was du mit der Zeit pflegen möchtest. Seine glatte grüne Oberfläche eignet sich zur Reflexion über Ausgeglichenheit, Weisheit und ein Leben im Einklang mit deinen Werten.",
-      "specimenDescription": "Ein glatter, polierter, mittellsmargradgrüner Jadeit-Kiesel mit sanft gefleckter Textur und wachsartig durchscheinenden Kanten."
+      "specimenDescription": "Ein glatter, polierter Jadeit-Kiesel in mittlerem bis kräftigem Smaragdgrün, mit sanft gefleckter Oberfläche und an den Rändern leicht durchscheinend."
     },
     "Nephrite": {
       "name": "Nephrit",
@@ -2405,7 +2405,7 @@
       "note": "Changement · nouvelle perspective",
       "description": "L'alexandrite est idéale quand vous voulez plus de flexibilité et un regard neuf.",
       "guideDescription": "Observez-la sous différentes lumières avant de noter vos réflexions sur une décision. Ses couleurs changeantes conviennent aux pratiques sur l'adaptabilité, l'acceptation de la complexité et l'ouverture à de nouvelles perspectives.",
-      "specimenDescription": "Un petit cristal naturel d'alexandrite chrysobéryl, vert sarcelle avec des reflets subtils tirant sur le violet, aux couleurs réalistes et discrètes."
+      "specimenDescription": "Un petit cristal naturel d’alexandrite, vert sarcelle avec de subtils reflets violets et des couleurs douces."
     },
     "Opal": {
       "name": "Opale",
@@ -2426,7 +2426,7 @@
       "note": "Vitalité · initiative",
       "description": "L'opale de feu est idéale quand vous voulez plus d'initiative et de confiance pour vous lancer.",
       "guideDescription": "Intégrez sa couleur orange-rouge vif dans un rituel d'intention matinal. Elle favorise la réflexion sur l'initiative, l'enthousiasme et le choix d'une action concrète pour donner vie à une idée.",
-      "specimenDescription": "Une opale de feu mexicaine translucide, orange riche, polie en forme libre, avec une couleur de corps chaleureuse sans paillettes arc-en-ciel inventées."
+      "specimenDescription": "Une opale de feu mexicaine translucide, d’un orange intense, polie en forme libre et aux tons chauds, sans reflets irisés."
     },
     "Spinel": {
       "name": "Spinelle",
@@ -2562,11 +2562,11 @@
       "specimenDescription": "Une forme libre d'agate de feu sur calcédoine brune polie, avec de petites taches naturelles botryoïdes iridescentes rouges, orange et vertes."
     },
     "Tree Agate": {
-      "name": "Agate mousse",
+      "name": "Agate arborescente",
       "note": "Stabilité · patience",
-      "description": "L'agate mousse est idéale quand vous souhaitez vous sentir stable, patient et équilibré.",
+      "description": "L’agate arborescente accompagne les pratiques d’ancrage, de patience et de recherche d’équilibre.",
       "guideDescription": "Utilisez ses motifs verts lors d'une méditation en nature ou d'une promenade calme. Elle convient aux pratiques sur l'ancrage, la patience et le sentiment d'être soutenu par des routines stables.",
-      "specimenDescription": "Un galet d'agate mousse blanc crème opaque avec des inclusions minérales vertes ramifiées réparties à la surface."
+      "specimenDescription": "Un galet opaque d’agate arborescente, blanc crème, parcouru d’inclusions minérales vertes qui évoquent de petites branches."
     },
     "Pink Tourmaline": {
       "name": "Tourmaline rose",
@@ -2650,7 +2650,7 @@
     "Smoky Quartz": {
       "name": "Cuarzo Ahumado",
       "note": "Estabilidad · paciencia",
-      "description": "El cuarzo ahumado es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "El cuarzo ahumado es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Úsalo durante una pausa de enraizamiento después de un día ajetreado. Su color terroso combina bien con una respiración lenta, observando lo que se siente firme y dejando que el día se asiente.",
       "specimenDescription": "Una punta de cuarzo ahumado natural y translúcido con un prisma de seis lados, una punta más oscura y una profundidad interna clara."
     },
@@ -2686,7 +2686,7 @@
       "name": "Obsidiana",
       "note": "Límites · resiliencia",
       "description": "La obsidiana es ideal para la resiliencia, la estabilidad y proteger tu tiempo.",
-      "guideDescription": "Usa su superficie oscura y vidriosa como un recordatorio para pausar y mirar con honestidad una situación. Es perfecta para escribir en tu diario sobre límites y lo que estás listo para soltar.",
+      "guideDescription": "Usa su superficie oscura y vidriosa como recordatorio para hacer una pausa y mirar una situación con honestidad. Es ideal para escribir en tu diario sobre tus límites y lo que quieres dejar atrás.",
       "specimenDescription": "Un trozo de vidrio volcánico obsidiana negro azabache con fracturas concoidales suaves y bordes naturales afilados y reflectantes."
     },
     "Tiger's Eye": {
@@ -2720,14 +2720,14 @@
     "Hematite": {
       "name": "Hematita",
       "note": "Estabilidad · paciencia",
-      "description": "La hematita es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "La hematita es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Tenla en tu escritorio durante una sesión de planificación práctica. Su peso y brillo oscuro son ideales para prácticas de enraizamiento sobre rutinas, seguimiento y mantenerte presente en la siguiente tarea.",
       "specimenDescription": "Un guijarro de hematita metálico de color plata oscuro, pulido, con brillo de espejo y forma redondeada y pesada."
     },
     "Red Jasper": {
       "name": "Jaspe Rojo",
       "note": "Estabilidad · paciencia",
-      "description": "El jaspe rojo es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "El jaspe rojo es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Úsalo al comienzo de un proyecto largo para establecer un ritmo paciente. Su superficie terrosa y cálida es ideal para prácticas de resistencia, consistencia y terminar un paso a la vez.",
       "specimenDescription": "Un guijarro de jaspe rojo ladrillo opaco, con coloración roja terrosa y sutiles vetas minerales oscuras, sin transparencia."
     },
@@ -2748,7 +2748,7 @@
     "Botswana Agate": {
       "name": "Ágata de Botsuana",
       "note": "Estabilidad · paciencia",
-      "description": "El ágata de Botsuana es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "El ágata de Botsuana es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Usa sus suaves bandas durante un momento de cambio o incertidumbre. Es ideal para escribir en tu diario sobre paciencia, aceptar lo que está sucediendo y elegir un siguiente paso constante.",
       "specimenDescription": "Un guijarro de ágata ovalado pulido con finas bandas concéntricas grises, taupe, blancas y tonos rosados suaves."
     },
@@ -2770,7 +2770,7 @@
       "name": "Malaquita",
       "note": "Cambio · nueva perspectiva",
       "description": "La malaquita es ideal cuando quieres flexibilidad y una nueva perspectiva.",
-      "guideDescription": "Usa sus vívidas bandas verdes mientras reflexionas sobre un cambio que estás listo para hacer. Es ideal para establecer intenciones sobre el crecimiento, la responsabilidad y dar un primer paso valiente.",
+      "guideDescription": "Usa sus vívidas bandas verdes mientras reflexionas sobre un cambio que te gustaría poner en marcha. Es ideal para establecer intenciones relacionadas con el crecimiento, la responsabilidad y dar un primer paso valiente.",
       "specimenDescription": "Una pieza de malaquita de rico color verde pulida con bandas concéntricas curvadas y patrones de ojo en tonos claros y oscuros."
     },
     "Rhodonite": {
@@ -2804,7 +2804,7 @@
     "Aquamarine": {
       "name": "Aguamarina",
       "note": "Serenidad · perspectiva",
-      "description": "El aguamarina es ideal cuando buscas más calma, descanso y espacio para pensar.",
+      "description": "La aguamarina es ideal cuando buscas más calma, descanso y espacio para pensar.",
       "guideDescription": "Úsala antes de escribir o tener una conversación que requiera apertura. Su color azul mar es ideal para prácticas de expresión calmada, escucha honesta y dejar que las palabras fluyan a un ritmo natural.",
       "specimenDescription": "Un cristal natural de aguamarina azul hielo pálido, prisma largo de berilo hexagonal transparente con terminación plana."
     },
@@ -2874,7 +2874,7 @@
     "Magnesite": {
       "name": "Magnesita",
       "note": "Estabilidad · paciencia",
-      "description": "La magnesita es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "La magnesita es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Úsala cuando quieras bajar el ritmo de una rutina acelerada. Su patrón pálido y tranquilo es ideal para prácticas de respiración, reflexión suave y elegir un ritmo más equilibrado.",
       "specimenDescription": "Un nódulo de magnesita en bruto de color blanco cremoso con una textura natural parecida a la coliflor y débiles venas de color bronceado."
     },
@@ -2937,7 +2937,7 @@
     "Shungite": {
       "name": "Shungita",
       "note": "Estabilidad · paciencia",
-      "description": "La shungita es ideal cuando quieres sentirte estable, paciente y equilibrado.",
+      "description": "La shungita es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Tenla cerca de tu espacio de trabajo mientras simplificas una agenda llena. Su superficie profunda y mate es ideal para prácticas de enraizamiento sobre enfoque, límites y volver a lo esencial.",
       "specimenDescription": "Un trozo de shungita en bruto de color negro carbón opaco con fracturas angulares naturales y un suave brillo semimetálico."
     },
@@ -2951,7 +2951,7 @@
     "Picture Jasper": {
       "name": "Jaspe Paisaje",
       "note": "Estabilidad · paciencia",
-      "description": "El jaspe paisaje es ideal cuando buscas sentirte estable, paciente y equilibrado.",
+      "description": "El jaspe paisaje es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Dedica unos minutos a observar los paisajes en sus patrones. Es ideal para prácticas de enraizamiento sobre la perspectiva, la paciencia y recordar la visión global cuando una tarea se vuelve exigente.",
       "specimenDescription": "Un canto rodado pulido de jaspe paisaje en tonos canela y marrón, con patrones minerales naturales que evocan paisajes, sin escenas dibujadas."
     },
@@ -3112,7 +3112,7 @@
     "Nephrite": {
       "name": "Nefrita",
       "note": "Estabilidad · paciencia",
-      "description": "La nefrita es ideal cuando buscas sentirte estable, paciente y equilibrado.",
+      "description": "La nefrita es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
       "guideDescription": "Tenla cerca durante una práctica de enraizamiento o un paseo tranquilo. Su color verde profundo es ideal para reflexionar sobre la estabilidad, la paciencia y los hábitos cotidianos que te apoyan.",
       "specimenDescription": "Un canto rodado de nefrita pulido en tono verde espinaca profundo, con textura fibrosa nublada y acabado satinado."
     },
@@ -3176,11 +3176,11 @@
       "name": "Hesonita",
       "note": "Coraje · confianza en uno mismo",
       "description": "La hesonita es ideal cuando buscas confiar en ti mismo y dar el primer paso.",
-      "guideDescription": "Usa su cálido color miel mientras nombras un desafío que estás listo para enfrentar. Es ideal para prácticas sobre coraje, autoconfianza y avanzar un paso deliberado a la vez.",
+      "guideDescription": "Usa su cálido color miel mientras nombras un reto que quieres afrontar. Es ideal para prácticas sobre coraje, confianza en ti y avanzar con paso firme, poco a poco.",
       "specimenDescription": "Un cristal natural de hesonita (granate grosularia) de color naranja canela cálido, con caras dodecaédricas y bordes traslúcidos de color ámbar."
     },
     "Spessartine": {
-      "name": "Espsartina",
+      "name": "Espesartina",
       "note": "Vitalidad · iniciativa",
       "description": "La espesartina es ideal cuando buscas más iniciativa y confianza para comenzar algo.",
       "guideDescription": "Tenla cerca durante una sesión de planificación creativa. Su brillante color naranja es ideal para prácticas de entusiasmo, iniciativa y convertir una idea animada en algo que puedas empezar.",
@@ -3215,11 +3215,11 @@
       "specimenDescription": "Una pieza de ágata de fuego (calcedonia marrón) pulida en forma libre, con pequeños parches naturales e iridiscentes en tonos rojo, naranja y verde."
     },
     "Tree Agate": {
-      "name": "Ágata Árbol",
+      "name": "Ágata de árbol",
       "note": "Estabilidad · paciencia",
-      "description": "El ágata árbol es ideal cuando buscas sentirte estable, paciente y equilibrado.",
-      "guideDescription": "Usa sus patrones verdes durante una meditación inspirada en la naturaleza o un paseo tranquilo. Es ideal para prácticas sobre enraizamiento, paciencia y sentirse apoyado por rutinas estables.",
-      "specimenDescription": "Un canto rodado de ágata árbol de color blanco cremoso opaco, con inclusiones minerales verdes en forma de ramas distribuidas por su superficie."
+      "description": "El ágata de árbol es ideal cuando buscas más estabilidad, paciencia y equilibrio.",
+      "guideDescription": "Usa sus patrones verdes durante una meditación inspirada en la naturaleza o un paseo tranquilo. Es ideal para prácticas de conexión con la tierra, paciencia y apoyo en rutinas estables.",
+      "specimenDescription": "Un canto rodado opaco de ágata de árbol, de color blanco cremoso y con inclusiones minerales verdes que recuerdan a pequeñas ramas."
     },
     "Pink Tourmaline": {
       "name": "Turmalina Rosa",
@@ -3297,7 +3297,7 @@
       "name": "Горный хрусталь",
       "note": "Взгляд со стороны · проницательность",
       "description": "Горный хрусталь поможет тебе обрести ясность взгляда, сделать осознанный выбор и настроиться на вдумчивое общение.",
-      "guideDescription": "Положи его рядом с дневником, когда выбираешь намерение на день. Его прозрачная форма идеально подходит для концентрации на главном и начала любого дела со свежим разумом.",
+      "guideDescription": "Положи его рядом с дневником, когда выбираешь намерение на день. Его прозрачная форма хорошо подходит для того, чтобы сосредоточиться на главном и начать дело с ясной головой.",
       "specimenDescription": "Природный бесцветный прозрачный кристалл кварца с шестигранной призмой и заостренным концом, с едва заметными внутренними вкраплениями."
     },
     "Smoky Quartz": {
@@ -3595,10 +3595,10 @@
       "specimenDescription": "Необработанный угольно-черный шунгит с естественными сколами и мягким металлическим блеском."
     },
     "Dalmatian Jasper": {
-      "name": "Далматиновый яшма",
+      "name": "Далматиновая яшма",
       "note": "Тепло · оптимизм",
       "description": "Далматиновая яшма подходит тебе, когда хочется добавить тепла, оптимизма и связи с окружающим миром.",
-      "guideDescription": "Пусть её пятнистый узор наполнит твою практику игривостью. Она поможет тебе поразмышлять о радости, оставаться любопытным и не принимать мелкие неудачи близко к сердцу.",
+      "guideDescription": "Пусть её пятнистый узор добавит лёгкости твоей практике. С ним можно поразмышлять о радости, сохранить любопытство и не принимать мелкие неудачи близко к сердцу.",
       "specimenDescription": "Округлый кремово-бежевый камешек далматиновой яшмы с отчетливыми небольшими черными пятнами."
     },
     "Picture Jasper": {
@@ -3829,7 +3829,7 @@
       "name": "Гессонит",
       "note": "Смелость · доверие к себе",
       "description": "Гессонит поможет тебе довериться себе и сделать первый шаг.",
-      "guideDescription": "Используй его теплый медовый цвет, когда называешь трудность, с которой готов встретиться. Он подходит для практик смелости, доверия к себе и движения вперед шаг за шагом.",
+      "guideDescription": "Используй его тёплый медовый цвет, когда называешь трудность, с которой хочешь справиться. Он подходит для практик смелости, доверия к себе и движения вперёд шаг за шагом.",
       "specimenDescription": "Природный тепло-коричневый кристалл гессонита с янтарными краями."
     },
     "Spessartine": {

@@ -143,15 +143,6 @@ export default function OnboardingScreen() {
         Platform.OS === 'web' && { paddingTop: 67 },
       ]}
     >
-      <View style={[styles.welcome, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.welcomeEyebrow, { color: colors.tint }]}>{t('WELCOME')}</Text>
-        <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
-          {t('A quick guide to Soul Compass')}
-        </Text>
-        <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>
-          {t('Daily reflections, a crystal guide, an optional birth chart, and more ways to explore.')}
-        </Text>
-      </View>
       <ProfileForm
         initialDraft={onboardingDraft}
         includeResidence={false}
@@ -260,8 +251,4 @@ const styles = StyleSheet.create({
   },
   ukFlagFrame: { width: 56, height: 28 },
   spanishFlagFrame: { width: 48, height: 32 },
-  welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
-  welcomeEyebrow: { fontSize: 10, letterSpacing: 1.8 },
-  welcomeTitle: { fontSize: 16, lineHeight: 21, fontWeight: '600' },
-  welcomeText: { fontSize: 13, lineHeight: 19 },
 });

@@ -223,14 +223,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       'Mitől lenne jó ez a nap azon túl, hogy hány dolgot végzek el?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Ez csak mintagondolat, nem a képleted alapján készült. Személyes napi olvasathoz add meg az adataidat a Beállításokban.',
-    'FOCUS FOR TODAY': 'MAI FÓKUSZ',
-    'WHAT TO LEAVE FOR LATER': 'MIT HAGYJ KÉSŐBBRE',
-    'A MOMENT TO KEEP': 'EGY PILLANAT, AMIT ŐRIZZ MEG',
+    'Focus for today': 'Mai fókusz',
+    'What to leave for later': 'Mit hagyj későbbre',
+    'A moment to keep': 'Egy pillanat, amit megőrizhetsz',
     'A small daily ritual': 'Egy apró napi rituálé',
     'Explore other ideas': 'Más ötletek',
-    'Other ideas for today': 'Még néhány mai ötlet',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Íme még három apró ötlet mára. Válassz közülük, ha hasznosnak érzed, vagy hagyd ki őket; ezek javaslatok, nem szabályok.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'A személyes napi olvasat most nem érhető el. Ellenőrizd a mentett adataidat a Beállításokban.',
     'Add current residence for your daily reflection →':
@@ -264,14 +261,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       'Che aspetto avrebbe una giornata soddisfacente, al di là di quante cose finisco?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Questa è una riflessione di esempio, non una lettura basata sul tuo tema natale. Aggiungi i tuoi dati nelle Impostazioni per una lettura personale.',
-    'FOCUS FOR TODAY': 'FOCUS DI OGGI',
-    'WHAT TO LEAVE FOR LATER': 'COSA RIMANDARE',
-    'A MOMENT TO KEEP': 'UN MOMENTO DA PORTARE CON TE',
+    'Focus for today': 'Il focus di oggi',
+    'What to leave for later': 'Cosa rimandare',
+    'A moment to keep': 'Un momento da portare con te',
     'A small daily ritual': 'Un piccolo rituale quotidiano',
     'Explore other ideas': 'Altre idee',
-    'Other ideas for today': 'Altre idee per oggi',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Ecco altre tre piccole idee per oggi. Scegline una se ti sembra utile, oppure ignorale: sono spunti, non regole.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'La tua lettura personale non è disponibile al momento. Controlla i dati salvati nelle Impostazioni.',
     'Add current residence for your daily reflection →':
@@ -305,14 +299,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       'Woran würde ich einen guten Tag erkennen, abgesehen davon, wie viel ich erledige?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Das ist ein Beispielimpuls und keine Deutung deines Geburtshoroskops. Ergänze deine Angaben in den Einstellungen für eine persönliche Tagesdeutung.',
-    'FOCUS FOR TODAY': 'DEIN FOKUS HEUTE',
-    'WHAT TO LEAVE FOR LATER': 'WAS NOCH WARTEN KANN',
-    'A MOMENT TO KEEP': 'EIN MOMENT ZUM BEWAHREN',
+    'Focus for today': 'Fokus für heute',
+    'What to leave for later': 'Was noch warten kann',
+    'A moment to keep': 'Ein Moment zum Bewahren',
     'A small daily ritual': 'Ein kleines Ritual für jeden Tag',
     'Explore other ideas': 'Weitere Ideen',
-    'Other ideas for today': 'Weitere Ideen für heute',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Hier sind drei weitere kleine Ideen für heute. Such dir eine aus, wenn sie dir guttut, oder lass sie aus: Es sind Anregungen, keine Regeln.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'Deine persönliche Tagesdeutung ist gerade nicht verfügbar. Prüf deine gespeicherten Angaben in den Einstellungen.',
     'Add current residence for your daily reflection →':
@@ -346,14 +337,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       'À quoi ressemblerait une bonne journée, au-delà du nombre de choses terminées ?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Ceci est une réflexion d’exemple, pas une lecture fondée sur ton thème natal. Ajoute tes informations dans les Réglages pour obtenir une lecture personnelle.',
-    'FOCUS FOR TODAY': 'TON POINT D’ATTENTION',
-    'WHAT TO LEAVE FOR LATER': 'CE QUI PEUT ATTENDRE',
-    'A MOMENT TO KEEP': 'UN MOMENT À GARDER',
+    'Focus for today': 'Le focus du jour',
+    'What to leave for later': 'Ce qui peut attendre',
+    'A moment to keep': 'Un moment à garder',
     'A small daily ritual': 'Un petit rituel quotidien',
     'Explore other ideas': 'Voir d’autres idées',
-    'Other ideas for today': 'D’autres idées pour aujourd’hui',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Voici trois autres petites idées pour aujourd’hui. Choisis-en une si elle te semble utile, ou passe-les : ce sont des suggestions, pas des règles.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'Ta lecture personnelle n’est pas disponible pour le moment. Vérifie les informations enregistrées dans les Réglages.',
     'Add current residence for your daily reflection →':
@@ -387,14 +375,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       '¿Cómo sería un día satisfactorio más allá de cuántas cosas termino?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Esta es una reflexión de ejemplo, no una lectura basada en tu carta natal. Añade tus datos en Ajustes para recibir una lectura diaria personal.',
-    'FOCUS FOR TODAY': 'ENFOQUE DE HOY',
-    'WHAT TO LEAVE FOR LATER': 'QUÉ DEJAR PARA DESPUÉS',
-    'A MOMENT TO KEEP': 'UN MOMENTO PARA RECORDAR',
+    'Focus for today': 'Enfoque de hoy',
+    'What to leave for later': 'Qué dejar para después',
+    'A moment to keep': 'Un momento para recordar',
     'A small daily ritual': 'Un pequeño ritual diario',
     'Explore other ideas': 'Ver otras ideas',
-    'Other ideas for today': 'Otras ideas para hoy',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Aquí tienes otras tres ideas sencillas para hoy. Elige una si te resulta útil o sáltatelas: son propuestas, no reglas.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'Tu lectura personal no está disponible ahora. Revisa los datos guardados en Ajustes.',
     'Add current residence for your daily reflection →':
@@ -428,14 +413,11 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
       'Что сделало бы этот день хорошим, кроме количества выполненных дел?',
     'This is a sample reflection, not a reading based on your chart. Add your details in Settings for a personal daily reading.':
       'Это пример размышления, а не чтение по твоей карте. Добавь данные в настройках, чтобы получать личный прогноз на день.',
-    'FOCUS FOR TODAY': 'ФОКУС НА СЕГОДНЯ',
-    'WHAT TO LEAVE FOR LATER': 'ЧТО МОЖНО ОТЛОЖИТЬ',
-    'A MOMENT TO KEEP': 'МЫСЛЬ, КОТОРУЮ СТОИТ СОХРАНИТЬ',
+    'Focus for today': 'Фокус на сегодня',
+    'What to leave for later': 'Что можно отложить',
+    'A moment to keep': 'Мысль, которую стоит сохранить',
     'A small daily ritual': 'Небольшой ритуал на день',
     'Explore other ideas': 'Другие идеи',
-    'Other ideas for today': 'Ещё идеи на сегодня',
-    'Here are three other small ideas for today. Choose one if it feels useful, or skip them; they are prompts, not rules.':
-      'Вот ещё три простые идеи на сегодня. Выбери одну, если она тебе подходит, или пропусти: это подсказки, а не правила.',
     'Your personal reading isn’t available right now. Check your saved details in Settings.':
       'Личный прогноз сейчас недоступен. Проверь сохранённые данные в настройках.',
     'Add current residence for your daily reflection →':
@@ -458,13 +440,100 @@ const sharedCopy: Record<Locale, Record<string, string>> = {
   },
 };
 
+const dayCardDetailCopy: Record<Locale, Record<string, string>> = {
+  hu: {
+    'Read more about today’s focus': 'További részletek a mai fókuszról',
+    'Opens a deeper note about the daily focus': 'Megnyitja a mai fókusz részletesebb magyarázatát',
+    'Read more about what to leave for later': 'További részletek arról, mit érdemes későbbre hagyni',
+    'Opens a gentle note about what can wait': 'Megnyitja annak magyarázatát, mi várhat még',
+    'Read more about today’s ritual': 'További részletek a mai rituáléról',
+    'Opens a note about the purpose of the ritual': 'Megnyitja a rituálé céljának magyarázatát',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'A mai fókusz arra mutat rá, amibe könnyebb lehet belevágni, amit átláthatóbbnak érezhetsz, vagy amiben előrébb juthatsz. Ez nem ígéret arra, hogy minden simán megy majd. Válassz egy hasznos, megtehető lépést, és figyelj arra; nem kell egyszerre mindent befejezned.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'Ez csak szelíd jelzés, hogy egy feladatra érdemes lehet több időt vagy teret hagyni; nem figyelmeztetés és nem szabály. Ha várhat, térj vissza rá akkor, amikor több időd vagy tisztább képed van. Ha nem halasztható, haladj kisebb lépésekben, és ne tegyél magadra még nagyobb nyomást.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Egy apró rituálé rövid szünet, amely segíthet visszahozni a figyelmedet a jelenbe. Próbáld ki egyszer, úgy, ahogy neked kényelmes. Ez meghívás, nem újabb feladat, amit jól kell teljesítened.',
+  },
+  it: {
+    'Read more about today’s focus': 'Approfondisci il focus di oggi',
+    'Opens a deeper note about the daily focus': 'Apre una spiegazione più dettagliata del focus di oggi',
+    'Read more about what to leave for later': 'Approfondisci cosa rimandare',
+    'Opens a gentle note about what can wait': 'Apre una spiegazione su cosa può aspettare',
+    'Read more about today’s ritual': 'Approfondisci il rituale di oggi',
+    'Opens a note about the purpose of the ritual': 'Apre una spiegazione sul senso del rituale',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'Il focus di oggi indica qualcosa che potrebbe essere più facile iniziare, capire o portare avanti. Non è una promessa che andrà tutto liscio. Scegli un passo utile e dedicagli attenzione: non devi finire tutto in una volta.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'È un invito gentile a dare più tempo o spazio a un certo tipo di impegno, non un avvertimento né una regola. Se può aspettare, riprendilo quando avrai più tempo o le idee più chiare. Se non può, procedi a piccoli passi senza aggiungere altra pressione.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Un piccolo rituale è una breve pausa che può riportare l’attenzione al presente. Provalo una volta, nel modo che ti è più comodo. È un invito, non un altro compito da svolgere alla perfezione.',
+  },
+  de: {
+    'Read more about today’s focus': 'Mehr über deinen Fokus heute',
+    'Opens a deeper note about the daily focus': 'Öffnet eine ausführlichere Erklärung zum heutigen Fokus',
+    'Read more about what to leave for later': 'Mehr darüber, was noch warten kann',
+    'Opens a gentle note about what can wait': 'Öffnet eine behutsame Erklärung dazu, was warten kann',
+    'Read more about today’s ritual': 'Mehr über das heutige Ritual',
+    'Opens a note about the purpose of the ritual': 'Öffnet eine Erklärung zum Sinn des Rituals',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'Der heutige Fokus zeigt auf etwas, mit dem du leichter anfangen, das du besser verstehen oder voranbringen kannst. Das heißt nicht, dass alles mühelos läuft. Wähle einen sinnvollen Schritt und konzentriere dich darauf. Du musst nicht alles auf einmal erledigen.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'Das ist ein sanfter Hinweis, einer bestimmten Aufgabe mehr Zeit oder Raum zu geben – keine Warnung und keine Regel. Wenn sie warten kann, komm darauf zurück, wenn du mehr Zeit oder Klarheit hast. Wenn nicht, geh in kleineren Schritten vor und mach dir keinen zusätzlichen Druck.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Ein kleines Ritual ist eine kurze Pause, die deine Aufmerksamkeit zurück ins Hier und Jetzt bringen kann. Probier es einmal so aus, wie es sich für dich gut anfühlt. Es ist eine Einladung und keine weitere Aufgabe, die du richtig machen musst.',
+  },
+  fr: {
+    'Read more about today’s focus': 'En savoir plus sur ton point d’attention',
+    'Opens a deeper note about the daily focus': 'Ouvre une explication plus détaillée du point d’attention',
+    'Read more about what to leave for later': 'En savoir plus sur ce qui peut attendre',
+    'Opens a gentle note about what can wait': 'Ouvre une explication douce sur ce qui peut attendre',
+    'Read more about today’s ritual': 'En savoir plus sur le rituel du jour',
+    'Opens a note about the purpose of the ritual': 'Ouvre une explication sur le sens du rituel',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'Le point d’attention du jour désigne quelque chose qu’il pourrait être plus facile de commencer, de comprendre ou de faire avancer. Cela ne garantit pas que tout se passera sans difficulté. Choisis une étape utile et concentre-toi dessus ; tu n’as pas besoin de tout terminer d’un coup.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'C’est une invitation à laisser un peu plus de temps ou d’espace à un type de tâche, pas un avertissement ni une règle. Si elle peut attendre, reprends-la quand tu auras plus de temps ou les idées plus claires. Sinon, avance par petites étapes sans te mettre davantage de pression.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Un petit rituel est une courte pause qui peut ramener ton attention au présent. Essaie-le une fois, d’une manière qui te convient. C’est une invitation, pas une tâche de plus à réussir.',
+  },
+  es: {
+    'Read more about today’s focus': 'Más sobre tu foco de hoy',
+    'Opens a deeper note about the daily focus': 'Abre una explicación más detallada del foco de hoy',
+    'Read more about what to leave for later': 'Más sobre qué conviene dejar para después',
+    'Opens a gentle note about what can wait': 'Abre una explicación amable sobre lo que puede esperar',
+    'Read more about today’s ritual': 'Más sobre el ritual de hoy',
+    'Opens a note about the purpose of the ritual': 'Abre una explicación sobre el sentido del ritual',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'El foco de hoy señala algo que quizá te resulte más fácil empezar, entender o sacar adelante. No es una promesa de que todo vaya a salir sin complicaciones. Elige un paso útil y préstale atención; no tienes que terminarlo todo de una vez.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'Es una sugerencia amable para dar más tiempo o espacio a cierto tipo de tarea, no una advertencia ni una regla. Si puede esperar, vuelve a ella cuando tengas más tiempo o las ideas más claras. Si no, avanza poco a poco y evita añadirte más presión.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Un pequeño ritual es una pausa breve que puede ayudarte a volver al presente. Pruébalo una vez, de una forma que te resulte cómoda. Es una invitación, no otra tarea que tengas que hacer bien.',
+  },
+  ru: {
+    'Read more about today’s focus': 'Подробнее о фокусе на сегодня',
+    'Opens a deeper note about the daily focus': 'Откроет более подробное пояснение к фокусу дня',
+    'Read more about what to leave for later': 'Подробнее о том, что лучше отложить',
+    'Opens a gentle note about what can wait': 'Откроет мягкое пояснение о том, что может подождать',
+    'Read more about today’s ritual': 'Подробнее о сегодняшнем ритуале',
+    'Opens a note about the purpose of the ritual': 'Откроет пояснение, для чего нужен ритуал',
+    'Today’s focus points to something that may feel easier to begin, understand, or move forward. It is not a promise that everything will go smoothly. Choose one useful step and give it your attention; you do not have to finish everything at once.':
+      'Сегодня может быть проще начать какое-то дело, разобраться в нём или сдвинуть его с места. Это не обещание, что всё пройдёт гладко. Выбери один полезный шаг и сосредоточься на нём — не обязательно успевать всё сразу.',
+    'This is a gentle nudge to give one kind of task more time or space, not a warning or a rule. If it can wait, come back to it when you have more time or clarity. If it cannot wait, take it in smaller steps and avoid adding extra pressure.':
+      'Это мягкая подсказка: возможно, одному делу стоит дать больше времени или пространства. Это не предупреждение и не правило. Если можно подождать, вернись к нему, когда будет больше времени или ясности. Если отложить нельзя, разбей его на небольшие шаги и не создавай себе лишнего давления.',
+    'A small ritual is a brief pause that can help bring your attention back to the present. Try it once in a way that feels comfortable. It is an invitation, not another task you need to get right.':
+      'Небольшой ритуал — это короткая пауза, которая помогает вернуться вниманием к настоящему. Попробуй его один раз так, как тебе удобно. Это приглашение, а не ещё одна задача, которую нужно выполнить правильно.',
+  },
+};
+
 export const cosmosTranslations: Record<Locale, Record<string, string>> = {
-  hu: { ...sharedCopy.hu },
-  it: { ...sharedCopy.it },
-  de: { ...sharedCopy.de },
-  fr: { ...sharedCopy.fr },
-  es: { ...sharedCopy.es },
-  ru: { ...sharedCopy.ru },
+  hu: { ...sharedCopy.hu, ...dayCardDetailCopy.hu },
+  it: { ...sharedCopy.it, ...dayCardDetailCopy.it },
+  de: { ...sharedCopy.de, ...dayCardDetailCopy.de },
+  fr: { ...sharedCopy.fr, ...dayCardDetailCopy.fr },
+  es: { ...sharedCopy.es, ...dayCardDetailCopy.es },
+  ru: { ...sharedCopy.ru, ...dayCardDetailCopy.ru },
 };
 
 for (const locale of Object.keys(cosmosTranslations) as Locale[]) {

@@ -3,7 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
-import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  usePanGesture,
+  usePinchGesture,
+  useSimultaneousGestures,
+} from 'react-native-gesture-handler';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -37,9 +42,10 @@ const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-const MAX_CRYSTAL_IMAGE_ZOOM = 2.5;
+const MAX_CRYSTAL_IMAGE_ZOOM = 3.5;
 const CRYSTAL_IMAGE_ZOOM_RESET_DURATION = 160;
 const AnimatedCrystalImage = Animated.createAnimatedComponent(Image);
+const AnimatedCrystalArtworkFrame = Animated.createAnimatedComponent(View);
 
 function localizeCrystal(crystal: Crystal, locale: CrystalLocale): LocalizedCrystalCopy {
   return getLocalizedCrystalCopy(crystal.name, locale) ?? {
@@ -79,14 +85,23 @@ function CrystalArtwork({ crystal, size, detailSize }: {
   const locale = useAppLocale();
   const t = useAppText();
   const copy = localizeCrystal(crystal, locale);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const responsiveDetailStyle = size === 'detail' && detailSize !== undefined
     ? { width: detailSize, height: detailSize, alignSelf: 'center' as const }
     : null;
   const zoomScale = useSharedValue(1);
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const zoomLayerStyle = useAnimatedStyle(() => ({
+    elevation: zoomScale.value > 1.01 ? 20 : 0,
+    zIndex: zoomScale.value > 1.01 ? 20 : 0,
+  }));
   const zoomStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: zoomScale.value }],
-    zIndex: zoomScale.value > 1.01 ? 10 : 0,
-    elevation: zoomScale.value > 1.01 ? 10 : 0,
+    transform: [
+      { scale: zoomScale.value },
+      { translateX: panX.value },
+      { translateY: panY.value },
+    ],
   }));
   const pinchGesture = usePinchGesture({
     onUpdate: ({ scale }) => {
@@ -94,8 +109,21 @@ function CrystalArtwork({ crystal, size, detailSize }: {
     },
     onFinalize: () => {
       zoomScale.value = withTiming(1, { duration: CRYSTAL_IMAGE_ZOOM_RESET_DURATION });
+      panX.value = withTiming(0, { duration: CRYSTAL_IMAGE_ZOOM_RESET_DURATION });
+      panY.value = withTiming(0, { duration: CRYSTAL_IMAGE_ZOOM_RESET_DURATION });
     },
   });
+  const panGesture = usePanGesture({
+    minPointers: 2,
+    maxPointers: 2,
+    onUpdate: ({ translationX, translationY }) => {
+      const scale = zoomScale.value;
+      if (scale <= 1.01) return;
+      panX.value = Math.min(screenWidth, Math.max(-screenWidth, translationX));
+      panY.value = Math.min(screenHeight, Math.max(-screenHeight, translationY));
+    },
+  });
+  const artworkGesture = useSimultaneousGestures(pinchGesture, panGesture);
   const imageStyle = size === 'feature'
     ? styles.featureImage
     : size === 'alternative'
@@ -103,21 +131,28 @@ function CrystalArtwork({ crystal, size, detailSize }: {
       : size === 'catalog'
         ? styles.catalogImage
         : styles.detailImage;
+  const imageShapeStyle = size === 'feature'
+    ? styles.featureArtworkCorners
+    : size === 'detail'
+      ? styles.detailArtworkCorners
+      : styles.tileArtworkCorners;
   if (crystal.image !== undefined) {
     return (
-      <GestureDetector gesture={pinchGesture}>
-        <AnimatedCrystalImage
-          testID={`crystal-artwork-${slugOf(crystal.name)}-${size}`}
-          source={crystal.image}
-          style={[
-            imageStyle,
-            responsiveDetailStyle,
-            zoomStyle,
-          ]}
-          resizeMode={size === 'detail' ? 'contain' : 'cover'}
-          accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
+      <GestureDetector gesture={artworkGesture}>
+        <AnimatedCrystalArtworkFrame
+          testID={`crystal-artwork-frame-${slugOf(crystal.name)}-${size}`}
+          style={[imageStyle, responsiveDetailStyle, styles.artworkViewport, zoomLayerStyle]}
           collapsable={false}
-        />
+        >
+          <AnimatedCrystalImage
+            testID={`crystal-artwork-${slugOf(crystal.name)}-${size}`}
+            source={crystal.image}
+            style={[styles.artworkImage, imageShapeStyle, zoomStyle]}
+            resizeMode={size === 'detail' ? 'contain' : 'cover'}
+            accessibilityLabel={formatCopy(t('{stone} stone illustration'), { stone: copy.name })}
+            collapsable={false}
+          />
+        </AnimatedCrystalArtworkFrame>
       </GestureDetector>
     );
   }
@@ -973,7 +1008,7 @@ export default function CrystalsScreen() {
             >
               <CrystalArtwork crystal={selectedCollectionStone} size="detail" detailSize={detailImageSize} />
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
-                {t('WHAT TO NOTICE')}
+                {t('WHAT IT LOOKS LIKE')}
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
                 {localizeCrystal(selectedCollectionStone, locale).specimenDescription}
@@ -982,16 +1017,30 @@ export default function CrystalsScreen() {
                 {t('GOOD FOR')}
               </Text>
               <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
-                {localizeCrystal(selectedCollectionStone, locale).description}
-                {'\n\n'}
                 {localizeCrystal(selectedCollectionStone, locale).guideDescription}
               </Text>
               <Text style={[styles.collectionSectionLabel, { color: colors.crystals.secondary }]}>
                 {t('GUIDE THEMES')}
               </Text>
-              <Text style={[styles.collectionDetailBody, { color: colors.crystals.foreground }]}>
-                {localizeCrystal(selectedCollectionStone, locale).note}
-              </Text>
+              <View style={styles.collectionThemeList}>
+                {selectedCollectionStone.themes.map((theme) => (
+                  <View
+                    key={theme}
+                    testID={`collection-theme-${slugOf(theme)}`}
+                    style={[
+                      styles.collectionThemePill,
+                      {
+                        backgroundColor: colors.crystals.card,
+                        borderColor: colors.crystals.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.collectionThemeText, { color: colors.crystals.foreground }]}>
+                      {t(theme)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
               <CollectionToggle name={selectedCollectionStone.name} />
             </ScrollView>
           ) : null}
@@ -1224,7 +1273,6 @@ const styles = StyleSheet.create({
   natalStoneArtwork: {
     borderRadius: 14,
     height: 72,
-    overflow: 'hidden',
     width: 72,
   },
   natalStoneRowCopy: {
@@ -1487,6 +1535,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
   },
+  collectionThemeList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  collectionThemePill: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+  collectionThemeText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   collectionDisclaimer: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
@@ -1496,7 +1560,6 @@ const styles = StyleSheet.create({
   featureCard: {
     borderRadius: 28,
     borderWidth: 1,
-    overflow: 'hidden',
   },
   emptyCard: {
     borderRadius: 24,
@@ -1521,6 +1584,24 @@ const styles = StyleSheet.create({
     height: 226,
     position: 'relative',
     width: '100%',
+  },
+  artworkViewport: {
+    overflow: 'visible',
+    position: 'relative',
+  },
+  artworkImage: {
+    height: '100%',
+    width: '100%',
+  },
+  featureArtworkCorners: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  detailArtworkCorners: {
+    borderRadius: 20,
+  },
+  tileArtworkCorners: {
+    borderRadius: 13,
   },
   featureImage: {
     height: '100%',
@@ -1613,7 +1694,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 112,
-    overflow: 'hidden',
     padding: 10,
   },
   alternativeImage: {

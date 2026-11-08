@@ -423,6 +423,17 @@ test('current residence is under Profile and can be cleared to use birthplace', 
   });
   expect(root.findAllByProps({ accessibilityLabel: 'Current residence' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'settings-residence-save' })).toHaveLength(0);
+  expect(root.findAllByProps({ accessibilityLabel: 'Search stones in the collection catalog' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'settings-collect-amethyst' })).toHaveLength(0);
+
+  await act(async () => { await pressText(root, 'Back'); });
+  expect(root.findByProps({ testID: 'settings-tab-collection' })).toBeDefined();
+  await act(async () => {
+    root.findByProps({ testID: 'settings-tab-collection' }).props.onPress();
+  });
+  expect(root.findByProps({ accessibilityLabel: 'Search stones in the collection catalog' })).toBeDefined();
+  expect(root.findByProps({ testID: 'settings-collect-amethyst' })).toBeDefined();
+  expect(root.findByProps({ testID: 'settings-hide-amethyst' })).toBeDefined();
 });
 
 test('Settings remains usable before the user creates a local profile', async () => {
@@ -576,7 +587,7 @@ test('catalog search keeps collection and hidden-stone changes saved locally', a
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
-  await act(async () => { await pressText(root, 'Preferences'); });
+  await act(async () => { await pressText(root, 'Your collection'); });
   await act(async () => {
     root.findByProps({ accessibilityLabel: 'Search stones in the collection catalog' }).props.onChangeText('ROSE');
   });

@@ -18,7 +18,9 @@ const state = vi.hoisted(() => ({
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
   pinchGestures: [] as Array<Record<string, (...args: any[]) => void>>,
+  panGestures: [] as Array<Record<string, (...args: any[]) => void>>,
   zoomScales: [] as Array<{ value: number }>,
+  panOffsets: [] as Array<{ value: number }>,
   profileContext: {
     profile: null as null | Record<string, unknown>,
     preferences: {
@@ -34,6 +36,7 @@ const state = vi.hoisted(() => ({
     note: 'Reflection · steadiness',
     description: 'A gentle reminder to pause.',
     guideDescription: 'Use it during a quiet reflection practice.',
+    themes: ['reflection', 'intuition'],
     specimenDescription: 'A pearly white stone with a soft blue flash.',
     image: 0,
     imageDescription: 'Moonstone on linen',
@@ -44,6 +47,7 @@ const state = vi.hoisted(() => ({
     note: 'Stillness · perspective',
     description: 'A reminder to slow down.',
     guideDescription: 'Use it as a calm focus during meditation.',
+    themes: ['calm', 'rest'],
     specimenDescription: 'A violet cluster of pointed quartz crystals.',
     image: 2,
     imageDescription: 'Amethyst cluster',
@@ -54,6 +58,7 @@ const state = vi.hoisted(() => ({
     note: 'Curiosity · change',
     description: 'A reminder to stay curious.',
     guideDescription: 'Use it while considering a fresh direction.',
+    themes: ['curiosity', 'change'],
     specimenDescription: 'A grey stone with blue-green flashes across its surface.',
     image: 3,
     imageDescription: 'Labradorite stone',
@@ -153,9 +158,12 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-reanimated', () => ({
   default: { createAnimatedComponent: (component: unknown) => component },
   useAnimatedStyle: (factory: () => unknown) => factory(),
-  useSharedValue: (value: number) => {
+  useSharedValue: (value: any) => {
     const sharedValue = { value };
-    state.zoomScales.push(sharedValue);
+    if (typeof value === 'number') {
+      if (value === 1) state.zoomScales.push(sharedValue);
+      else state.panOffsets.push(sharedValue);
+    }
     return sharedValue;
   },
   withTiming: (value: number) => value,
@@ -169,6 +177,11 @@ vi.mock('react-native-gesture-handler', async () => {
       state.pinchGestures.push(config);
       return config;
     },
+    usePanGesture: (config: Record<string, (...args: any[]) => void>) => {
+      state.panGestures.push(config);
+      return config;
+    },
+    useSimultaneousGestures: (...gestures: unknown[]) => ({ gestures }),
   };
 });
 vi.mock('react-native-keyboard-controller', () => ({
@@ -267,7 +280,9 @@ afterEach(async () => {
   state.natalBalance = null;
   state.natalRecommendations = [];
   state.pinchGestures.length = 0;
+  state.panGestures.length = 0;
   state.zoomScales.length = 0;
+  state.panOffsets.length = 0;
 });
 
 test('crystal artwork zooms during a pinch and resets when the gesture ends', async () => {
@@ -285,14 +300,29 @@ test('crystal artwork zooms during a pinch and resets when the gesture ends', as
   expect(images.length).toBeGreaterThan(0);
   expect(gestureDetectors).toHaveLength(images.length);
 
-  const firstGesture = gestureDetectors[0].props.gesture;
+  const composedGesture = gestureDetectors[0].props.gesture;
+  expect(composedGesture.gestures).toHaveLength(2);
+  const [firstGesture, panGesture] = composedGesture.gestures;
   const zoomScale = state.zoomScales[0];
+  const panX = state.panOffsets[0];
+  const panY = state.panOffsets[1];
+  const frame = root.findByProps({ testID: 'crystal-artwork-frame-moonstone-feature' });
   act(() => firstGesture.onUpdate({ scale: 1.8 }));
   expect(zoomScale.value).toBe(1.8);
+  act(() => panGesture.onUpdate({ translationX: 1000, translationY: -1000 }));
+  expect(panX.value).toBe(402);
+  expect(panY.value).toBe(-874);
   act(() => firstGesture.onUpdate({ scale: 8 }));
-  expect(zoomScale.value).toBe(2.5);
+  expect(zoomScale.value).toBe(3.5);
+  const frameStyles = Array.isArray(frame.props.style) ? frame.props.style.flat(Infinity) : [frame.props.style];
+  expect(frameStyles.some((style: any) => style && typeof style === 'object' && 'transform' in style)).toBe(false);
+  const image = root.findByProps({ testID: 'crystal-artwork-moonstone-feature' });
+  const imageStyles = Array.isArray(image.props.style) ? image.props.style.flat(Infinity) : [image.props.style];
+  expect(imageStyles.some((style: any) => style && typeof style === 'object' && 'transform' in style)).toBe(true);
   act(() => firstGesture.onFinalize());
   expect(zoomScale.value).toBe(1);
+  expect(panX.value).toBe(0);
+  expect(panY.value).toBe(0);
 });
 
 test('feeling-based crystal suggestions use the saved city local date without a chart', async () => {
@@ -427,9 +457,13 @@ test('the full collection can be searched, opened, and added to a local collecti
   expect(detailText).toContain('pale pink quartz');
   expect(detailText).not.toContain('AI-generated illustrations');
   expect(detailText).not.toContain('Real stones vary');
+  expect(detailText).toContain('WHAT IT LOOKS LIKE');
+  expect(detailText).not.toContain('WHAT TO NOTICE');
   expect(detailText).toContain('GOOD FOR');
-  expect(detailText).toContain('A good fit for care and connection.');
-  expect(detailText).toContain('heart-centered meditation or gratitude practice');
+  expect(detailText).not.toContain('A good fit for care and connection.');
+  expect(detailText).toContain('Keep it nearby for a heart-centered meditation or gratitude practice.');
+  expect(root.findByProps({ testID: 'collection-theme-connection' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collection-theme-empathy' })).toBeDefined();
   expect(detailText).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   await act(async () => { addStone.props.onPress(); });
@@ -585,12 +619,11 @@ test('the collection button clears the tab bar and detail artwork scales to the 
   await act(async () => {
     root.findByProps({ testID: 'catalog-stone-moonstone' }).props.onPress();
   });
-  const detailImage = root.findAll(
-    (node) => node.props.accessibilityLabel === 'Moonstone stone illustration',
-  ).find((node) => Array.isArray(node.props.style))!;
+  const detailImage = root.findByProps({ testID: 'crystal-artwork-moonstone-detail' });
   expect(detailImage).toBeDefined();
   expect(detailImage.props.resizeMode).toBe('contain');
-  const detailStyle = Object.assign({}, ...detailImage.props.style);
+  const detailFrame = root.findByProps({ testID: 'crystal-artwork-frame-moonstone-detail' });
+  const detailStyle = Object.assign({}, ...detailFrame.props.style);
   expect(detailStyle).toMatchObject({ aspectRatio: 1 });
   expect(detailStyle.width).toBeCloseTo(297.16, 1);
   expect(detailStyle.height).toBe(detailStyle.width);
@@ -717,6 +750,7 @@ test('birth-chart companions show image cards and open the matching full-catalog
       description: 'A good fit for care and connection.',
       specimenDescription: 'A soft pink quartz stone.',
       guideDescription: 'Often chosen for a quiet reflection practice.',
+      themes: ['connection', 'empathy'],
       tone: index === 0 ? 'pink' : 'blue',
       image: index % 4,
     },
@@ -750,7 +784,8 @@ test('birth-chart companions show image cards and open the matching full-catalog
   expect(root.findByProps({ testID: 'crystal-artwork-rose-quartz-detail' })).toBeDefined();
   const catalogDetailText = root.findAllByType(Text).map((node) => node.props.children).join(' ');
   expect(catalogDetailText).toContain('A soft pink quartz stone.');
-  expect(catalogDetailText).toContain('A good fit for care and connection.');
+  expect(catalogDetailText).not.toContain('A good fit for care and connection.');
+  expect(catalogDetailText).toContain('Often chosen for a quiet reflection practice.');
   expect(catalogDetailText).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   expect(addStone).toBeDefined();

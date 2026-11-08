@@ -21,11 +21,17 @@ Store listings must describe only features present and working in the release bu
 
 **How to apply:** audit each store claim against the current build before submission; revise the description whenever scope changes.
 
-Keep Cosmos copy concise—one reflection heading, one short daily message, then “A moment to keep”—but keep the page complete and intentional rather than visually stripped down. Let the selected daily feeling, available transit theme, and saved intentions inform crystal suggestions; describe stones as symbolic prompts, not as having guaranteed effects.
+Keep Cosmos organized as one cohesive daily card: the main theme, what may feel easier, what can wait, “A moment to keep,” and one short ritual. Use consistent information buttons for readers who want more context, while keeping the overview easy to scan.
 
-**Why:** the user asked for daily feeling states to affect crystal picks alongside transits, while keeping the reading simple and grounded.
+**Why:** the user explicitly chose a single card instead of fragmented blocks and approved tap-for-more explanations to add depth without crowding the main screen.
 
-**How to apply:** keep mood, chart theme, and optional intentions distinct in the recommendation logic and explanation; never promise that a crystal changes a person's health or circumstances.
+**How to apply:** keep each section distinct and complementary; reserve detailed explanations for the information buttons, translate new copy in all seven app languages, and do not turn suggestions into predictions.
+
+Keep the five Cosmos section headings visually consistent, compact, and gold-toned, with each info button aligned to its heading. Explanation overlays need an obvious top-right close control; the “Explore other ideas” overlay should show the ideas without a redundant title or introductory paragraph.
+
+**Why:** the user asked for one cohesive daily card with matching section typography and icon placement, less empty spacing, and concise overlays that are easy to dismiss.
+
+**How to apply:** use the same heading row and icon hit area for all five sections, keep the main theme visually primary, and preserve enough top-right safe-area room for the close button.
 
 Soul Compass is a spiritual self-exploration app for everyday users, including people who are not especially spiritual. Keep its language simple, welcoming, and practical.
 
@@ -33,11 +39,11 @@ Soul Compass is a spiritual self-exploration app for everyday users, including p
 
 **How to apply:** explain symbolic readings in grounded language; avoid assuming spiritual beliefs or presenting astrology and rituals as predictions or guaranteed effects.
 
-Crystal descriptions should directly say what qualities a stone is good for. Do not add visible caveats that crystal meanings are symbolic prompts or unproven effects.
+Crystal catalog details should separate “What it looks like,” a stone-specific, name-free “Good for” explanation, and concise translated guide-theme tags. Avoid generic repeated copy and do not add visible caveats that crystal meanings are symbolic prompts or unproven effects.
 
-**Why:** the user explicitly asked for direct, benefit-oriented crystal descriptions without that disclaimer.
+**Why:** the user asked for clear specimen identification, richer per-stone descriptions without repeating the name, and a distinct themes section that does not restate the same prose.
 
-**How to apply:** use simple language tied to the stone’s guide themes and chart context; keep the copy out of clinical or guaranteed-result claims.
+**How to apply:** write catalog copy for each stone's own appearance and practical reflection themes; use the themes as quick-scan tags, translate them in all supported languages, and keep the copy out of clinical or guaranteed-result claims.
 
 For daily crystal picks, one shared chart theme is enough when no stronger match is available; do not select a stone with no relevant theme connection.
 
@@ -57,6 +63,12 @@ Major-aspect explanations should connect both actual planetary placements to how
 
 **How to apply:** use each planet's calculated sign and available house, explain the type of connection in plain language without repeating the placement definitions, and include a concise hypothetical example. For unknown birth times, label reference-time aspects as uncertain and omit unverified signs or houses.
 
+All seven language versions should read like natural, conversational copy in that language, with consistent informal address. Use idioms or familiar sayings only when they fit the meaning and sound natural locally; do not translate them literally or force a proverb into every reflection.
+
+**Why:** the user wants Soul Compass to feel as if a fluent speaker wrote each language, including appropriate syntax, word endings, punctuation, and occasional culturally familiar expressions.
+
+**How to apply:** review full sentences and dynamic placeholders for case, gender, agreement, and word order; adapt idioms by meaning, not word-for-word. Treat automated checks as coverage/consistency checks, not proof of native editorial quality.
+
 Planet explanations should end with one or two clearly hypothetical, everyday examples in place of a reflection question. Use “A hypothetical example” as the heading and begin the next line directly with the scenario, without repeating “For example.”
 
 **Why:** the user wants readers to see how a planet-sign-house combination could show up in ordinary life, without presenting it as a fact about them.
@@ -75,11 +87,11 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 
 **How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
-Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app. Keep the wordmark, settings control, page-title baseline, horizontal gutter, and subtitle spacing consistent across all three tabs.
+Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app. Keep the wordmark, settings control, page-title baseline, horizontal gutter, and subtitle spacing consistent across all three tabs. In Settings, keep Profile, Privacy, and About intact; keep Preferences brief and give Your Collection its own menu item.
 
-**Why:** the user asked for the three tabs to feel consistent while explicitly keeping Crystals beige, then requested pixel-aligned wordmarks, headings, subtitles, and settings icons.
+**Why:** the user asked for consistent tab styling while keeping Crystals beige, and chose a separate collection menu to avoid crowding Preferences.
 
-**How to apply:** use the shared tab header and layout tokens, align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals.
+**How to apply:** use the shared tab header and layout tokens, align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals. Keep the collection catalog and hidden-stone controls together under Your Collection.
 
 Cosmos overview, focus, caution, and reflection should offer complementary perspectives, not repeat one instruction in different words. Small ritual ideas should change daily; repetition after some time is acceptable.
 

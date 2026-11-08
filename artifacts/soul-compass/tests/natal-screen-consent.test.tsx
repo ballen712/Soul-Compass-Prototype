@@ -33,6 +33,7 @@ vi.mock('react-native-svg', () => ({
   default: 'Svg',
   Circle: 'SvgCircle',
   Line: 'SvgLine',
+  Rect: 'SvgRect',
   Text: 'SvgText',
 }));
 vi.mock('expo-router', () => ({
@@ -90,6 +91,7 @@ vi.mock('@/hooks/useColors', () => ({
 }));
 
 import NatalScreen, { explainAngle, explainAspect, explainPlanet } from '../app/(tabs)/natal';
+import { NatalChartWheel } from '../components/NatalChartWheel';
 import { dailyReadingTranslations } from '../localization/daily-copy';
 import { natalTranslations } from '../localization/natal-copy';
 import { screenTranslations } from '../localization/screen-copy';
@@ -451,8 +453,12 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(wheel.props.accessibilityLabel).toContain('Moon');
   expect(root.findByProps({ testID: 'natal-planet-glyph-sun' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-planet-name-sun' }).props.children).toBe('Sun');
+  expect(root.findByProps({ testID: 'natal-planet-label-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-number-1' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-cusp-line-1' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-marker-asc' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-marker-mc' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
@@ -598,6 +604,8 @@ test('timed chart keeps angles but omits Placidus houses when the location canno
   expect(root.findByProps({ testID: 'natal-angle-ascendant' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-house-number-1' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-house-cusp-line-1' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('no substitute house system was used'),
@@ -675,7 +683,7 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-angle-marker-asc' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-angle-marker-mc' })).toHaveLength(0);
-  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' }).props.strokeDasharray).toBe('3 3');
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' }).props.strokeDasharray).toBe('1 5');
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   await openGuide(root);
   expect(root.findAllByType(Text).some((node) =>
@@ -684,6 +692,102 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   await act(async () => { root.findByProps({ testID: 'natal-planet-moon' }).props.onPress(); });
   expect(findText(root, 'Moon sign range')).toBeDefined();
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('Aquarius or Pisces'))).toBe(true);
+});
+
+test('the wheel labels a tight planet cluster without overlap and dots every major aspect', async () => {
+  const planetNames = [
+    'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
+    'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
+  ];
+  const planets = planetNames.map((planet, index) => ({
+    planet,
+    sign: 'Cancer',
+    degreeInSign: 10 + index / 10,
+    retrograde: false,
+    longitude: 101 + index * 0.4,
+    latitude: 0,
+    speedDegreesPerDay: 0,
+  })) as unknown as NatalChartResponse['planets'];
+  const majorTypes = ['conjunction', 'sextile', 'square', 'trine', 'opposition'];
+  const aspects = majorTypes.map((type, index) => ({
+    first: planetNames[index],
+    second: planetNames[index + 1],
+    type,
+    orb: 1,
+    exact: false,
+    applying: true,
+    strength: 0.5,
+  })) as unknown as NatalChartResponse['aspects'];
+
+  await act(async () => {
+    renderer = create(
+      <NatalChartWheel
+        planets={planets}
+        palette={{
+          card: '#192A42',
+          border: '#304158',
+          foreground: '#F4F0E7',
+          secondary: '#D9C49B',
+          mutedForeground: '#AAB5C5',
+        }}
+        translate={(copy) => copy}
+        locale="en"
+        moonSignRange={[]}
+        timeKnown
+        angles={chartResult.angles!}
+        houseCusps={chartResult.houseCusps}
+        majorAspects={aspects}
+      />,
+    );
+  });
+
+  const root = renderer!.root;
+  const labels = root.findAll((node) =>
+    typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-planet-label-'),
+  );
+  expect(labels).toHaveLength(10);
+  const markers = planetNames.map((planet) =>
+    root.findByProps({ testID: `natal-planet-marker-${planet.toLowerCase()}` }).props,
+  );
+  const markerRadii = markers.map((marker) => Math.hypot(marker.cx - 162, marker.cy - 162));
+  expect(Math.max(...markerRadii) - Math.min(...markerRadii)).toBeLessThan(0.001);
+
+  for (let first = 0; first < labels.length; first += 1) {
+    for (let second = first + 1; second < labels.length; second += 1) {
+      const a = labels[first].props;
+      const b = labels[second].props;
+      const overlaps = a.x < b.x + b.width
+        && a.x + a.width > b.x
+        && a.y < b.y + b.height
+        && a.y + a.height > b.y;
+      expect(overlaps, `${a.testID} and ${b.testID}`).toBe(false);
+    }
+  }
+
+  const expectedAspectDashes: Array<string | undefined> = [
+    undefined,
+    '1 3',
+    '4 3',
+    undefined,
+    '5 3',
+  ];
+  for (let index = 0; index < majorTypes.length; index += 1) {
+    const line = root.findByProps({
+      testID: `natal-aspect-line-${majorTypes[index]}-${planetNames[index].toLowerCase()}-${planetNames[index + 1].toLowerCase()}`,
+    });
+    const firstMarker = root.findByProps({
+      testID: `natal-planet-marker-${planetNames[index].toLowerCase()}`,
+    }).props;
+    const secondMarker = root.findByProps({
+      testID: `natal-planet-marker-${planetNames[index + 1].toLowerCase()}`,
+    }).props;
+    expect(line.props.x1).toBe(firstMarker.cx);
+    expect(line.props.y1).toBe(firstMarker.cy);
+    expect(line.props.x2).toBe(secondMarker.cx);
+    expect(line.props.y2).toBe(secondMarker.cy);
+    expect(line.props.strokeDasharray).toBe(expectedAspectDashes[index]);
+  }
+  expect(root.findAllByProps({ cx: 162, cy: 162, r: 2.5 })).toHaveLength(0);
 });
 
 const supportedTranslationLocales: Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];

@@ -135,7 +135,7 @@ test('choosing a language saves it locally and then opens onboarding', async () 
   expect(renderer!.root.findAllByProps({ testID: 'language-option-es' })).toHaveLength(0);
 });
 
-test('onboarding combines a short app introduction with profile entry without repeating the privacy explanation', async () => {
+test('onboarding proceeds from language choice directly to profile entry without the guide card', async () => {
   await act(async () => {
     renderer = create(<OnboardingScreen />);
   });
@@ -146,8 +146,9 @@ test('onboarding combines a short app introduction with profile entry without re
   const visibleCopy = renderer!.root.findAllByType('Text' as any)
     .map((node) => typeof node.props.children === 'string' ? node.props.children : '')
     .join(' ');
-  expect(visibleCopy).toContain('A quick guide to Soul Compass');
-  expect(visibleCopy).toContain('Daily reflections, a crystal guide, an optional birth chart, and more ways to explore.');
+  expect(renderer!.root.findAll((node) => String(node.type) === 'ProfileForm')).toHaveLength(1);
+  expect(visibleCopy).not.toContain('A quick guide to Soul Compass');
+  expect(visibleCopy).not.toContain('Daily reflections, a crystal guide, an optional birth chart, and more ways to explore.');
   expect(visibleCopy).not.toContain('No account is needed.');
   expect(visibleCopy).not.toContain('birth details are sent to calculate it');
 });

@@ -27,7 +27,7 @@ const CATALOG = crystalCatalog
   .sort((first, second) => first.name.localeCompare(second.name));
 const LANGUAGES = APP_LOCALES.map((code) => ({ code, label: APP_LANGUAGE_LABELS[code] }));
 
-type Tab = 'profile' | 'preferences' | 'privacy' | 'about';
+type Tab = 'profile' | 'preferences' | 'collection' | 'privacy' | 'about';
 
 const appearanceOptions = [
   { id: 'system', label: 'System' },
@@ -198,9 +198,10 @@ export default function SettingsScreen() {
       ))}
     </View>
   );
-  const sections: { key: Tab; label: string; description: string }[] = [
+  const sections: { key: Tab; label: string; description?: string }[] = [
     { key: 'profile', label: 'Profile', description: 'Birth details' },
-    { key: 'preferences', label: 'Preferences', description: 'Daily feeling, language and collection' },
+    { key: 'preferences', label: 'Preferences' },
+    { key: 'collection', label: 'Your collection' },
     { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
     { key: 'about', label: 'About', description: 'How to use the app and support' },
   ];
@@ -299,8 +300,10 @@ export default function SettingsScreen() {
                 style={styles.menuButton}
               >
                 <View style={styles.menuCopy}>
-                <Text style={styles.menuLabel}>{t(section.label)}</Text>
-                <Text style={styles.menuDescription}>{t(section.description)}</Text>
+                  <Text style={styles.menuLabel}>{t(section.label)}</Text>
+                  {section.description ? (
+                    <Text style={styles.menuDescription}>{t(section.description)}</Text>
+                  ) : null}
                 </View>
                 <Text style={styles.menuArrow}>›</Text>
               </Pressable>
@@ -354,39 +357,55 @@ export default function SettingsScreen() {
                     ))}
                   </View>
                 </Section>
-               <Section
-                 title="Your collection"
-                 description={formatAppText(
-                   'This guide currently has {count} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today’s suggestion. Your collection does not limit recommendations.',
-                   locale,
-                   { count: CATALOG.length },
-                 )}
-               >
-                  <TextInput
-                    accessibilityLabel={t('Search stones in the collection catalog')}
-                    placeholder={t('Search stones')}
-                   value={collectionSearch}
-                   onChangeText={setCollectionSearch}
-                   autoCorrect={false}
-                   style={styles.catalogSearch}
-                 />
-                  {collectionMatches.length === 0 ? <Text style={styles.body}>{t('No stones match your search.')}</Text> : null}
-                 {collectionMatches.map((c) => {
+            </>
+          ) : null}
+
+          {tab === 'collection' ? (
+            <>
+              <Section
+                title="Your collection"
+                description={formatAppText(
+                  'This guide currently has {count} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today’s suggestion. Your collection does not limit recommendations.',
+                  locale,
+                  { count: CATALOG.length },
+                )}
+              >
+                <TextInput
+                  accessibilityLabel={t('Search stones in the collection catalog')}
+                  placeholder={t('Search stones')}
+                  value={collectionSearch}
+                  onChangeText={setCollectionSearch}
+                  autoCorrect={false}
+                  style={styles.catalogSearch}
+                />
+                {collectionMatches.length === 0 ? (
+                  <Text style={styles.body}>{t('No stones match your search.')}</Text>
+                ) : null}
+                {collectionMatches.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
                   return (
                     <View key={c.id} style={styles.row}>
-                       <Text style={styles.rowLabel}>{stoneName(c.name)}</Text>
-                      <Pressable testID={`settings-collect-${c.id}`} accessibilityRole="button" disabled={busy}
+                      <Text style={styles.rowLabel}>{stoneName(c.name)}</Text>
+                      <Pressable
+                        testID={`settings-collect-${c.id}`}
+                        accessibilityRole="button"
+                        disabled={busy}
                         onPress={() => void run(() => toggleCrystal(c.id), undefined, { clearMessage: false })}
-                        style={[styles.smallButton, owned && styles.smallButtonActive]}>
-                         <Text style={[styles.smallButtonText, owned && styles.smallButtonTextActive]}>{t(owned ? 'Remove' : 'Add')}</Text>
+                        style={[styles.smallButton, owned && styles.smallButtonActive]}
+                      >
+                        <Text style={[styles.smallButtonText, owned && styles.smallButtonTextActive]}>
+                          {t(owned ? 'Remove' : 'Add')}
+                        </Text>
                       </Pressable>
                     </View>
                   );
                 })}
               </Section>
-               <Section title="Hidden stones" description="If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time.">
-                 <TextInput
+              <Section
+                title="Hidden stones"
+                description="If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time."
+              >
+                <TextInput
                   accessibilityLabel={t('Search stones to hide or restore')}
                   placeholder={t('Search stones')}
                   value={hiddenSearch}
@@ -394,15 +413,24 @@ export default function SettingsScreen() {
                   autoCorrect={false}
                   style={styles.catalogSearch}
                 />
-                {hiddenMatches.length === 0 ? <Text style={styles.body}>{t('No stones match your search.')}</Text> : null}
+                {hiddenMatches.length === 0 ? (
+                  <Text style={styles.body}>{t('No stones match your search.')}</Text>
+                ) : null}
                 {hiddenMatches.map((c) => {
                   const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
                   return (
                     <View key={c.id} style={styles.row}>
                       <Text style={styles.rowLabel}>{stoneName(c.name)}</Text>
-                      <Pressable testID={`settings-hide-${c.id}`} accessibilityRole="button" disabled={busy} onPress={() => toggleHidden(c.id)}
-                        style={[styles.smallButton, hidden && styles.smallButtonActive]}>
-                        <Text style={[styles.smallButtonText, hidden && styles.smallButtonTextActive]}>{t(hidden ? 'Restore' : 'Hide')}</Text>
+                      <Pressable
+                        testID={`settings-hide-${c.id}`}
+                        accessibilityRole="button"
+                        disabled={busy}
+                        onPress={() => toggleHidden(c.id)}
+                        style={[styles.smallButton, hidden && styles.smallButtonActive]}
+                      >
+                        <Text style={[styles.smallButtonText, hidden && styles.smallButtonTextActive]}>
+                          {t(hidden ? 'Restore' : 'Hide')}
+                        </Text>
                       </Pressable>
                     </View>
                   );

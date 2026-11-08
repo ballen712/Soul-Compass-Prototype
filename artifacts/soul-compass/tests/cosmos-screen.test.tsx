@@ -94,10 +94,17 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(screenCopy).toContain('SOUL COMPASS');
   expect(screenCopy).not.toContain('DAILY PRACTICE');
   expect(screenCopy).not.toContain('A DAILY PAUSE');
-  expect(screenCopy).toContain('FOCUS FOR TODAY');
-  expect(screenCopy).toContain('WHAT TO LEAVE FOR LATER');
+  expect(screenCopy).toContain('Focus for today');
+  expect(screenCopy).toContain('What to leave for later');
+  expect(screenCopy).toContain('A moment to keep');
+  expect(screenCopy).toContain('A small daily ritual');
   expect(screenCopy).not.toContain('OPTIONAL');
-  expect(root.findAllByProps({ name: 'info' })).toHaveLength(3);
+  expect(root.findAllByProps({ name: 'info' })).toHaveLength(5);
+  for (const section of ['reflection', 'focus', 'caution', 'moment', 'ritual']) {
+    const heading = root.findByProps({ testID: `cosmos-heading-${section}` });
+    expect(heading.findByProps({ testID: `cosmos-info-${section}` })).toBeDefined();
+  }
+  expect(root.findByProps({ testID: 'cosmos-day-card' }).findByProps({ testID: 'cosmos-ritual-ideas' })).toBeDefined();
   expect(root.findAllByProps({ name: 'compass' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'moon-outline' })).toHaveLength(0);
   expect(root.findAllByProps({ name: 'wind' })).toHaveLength(0);
@@ -130,7 +137,7 @@ test('A moment to keep opens in a centered modal and closes without a chart requ
   expect(modal).toBeDefined();
   const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
   expect(modalCopy).not.toContain('About this question');
-  expect(modalCopy).not.toContain('What deserves my attention?');
+  expect(modalCopy).toContain('What deserves my attention?');
   expect(modalCopy.join(' ')).toContain('This prompt connects today’s reflection');
   expect(state.getDailyAstrology).not.toHaveBeenCalled();
 
@@ -215,9 +222,23 @@ test('calculated focus and caution are both visible and readable in the Cosmos c
       lineHeight: 21,
     }));
   }
+
+  for (const [testID, expectedCopy] of [
+    ['cosmos-info-focus', 'Today’s focus points to something that may feel easier'],
+    ['cosmos-info-caution', 'This is a gentle nudge to give one kind of task more time'],
+  ]) {
+    await act(async () => {
+      root.findByProps({ testID }).props.onPress();
+    });
+    const modal = root.findByProps({ testID: 'cosmos-explanation-modal' });
+    expect(modal.findAllByType(Text).map((node) => node.props.children).join(' ')).toContain(expectedCopy);
+    await act(async () => {
+      root.findByProps({ accessibilityLabel: 'Close explanation' }).props.onPress();
+    });
+  }
 });
 
-test('ritual ideas use the shared info button and no optional label', async () => {
+test('the ritual belongs to the day card while other ideas remain a separate action', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   await act(async () => {
     renderer = create(<CosmosScreen />);
@@ -226,11 +247,35 @@ test('ritual ideas use the shared info button and no optional label', async () =
   const ideasButton = root.findByProps({
     accessibilityLabel: 'Explore other daily ritual ideas',
   });
+  const dayCard = root.findByProps({ testID: 'cosmos-day-card' });
+  expect(dayCard.findByProps({ testID: 'cosmos-info-focus' })).toBeDefined();
+  expect(dayCard.findByProps({ testID: 'cosmos-info-caution' })).toBeDefined();
+  expect(dayCard.findByProps({ testID: 'cosmos-info-moment' })).toBeDefined();
+  expect(dayCard.findByProps({ testID: 'cosmos-info-ritual' })).toBeDefined();
+  expect(dayCard.findByProps({ testID: 'cosmos-ritual-ideas' })).toBeDefined();
+  expect(ideasButton.findAllByProps({ name: 'info' })).toHaveLength(0);
+
+  await act(async () => {
+    root.findByProps({ testID: 'cosmos-info-ritual' }).props.onPress();
+  });
+  const ritualModal = root.findByProps({ testID: 'cosmos-explanation-modal' });
+  expect(ritualModal.findAllByType(Text).map((node) => node.props.children).join(' ')).toContain(
+    'A small ritual is a brief pause that can help bring your attention back to the present.',
+  );
+  await act(async () => {
+    root.findByProps({ accessibilityLabel: 'Close explanation' }).props.onPress();
+  });
 
   await act(async () => { ideasButton.props.onPress(); });
   const modal = root.findByProps({ testID: 'cosmos-explanation-modal' });
   const modalCopy = modal.findAllByType(Text).map((node) => node.props.children);
-  expect(modalCopy).toContain('Other ideas for today');
+  expect(modalCopy).not.toContain('Other ideas for today');
+  expect(modalCopy.join(' ')).not.toContain('Here are three other small ideas for today');
+  expect(modal.findByProps({ accessibilityLabel: 'Close explanation' })).toBeDefined();
   expect(modalCopy).not.toContain('OPTIONAL');
   expect(modal.findAllByProps({ testID: 'daily-ritual-option' })).toHaveLength(3);
+  await act(async () => {
+    modal.findByProps({ accessibilityLabel: 'Close explanation' }).props.onPress();
+  });
+  expect(root.findAllByProps({ testID: 'cosmos-explanation-modal' })).toHaveLength(0);
 });

@@ -4,6 +4,8 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 
 type PlanetPosition = NatalChartResponse['planets'][number];
+type Aspect = NatalChartResponse['aspects'][number];
+type Angles = NonNullable<NatalChartResponse['angles']>;
 type Palette = {
   card: string;
   border: string;
@@ -30,9 +32,6 @@ const PLANET_GLYPHS: Record<string, string> = {
   Pluto: '♇',
 };
 
-const PLANET_LANES = [50, 64, 78] as const;
-const DEFAULT_LANE = PLANET_LANES[1];
-
 function normalizedPlanetName(value: string) {
   return value ? `${value[0].toUpperCase()}${value.slice(1).toLowerCase()}` : value;
 }
@@ -46,6 +45,7 @@ function polarPoint(longitude: number, radius: number, center: number) {
 }
 
 function layoutPlanets(planets: PlanetPosition[], center: number) {
+  const planetLanes = [center * 0.33, center * 0.44, center * 0.55];
   const placed: Array<{
     planet: PlanetPosition;
     x: number;
@@ -55,7 +55,7 @@ function layoutPlanets(planets: PlanetPosition[], center: number) {
 
   const sorted = [...planets].sort((first, second) => first.longitude - second.longitude);
   for (const planet of sorted) {
-    const candidates = PLANET_LANES.map((radius) => ({
+    const candidates = planetLanes.map((radius) => ({
       radius,
       ...polarPoint(planet.longitude, radius, center),
     }));
@@ -81,6 +81,8 @@ export function NatalChartWheel({
   locale,
   moonSignRange,
   timeKnown,
+  angles,
+  majorAspects,
 }: {
   planets: PlanetPosition[];
   palette: Palette;
@@ -88,11 +90,35 @@ export function NatalChartWheel({
   locale: string;
   moonSignRange: string[];
   timeKnown: boolean;
+  angles: Angles | null;
+  majorAspects: Aspect[];
 }) {
   const { width } = useWindowDimensions();
   const size = Math.min(276, Math.max(220, width - 116));
   const center = size / 2;
   const markers = useMemo(() => layoutPlanets(planets, center), [planets, center]);
+  const planetLongitudes = useMemo(
+    () => new Map(planets.map((planet) => [planet.planet.toLowerCase(), planet.longitude])),
+    [planets],
+  );
+  const aspectLines = useMemo(() => {
+    const radius = center * 0.34;
+    return majorAspects.flatMap((aspect, index) => {
+      const firstLongitude = planetLongitudes.get(aspect.first.toLowerCase());
+      const secondLongitude = planetLongitudes.get(aspect.second.toLowerCase());
+      if (firstLongitude === undefined || secondLongitude === undefined) return [];
+      const first = polarPoint(firstLongitude, radius, center);
+      const second = polarPoint(secondLongitude, radius, center);
+      return [{
+        aspect,
+        index,
+        first,
+        second,
+        uncertainMoon: !timeKnown
+          && (aspect.first.toLowerCase() === 'moon' || aspect.second.toLowerCase() === 'moon'),
+      }];
+    });
+  }, [center, majorAspects, planetLongitudes, timeKnown]);
 
   const accessiblePositions = planets.map((planet) => {
     const name = normalizedPlanetName(planet.planet);
@@ -101,11 +127,12 @@ export function NatalChartWheel({
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
-    const isUncertainMoon = !timeKnown
-      && name === 'Moon'
-      && moonSignRange.length > 1;
+    const isUncertainMoon = !timeKnown && name === 'Moon';
     const position = `${translate(name)} ${translate('in')} ${translate(sign)} ${degree}°`;
-    return isUncertainMoon ? `${position}?` : position;
+    const possibleSigns = isUncertainMoon && moonSignRange.length > 1
+      ? ` (${moonSignRange.map((possibleSign) => translate(normalizedPlanetName(possibleSign))).join(', ')})`
+      : '';
+    return isUncertainMoon ? `${position}?${possibleSigns}` : position;
   }).join(', ');
 
   return (
@@ -165,28 +192,67 @@ export function NatalChartWheel({
             </SvgText>
           );
         })}
-        <Circle
-          cx={center}
-          cy={center}
-          r={30}
-          fill={palette.card}
-          stroke={palette.border}
-          strokeWidth={1}
-        />
-        <Circle cx={center} cy={center} r={2} fill={palette.secondary} />
+        {aspectLines.map(({ aspect, index, first, second, uncertainMoon }) => {
+          const strength = Number.isFinite(aspect.strength)
+            ? Math.max(0, Math.min(1, aspect.strength))
+            : 0.5;
+          return (
+            <Line
+              key={`${aspect.type}-${aspect.first}-${aspect.second}-${index}`}
+              testID={`natal-aspect-line-${aspect.type}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
+              x1={first.x}
+              y1={first.y}
+              x2={second.x}
+              y2={second.y}
+              stroke={palette.secondary}
+              strokeWidth={0.75 + strength * 0.55}
+              strokeDasharray={uncertainMoon ? '3 3' : undefined}
+              opacity={uncertainMoon ? 0.35 : 0.2 + strength * 0.36}
+            />
+          );
+        })}
+        <Circle cx={center} cy={center} r={2.5} fill={palette.secondary} />
+        {angles ? (
+          [
+            { key: 'asc', label: 'ASC', longitude: angles.ascendant },
+            { key: 'mc', label: 'MC', longitude: angles.midheaven },
+          ].map(({ key, label, longitude }) => {
+            const point = polarPoint(longitude, center - 3, center);
+            const labelPoint = polarPoint(longitude, center * 0.74, center);
+            return (
+              <React.Fragment key={key}>
+                <Circle
+                  testID={`natal-angle-marker-${key}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r={3}
+                  fill={palette.secondary}
+                />
+                <SvgText
+                  x={labelPoint.x}
+                  y={labelPoint.y + 3}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fontWeight="700"
+                  fill={palette.secondary}
+                >
+                  {label}
+                </SvgText>
+              </React.Fragment>
+            );
+          })
+        ) : null}
         {markers.map(({ planet, x, y, radius }) => {
           const name = normalizedPlanetName(planet.planet);
           const glyph = PLANET_GLYPHS[name] ?? name.slice(0, 1);
-          const isUncertainMoon = !timeKnown
-            && name === 'Moon'
-            && moonSignRange.length > 1;
-          const exactPoint = polarPoint(planet.longitude, DEFAULT_LANE, center);
+          const isUncertainMoon = !timeKnown && name === 'Moon';
+          const exactPoint = polarPoint(planet.longitude, center * 0.44, center);
           const color = name === 'Sun' || name === 'Moon'
             ? palette.secondary
             : palette.foreground;
           return (
             <React.Fragment key={planet.planet}>
-              {Math.abs(radius - DEFAULT_LANE) > 0.5 ? (
+              {Math.abs(radius - center * 0.44) > 0.5 ? (
                 <Line
                   x1={exactPoint.x}
                   y1={exactPoint.y}

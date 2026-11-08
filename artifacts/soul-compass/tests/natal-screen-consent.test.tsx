@@ -453,6 +453,9 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-marker-asc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-marker-mc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
 
   await act(async () => { root.findByProps({ testID: 'natal-planet-sun' }).props.onPress(); });
   expect(findText(root, 'Sun in Aquarius · House 5')).toBeDefined();
@@ -670,6 +673,9 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-marker-moon' }).props.strokeDasharray).toBe('2 2');
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
+  expect(root.findAllByProps({ testID: 'natal-angle-marker-asc' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-marker-mc' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' }).props.strokeDasharray).toBe('3 3');
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   await openGuide(root);
   expect(root.findAllByType(Text).some((node) =>

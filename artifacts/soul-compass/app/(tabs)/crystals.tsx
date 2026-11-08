@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { GestureDetector, usePinchGesture } from 'react-native-gesture-handler';
@@ -25,7 +25,7 @@ import {
   getHomeLocalDate,
   getNatalCrystalSuggestions,
 } from '@/profile/astrology';
-import { FEELING_OPTIONS, type NatalCrystalRecommendation } from '@/profile/crystal-guidance';
+import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { getDailyAstrology } from '@/profile/daily-cache';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
@@ -241,7 +241,6 @@ export default function CrystalsScreen() {
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [collectionSearch, setCollectionSearch] = useState('');
   const [selectedCollectionStone, setSelectedCollectionStone] = useState<Crystal | null>(null);
-  const [selectedNatalStone, setSelectedNatalStone] = useState<NatalCrystalRecommendation | null>(null);
   const [feelingPickerOpen, setFeelingPickerOpen] = useState(false);
   const [feelingSaving, setFeelingSaving] = useState(false);
   const [feelingSaveError, setFeelingSaveError] = useState<string | null>(null);
@@ -252,9 +251,8 @@ export default function CrystalsScreen() {
   const restoreCollectionIndexRef = useRef<number | null>(null);
   const restoreCollectionRetryCountRef = useRef(0);
   const collectionListViewportHeightRef = useRef(0);
-  const guideScrollRef = useRef<ScrollViewInstance | null>(null);
-  const guideScrollOffsetRef = useRef(0);
-  const restoreGuideScrollRef = useRef(false);
+  const pendingCatalogStoneRef = useRef<Crystal | null>(null);
+  const pendingCatalogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
@@ -369,13 +367,34 @@ export default function CrystalsScreen() {
     setSelectedCollectionStone(null);
     setCollectionOpen(false);
   };
-  const returnToStoneGuide = () => {
-    restoreGuideScrollRef.current = true;
-    setSelectedNatalStone(null);
+  const openPendingCatalogStone = () => {
+    const stone = pendingCatalogStoneRef.current;
+    if (!stone) return;
+    pendingCatalogStoneRef.current = null;
+    if (pendingCatalogTimerRef.current) {
+      clearTimeout(pendingCatalogTimerRef.current);
+      pendingCatalogTimerRef.current = null;
+    }
+    setCollectionSearch('');
+    setSelectedCollectionStone(stone);
+    setCollectionOpen(true);
   };
+  const openRecommendedStoneInCatalog = (stone: Crystal) => {
+    pendingCatalogStoneRef.current = stone;
+    setGuideOpen(false);
+    if (pendingCatalogTimerRef.current) clearTimeout(pendingCatalogTimerRef.current);
+    // onDismiss is reliable on iOS. Keep a fallback for platforms that do not emit it.
+    pendingCatalogTimerRef.current = setTimeout(openPendingCatalogStone, 400);
+  };
+  useEffect(() => () => {
+    if (pendingCatalogTimerRef.current) clearTimeout(pendingCatalogTimerRef.current);
+  }, []);
   const closeStoneGuide = () => {
-    restoreGuideScrollRef.current = false;
-    setSelectedNatalStone(null);
+    pendingCatalogStoneRef.current = null;
+    if (pendingCatalogTimerRef.current) {
+      clearTimeout(pendingCatalogTimerRef.current);
+      pendingCatalogTimerRef.current = null;
+    }
     setGuideOpen(false);
   };
 
@@ -429,7 +448,6 @@ export default function CrystalsScreen() {
                 accessibilityLabel={t('About the Stone Guide')}
                 accessibilityHint={t('Opens an explanation of daily stone suggestions and your collection')}
                 onPress={() => {
-                  setSelectedNatalStone(null);
                   setGuideOpen(true);
                 }}
                 style={styles.guideInfoButton}
@@ -738,17 +756,12 @@ export default function CrystalsScreen() {
         transparent
         animationType="fade"
         statusBarTranslucent
-        onRequestClose={() => {
-          if (selectedNatalStone) returnToStoneGuide();
-          else closeStoneGuide();
-        }}
+        onRequestClose={closeStoneGuide}
+        onDismiss={openPendingCatalogStone}
       >
         <EdgeSwipeBack
           testID="stone-guide-edge-swipe-back"
-          onBack={() => {
-            if (selectedNatalStone) returnToStoneGuide();
-            else closeStoneGuide();
-          }}
+          onBack={closeStoneGuide}
         >
         <SafeAreaView edges={['top', 'bottom']} style={styles.guideModalStage}>
           <View
@@ -770,22 +783,9 @@ export default function CrystalsScreen() {
             ]}
           >
             <View style={styles.guideModalHeader}>
-              {selectedNatalStone ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('Back to the Stone Guide')}
-                  testID="back-to-stone-guide"
-                  onPress={returnToStoneGuide}
-                  style={styles.guideBackButton}
-                >
-                  <Feather name="arrow-left" size={17} color={colors.cosmos.secondary} />
-                  <Text style={[styles.guideBackText, { color: colors.cosmos.secondary }]}>{t('Back to guide')}</Text>
-                </Pressable>
-              ) : (
-                <Text style={[styles.guideModalTitle, { color: colors.cosmos.foreground }]}>
-                  {t('About the Stone Guide')}
-                </Text>
-              )}
+              <Text style={[styles.guideModalTitle, { color: colors.cosmos.foreground }]}>
+                {t('About the Stone Guide')}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('Close Stone Guide explanation')}
@@ -798,137 +798,96 @@ export default function CrystalsScreen() {
               </Pressable>
             </View>
             <ScrollView
-              ref={guideScrollRef}
               testID="stone-guide-scroll"
-              onScroll={(event) => {
-                if (!selectedNatalStone && !restoreGuideScrollRef.current) {
-                  guideScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
-                }
-              }}
-              scrollEventThrottle={16}
-              onContentSizeChange={() => {
-                if (!restoreGuideScrollRef.current) return;
-                restoreGuideScrollRef.current = false;
-                guideScrollRef.current?.scrollTo({
-                  y: guideScrollOffsetRef.current,
-                  animated: false,
-                });
-              }}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.guideModalCopy}
             >
-              {selectedNatalStone ? (
-                <View style={styles.natalStoneDetail}>
-                  <View
-                    testID={`natal-stone-detail-artwork-${slugOf(selectedNatalStone.crystal.name)}`}
-                    style={[
-                      styles.natalStoneDetailArtwork,
-                      {
-                        backgroundColor: colors.crystals.imageSurface,
-                        width: detailImageSize,
-                        height: detailImageSize,
-                      },
-                    ]}
-                  >
-                    <CrystalArtwork
-                      crystal={selectedNatalStone.crystal}
-                      size="detail"
-                      detailSize={detailImageSize}
-                    />
-                  </View>
-                  <Text style={[styles.natalStoneDetailTitle, { color: colors.cosmos.foreground }]}>
-                    {localizeCrystal(selectedNatalStone.crystal, locale).name}
-                  </Text>
-                  <Text style={[styles.natalStoneMeta, { color: colors.cosmos.secondary }]}>
-                    {t(selectedNatalStone.element)} · {localizeCrystal(selectedNatalStone.crystal, locale).note}
-                  </Text>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {selectedNatalStone.reason}
-                  </Text>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {localizeCrystal(selectedNatalStone.crystal, locale).description}
-                  </Text>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {t('Add this stone to your collection to keep track of the ones you own.')}
-                  </Text>
-                  <CollectionToggle name={selectedNatalStone.crystal.name} />
-                </View>
-              ) : (
-                <>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {formatCopy(t('The guide includes {count} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.'), { count: crystalCatalog.length })}
-                  </Text>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {t('With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
-                  </Text>
-                  <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {t('If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.')}
-                  </Text>
-                  <View style={styles.natalGuideSection} testID="natal-stone-recommendations">
-                    <Text style={[styles.natalStoneSectionTitle, { color: colors.cosmos.foreground }]}>
-                      {t('Your birth-chart companions')}
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {formatCopy(t('The guide includes {count} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.'), { count: crystalCatalog.length })}
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {t('With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {t('If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.')}
+              </Text>
+              <View style={styles.natalGuideSection} testID="natal-stone-recommendations">
+                <Text style={[styles.natalStoneSectionTitle, { color: colors.cosmos.foreground }]}>
+                  {t('Your birth-chart companions')}
+                </Text>
+                {natalElementResult?.status === 'calculated' ? (
+                  <>
+                    <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                      {describeElementBalance(natalElementResult, natalStoneSuggestions.length, t)}
                     </Text>
-                    {natalElementResult?.status === 'calculated' ? (
-                      <>
-                        <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                          {describeElementBalance(natalElementResult, natalStoneSuggestions.length, t)}
-                        </Text>
-                        {!natalElementResult.preciseBirthMoment ? (
-                          <Text style={[styles.natalStoneMeta, { color: colors.cosmos.secondary }]}>
-                            {t('Your birth time is unknown, so placements that could change during that day are left out.')}
-                          </Text>
-                        ) : null}
-                        {natalStoneSuggestions.length > 0 ? (
-                          <View style={styles.natalStoneList}>
-                            {natalStoneSuggestions.map((suggestion, index) => (
-                              <Pressable
-                                key={suggestion.crystal.name}
-                                accessibilityRole="button"
-                                 accessibilityLabel={formatCopy(t('Read why {stone} fits your birth chart'), { stone: localizeCrystal(suggestion.crystal, locale).name })}
-                                testID={`natal-stone-${slugOf(suggestion.crystal.name)}`}
-                                onPress={() => {
-                                  restoreGuideScrollRef.current = false;
-                                  setSelectedNatalStone(suggestion);
-                                }}
-                                style={[
-                                  styles.natalStoneRow,
-                                  { borderColor: colors.cosmos.border, backgroundColor: colors.cosmos.surface },
-                                ]}
-                              >
+                    {!natalElementResult.preciseBirthMoment ? (
+                      <Text style={[styles.natalStoneMeta, { color: colors.cosmos.secondary }]}>
+                        {t('Your birth time is unknown, so placements that could change during that day are left out.')}
+                      </Text>
+                    ) : null}
+                    {natalStoneSuggestions.length > 0 ? (
+                      <View style={styles.natalStoneList}>
+                        {natalStoneSuggestions.map((suggestion, index) => {
+                          const crystalCopy = localizeCrystal(suggestion.crystal, locale);
+                          return (
+                            <Pressable
+                              key={suggestion.crystal.name}
+                              accessibilityRole="button"
+                              accessibilityLabel={formatCopy(t('Read about {stone}'), { stone: crystalCopy.name })}
+                              testID={`natal-stone-${slugOf(suggestion.crystal.name)}`}
+                              onPress={() => openRecommendedStoneInCatalog(suggestion.crystal)}
+                              style={[
+                                styles.natalStoneRow,
+                                { borderColor: colors.cosmos.border, backgroundColor: colors.cosmos.surface },
+                              ]}
+                            >
+                              <View style={styles.natalStoneRowTop}>
+                                <View
+                                  testID={`natal-stone-artwork-${slugOf(suggestion.crystal.name)}`}
+                                  style={[
+                                    styles.natalStoneArtwork,
+                                    { backgroundColor: colors.crystals.imageSurface },
+                                  ]}
+                                >
+                                  <CrystalArtwork crystal={suggestion.crystal} size="catalog" />
+                                </View>
                                 <View style={styles.natalStoneRowCopy}>
                                   <Text style={[styles.natalStoneName, { color: colors.cosmos.foreground }]}>
-                                    {index + 1}. {localizeCrystal(suggestion.crystal, locale).name}
+                                    {index + 1}. {crystalCopy.name}
                                   </Text>
                                   <Text style={[styles.natalStoneMeta, { color: colors.cosmos.mutedForeground }]}>
-                                    {t(suggestion.element)} · {localizeCrystal(suggestion.crystal, locale).note}
+                                    {t(suggestion.element)} · {crystalCopy.note}
                                   </Text>
                                 </View>
                                 <Feather name="chevron-right" size={17} color={colors.cosmos.secondary} />
-                              </Pressable>
-                            ))}
-                          </View>
-                        ) : (
-                          <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                            {t('The stones you have hidden are left out. Restore some in Settings to see chart-based suggestions.')}
-                          </Text>
-                        )}
-                      </>
+                              </View>
+                              <Text style={[styles.natalStoneReason, { color: colors.cosmos.mutedForeground }]}>
+                                {suggestion.reason}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
                     ) : (
                       <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                        {profile
-                          ? t(natalElementResult?.message ?? 'A reliable chart summary is not available yet.')
-                          : t('Save your birth details to see a local, chart-based list of stones.')}
+                        {t('The stones you have hidden are left out. Restore some in Settings to see chart-based suggestions.')}
                       </Text>
                     )}
-                    <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                      {t('These stones are matched to the qualities that stand out in your chart.')}
-                    </Text>
-                  </View>
+                  </>
+                ) : (
                   <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                    {t('If you enjoy crystals, use the guide to choose a loose stone or a piece of jewelry—a pendant, ring, or bracelet. Tap “Add to Collection” for stones you already own, so you can see at a glance which companions are already yours.')}
+                    {profile
+                      ? t(natalElementResult?.message ?? 'A reliable chart summary is not available yet.')
+                      : t('Save your birth details to see a local, chart-based list of stones.')}
                   </Text>
-                </>
-              )}
+                )}
+                <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                  {t('These stones are matched to the qualities that stand out in your chart.')}
+                </Text>
+              </View>
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {t('If you enjoy crystals, use the guide to choose a loose stone or a piece of jewelry—a pendant, ring, or bracelet. Tap “Add to Collection” for stones you already own, so you can see at a glance which companions are already yours.')}
+              </Text>
             </ScrollView>
           </View>
         </SafeAreaView>
@@ -1217,17 +1176,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  guideBackButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flex: 1,
-    gap: 7,
-    minHeight: 34,
-  },
-  guideBackText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 13,
-  },
   guideModalTitle: {
     flex: 1,
     fontFamily: 'Georgia',
@@ -1263,14 +1211,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   natalStoneRow: {
-    alignItems: 'center',
     borderRadius: 15,
     borderWidth: 1,
+    gap: 9,
+    padding: 12,
+  },
+  natalStoneRowTop: {
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
-    minHeight: 64,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
+    gap: 11,
+  },
+  natalStoneArtwork: {
+    borderRadius: 14,
+    height: 72,
+    overflow: 'hidden',
+    width: 72,
   },
   natalStoneRowCopy: {
     flex: 1,
@@ -1286,19 +1241,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
-  natalStoneDetail: {
-    gap: 13,
-  },
-  natalStoneDetailArtwork: {
-    alignSelf: 'center',
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  natalStoneDetailTitle: {
-    fontFamily: 'Georgia',
-    fontSize: 28,
-    fontWeight: '400',
-    lineHeight: 34,
+  natalStoneReason: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    lineHeight: 20,
   },
   catalogButton: {
     alignItems: 'center',

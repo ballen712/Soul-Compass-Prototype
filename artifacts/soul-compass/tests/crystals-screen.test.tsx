@@ -699,7 +699,7 @@ test('the Crystals feeling picker uses the Settings choices and updates daily su
   expect(state.crystalOptions?.feeling).toBeNull();
 });
 
-test('birth-chart stones open individual explanations and can be added to the collection', async () => {
+test('birth-chart companions show image cards and open the matching full-catalog detail', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.profileContext.profile = { birthDate: '2000-01-01' };
   state.natalBalance = {
@@ -715,8 +715,10 @@ test('birth-chart stones open individual explanations and can be added to the co
       name: index === 0 ? 'Rose Quartz' : `Chart Stone ${index + 1}`,
       note: 'Connection · care',
       description: 'A good fit for care and connection.',
+      specimenDescription: 'A soft pink quartz stone.',
+      guideDescription: 'Often chosen for a quiet reflection practice.',
       tone: index === 0 ? 'pink' : 'blue',
-      ...(index === 0 ? { image: 5 } : {}),
+      image: index % 4,
     },
     element: index === 0 ? 'Air' : 'Fire',
     reason: index === 0
@@ -730,49 +732,36 @@ test('birth-chart stones open individual explanations and can be added to the co
   expect(root.findAll((node) =>
     node.type === Pressable && String(node.props.testID ?? '').startsWith('natal-stone-'),
   )).toHaveLength(8);
+  expect(root.findAll((node) =>
+    String(node.props.testID ?? '').startsWith('natal-stone-artwork-'),
+  )).toHaveLength(8);
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('Your chart has fewer air placements'),
+  )).toBe(true);
+  expect(root.findByProps({ testID: 'crystal-artwork-rose-quartz-catalog' })).toBeDefined();
 
   await act(async () => { root.findByProps({ testID: 'natal-stone-rose-quartz' }).props.onPress(); });
-  const companionImage = root.findAllByType(Image).find(
-    (node) => node.props.accessibilityLabel === 'Rose Quartz stone illustration',
-  );
-  expect(companionImage).toBeDefined();
-  expect(companionImage?.props.source).toBe(5);
-  expect(companionImage?.props.resizeMode).toBe('contain');
-  expect(root.findByProps({ testID: 'natal-stone-detail-artwork-rose-quartz' })).toBeDefined();
-  const detailCopy = root.findByProps({ testID: 'stone-guide-modal' })
-    .findAllByType(Text).map((node) => node.props.children).join(' ');
-  expect(detailCopy).toContain('fewer air placements');
-  expect(detailCopy).toContain('A good fit for care and connection.');
-  expect(detailCopy).not.toMatch(/symbolic|not proven|guaranteed effect/i);
+  const guideModal = root.findAllByType(Modal)[0];
+  expect(guideModal.props.visible).toBe(false);
+  await act(async () => { guideModal.props.onDismiss(); });
+  expect(root.findAllByType(Modal)[1].props.visible).toBe(true);
+  expect(root.findByProps({ testID: 'back-to-crystal-catalog' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collection-catalog-background' }).props.pointerEvents).toBe('none');
+  expect(root.findByProps({ testID: 'crystal-artwork-rose-quartz-detail' })).toBeDefined();
+  const catalogDetailText = root.findAllByType(Text).map((node) => node.props.children).join(' ');
+  expect(catalogDetailText).toContain('A soft pink quartz stone.');
+  expect(catalogDetailText).toContain('A good fit for care and connection.');
+  expect(catalogDetailText).not.toMatch(/symbolic|not proven|guaranteed effect/i);
   const addStone = root.findByProps({ testID: 'collect-rose-quartz' });
   expect(addStone).toBeDefined();
   await act(async () => { addStone.props.onPress(); });
   expect(state.profileContext.toggleCrystal).toHaveBeenCalledWith('rose-quartz');
 
-  await act(async () => { root.findByProps({ testID: 'back-to-stone-guide' }).props.onPress(); });
-  await act(async () => {
-    root.findByProps({ testID: 'stone-guide-scroll' }).props.onContentSizeChange(320, 900);
-  });
-
-  state.guideScrollTo.mockClear();
-  const guideScroll = root.findByProps({ testID: 'stone-guide-scroll' });
-  await act(async () => {
-    guideScroll.props.onScroll({ nativeEvent: { contentOffset: { y: 720 } } });
-  });
-  await act(async () => {
-    root.findByProps({ testID: 'natal-stone-chart-stone-6' }).props.onPress();
-  });
-  await act(async () => {
-    root.findByProps({ testID: 'stone-guide-scroll' }).props.onScroll({
-      nativeEvent: { contentOffset: { y: 40 } },
-    });
-  });
-  await act(async () => { root.findByProps({ testID: 'back-to-stone-guide' }).props.onPress(); });
-  await act(async () => {
-    root.findByProps({ testID: 'stone-guide-scroll' }).props.onContentSizeChange(320, 900);
-  });
-  expect(state.guideScrollTo).toHaveBeenCalledWith({ y: 720, animated: false });
-  expect(root.findAll((node) =>
-    node.type === Pressable && String(node.props.testID ?? '').startsWith('natal-stone-'),
-  )).toHaveLength(8);
+  await act(async () => { root.findByProps({ testID: 'back-to-crystal-catalog' }).props.onPress(); });
+  expect(root.findByProps({ testID: 'catalog-stone-rose-quartz' })).toBeDefined();
+  expect(root.findByProps({ testID: 'collection-catalog-background' }).props.pointerEvents).toBe('auto');
+  expect(state.collectionScrollToIndex).toHaveBeenCalledWith(expect.objectContaining({
+    viewPosition: 0.5,
+    animated: false,
+  }));
 });

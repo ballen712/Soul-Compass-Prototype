@@ -164,11 +164,11 @@ function LanguageFlag({ locale }: { locale: AppLocale }) {
   const colors = useColors();
   if (locale === 'en') {
     return (
-      <View style={[styles.flagFrame, { borderColor: colors.border }]} accessibilityElementsHidden>
-        <Svg width={48} height={24} viewBox="0 0 60 30">
+      <View style={[styles.flagFrame, styles.ukFlagFrame, { borderColor: colors.border }]} accessibilityElementsHidden>
+        <Svg width={56} height={28} viewBox="0 0 60 30">
           <Rect width="60" height="30" fill="#012169" />
-          <Path d="M0 0L60 30H47L0 6ZM60 0L0 30H13L60 6Z" fill="#FFFFFF" />
-          <Path d="M0 0L60 30H54L0 3ZM60 0L0 30H6L60 3Z" fill="#C8102E" />
+          <Path d="M0 0L60 30M60 0L0 30" stroke="#FFFFFF" strokeWidth="6" />
+          <Path d="M0 0L60 30M60 0L0 30" stroke="#C8102E" strokeWidth="2.2" />
           <Path d="M30 0V30M0 15H60" stroke="#FFFFFF" strokeWidth="10" />
           <Path d="M30 0V30M0 15H60" stroke="#C8102E" strokeWidth="6" />
         </Svg>
@@ -176,18 +176,35 @@ function LanguageFlag({ locale }: { locale: AppLocale }) {
     );
   }
 
-  const bands: Record<Exclude<AppLocale, 'en'>, { direction: 'row' | 'column'; colors: string[]; weights?: number[] }> = {
+  if (locale === 'es') {
+    return (
+      <View style={[styles.flagFrame, styles.spanishFlagFrame, { borderColor: colors.border }]} accessibilityElementsHidden>
+        <Svg width={48} height={32} viewBox="0 0 60 40">
+          <Rect width="60" height="10" fill="#AA151B" />
+          <Rect y="10" width="60" height="20" fill="#F1BF00" />
+          <Rect y="30" width="60" height="10" fill="#AA151B" />
+          {/* A compact, simplified coat of arms keeps Spain's flag identifiable at icon size. */}
+          <Path d="M19 13H27V21.5C27 25.2 23 27.4 23 27.4S19 25.2 19 21.5Z" fill="#F1BF00" stroke="#8C1D22" strokeWidth="0.8" />
+          <Path d="M23 13V26.7M19.4 18.5H26.6" stroke="#AA151B" strokeWidth="1.4" />
+          <Path d="M19.5 21.8H26.5L23 25.9Z" fill="#6B91B8" stroke="#8C1D22" strokeWidth="0.5" />
+          <Path d="M18.5 12.1H27.5L26.7 14.2H19.3Z" fill="#AA151B" stroke="#8C1D22" strokeWidth="0.4" />
+          <Path d="M20.1 11.8L20.7 10.4L22 11.2L23 9.9L24 11.2L25.3 10.4L25.9 11.8Z" fill="#F1BF00" stroke="#8C1D22" strokeWidth="0.4" />
+        </Svg>
+      </View>
+    );
+  }
+
+  const bands: Record<Exclude<AppLocale, 'en' | 'es'>, { direction: 'row' | 'column'; colors: string[]; weights?: number[] }> = {
     hu: { direction: 'column', colors: ['#CE2939', '#FFFFFF', '#477050'] },
     it: { direction: 'row', colors: ['#009246', '#FFFFFF', '#CE2B37'] },
     de: { direction: 'column', colors: ['#000000', '#DD0000', '#FFCE00'] },
     fr: { direction: 'row', colors: ['#002395', '#FFFFFF', '#ED2939'] },
-    es: { direction: 'column', colors: ['#AA151B', '#F1BF00', '#AA151B'], weights: [1, 2, 1] },
     ru: { direction: 'column', colors: ['#FFFFFF', '#0039A6', '#D52B1E'] },
   };
   const design = bands[locale];
   return (
     <View
-      style={[styles.flag, { flexDirection: design.direction, borderColor: colors.border }]}
+      style={[styles.flagFrame, styles.flag, { flexDirection: design.direction, borderColor: colors.border }]}
       accessibilityElementsHidden
     >
       {design.colors.map((color, index) => (
@@ -227,23 +244,19 @@ const styles = StyleSheet.create({
   },
   languageError: { marginTop: 16, fontSize: 13, lineHeight: 19 },
   flag: {
-    width: 48,
-    height: 24,
+    width: 56,
+    height: 28,
     overflow: 'hidden',
     borderRadius: 5,
     borderWidth: StyleSheet.hairlineWidth,
   },
   flagFrame: {
-    width: 48,
-    height: 24,
     overflow: 'hidden',
     borderRadius: 5,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  flagDiagonal: { position: 'absolute', width: 62, height: 4, top: 10, left: -7 },
-  flagDiagonalRed: { position: 'absolute', width: 62, height: 1.8, top: 11.1, left: -7, backgroundColor: '#C8102E' },
-  flagCrossHorizontal: { position: 'absolute', top: 8, left: 0, right: 0 },
-  flagCrossVertical: { position: 'absolute', top: 0, bottom: 0, left: 20 },
+  ukFlagFrame: { width: 56, height: 28 },
+  spanishFlagFrame: { width: 48, height: 32 },
   welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
   welcomeEyebrow: { fontSize: 10, letterSpacing: 1.8 },
   welcomeText: { fontSize: 13, lineHeight: 19 },

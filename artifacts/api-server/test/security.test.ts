@@ -15,12 +15,10 @@ const allowCalculations: CalculationRateLimitStore = {
 
 async function withApp(
   fn: (base: string) => Promise<void>,
-  profileLimit = 120,
   calculationStore: CalculationRateLimitStore = allowCalculations,
 ) {
   const server = createApp({
     allowedOrigins: ["https://allowed.example"],
-    profileRateLimit: profileLimit,
     calculationRateLimitStore: calculationStore,
   }).listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -96,20 +94,34 @@ test("shared calculation limit returns a bounded Retry-After response", async ()
   const blocked = await fetch(url, json({ atUtc: "2000-01-01T12:00:00Z" }));
   assert.equal(blocked.status, 429);
   assert.equal(blocked.headers.get("retry-after"), "34");
-}, 120, { reserve: async () => ({ allowed: false, retryAfterSeconds: 34 }) }));
+}, { reserve: async () => ({ allowed: false, retryAfterSeconds: 34 }) }));
 
 test("shared calculation limiter fails closed without leaking database errors", async () => withApp(async (base) => {
   const response = await fetch(`${base}/astrology/positions`, json({ atUtc: "2000-01-01T12:00:00Z" }));
   assert.equal(response.status, 503);
   assert.doesNotMatch(await response.text(), /private database detail/);
-}, 120, { reserve: async () => { throw new Error("private database detail"); } }));
+}, { reserve: async () => { throw new Error("private database detail"); } }));
 
-test("legacy authenticated profile limiter remains local and ignores forwarded-header spoofing", async () => withApp(async (base) => {
-  const url = `${base}/me/profile`;
-  assert.equal((await fetch(url, { headers: { "x-forwarded-for": "1.2.3.4" } })).status, 401);
-  assert.equal((await fetch(url, { headers: { "x-forwarded-for": "8.8.8.8" } })).status, 401);
-  assert.equal((await fetch(url)).status, 429);
-}, 2));
+test("removed Supabase account routes are not registered", async () => withApp(async (base) => {
+  const requests = [
+    ["/me/profile", "GET"],
+    ["/me/profile", "POST"],
+    ["/me/profile", "PUT"],
+    ["/me/profile", "DELETE"],
+    ["/me/account", "DELETE"],
+  ] as const;
+  for (const [path, method] of requests) {
+    const response = await fetch(`${base}${path}`, {
+      method,
+      ...(["POST", "PUT"].includes(method) ? {
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      } : {}),
+    });
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "API endpoint not found." });
+  }
+}));
 
 test("public file index excludes traversal, symlinks, hidden files and source maps", () => {
   const require = createRequire(import.meta.url);

@@ -1,17 +1,18 @@
 import React from 'react';
-import { PublicInfoPage, type InfoSection } from '@/components/PublicInfoPage';
+import { PublicInfoPage } from '@/components/PublicInfoPage';
 import legalContent from '@/constants/legal-documents.json';
+import { useAppText } from '@/localization';
 
-const page = legalContent.pages.privacy;
-
-export default function PrivacyPageDraft() {
+export default function PrivacyPage() {
+  const t = useAppText();
   return (
     <PublicInfoPage
-      title={page.title}
-      subtitle={page.subtitle}
+      title={t('Privacy Policy')}
+      subtitle={t('The current published document is available on the Soul Compass website.')}
       updated={legalContent.updated}
-      sections={page.sections as InfoSection[]}
-      actions={page.actions as Array<{ label: string; icon: 'mail' | 'file-text' | 'help-circle'; route?: './privacy' | './terms' | './support'; href?: string }>}
+      sections={[]}
+      showDraftNotice={false}
+      actions={[{ label: t('Open the Soul Compass website'), icon: 'file-text', href: legalContent.publicUrls.privacy }]}
     />
   );
 }

@@ -122,7 +122,7 @@ export function createCitySearch(options: {
       if (receipt.warningCrossed) event("geoapify_quota_warning", { day: receipt.day, used: receipt.used });
       if (receipt.criticalCrossed) event("geoapify_quota_critical", { day: receipt.day, used: receipt.used });
     try {
-      const url = new URL("https://api.geoapify.com/v1/geocode/search");
+      const url = new URL("https://api-eu.geoapify.com/v1/geocode/search");
       url.search = new URLSearchParams({
         text: query.trim(), type: "city", format: "json", lang: "en", limit: "8",
         bias: "countrycode:none", apiKey: key,

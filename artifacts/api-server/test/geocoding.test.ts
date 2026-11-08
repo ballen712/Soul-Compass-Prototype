@@ -8,6 +8,7 @@ import { createGeocodingRouter } from "../src/routes/geocoding";
 import { createApp } from "../src/app";
 import { geocodingConfig } from "../src/geocoding/config";
 import { developmentQuota } from "../src/geocoding/quota";
+import { pruneExpiredSourceDigests } from "../src/geocoding/postgres";
 
 function testSearch(options: Parameters<typeof createCitySearch>[0] = {}) {
   const config = { ...geocodingConfig({}), requestsPerSecond: 2, ...options.config };
@@ -46,7 +47,7 @@ test("only explicit query and fixed parameters reach provider; no profile, clien
     }) as typeof fetch,
   });
   const result = await search("Budapest");
-  assert.equal(received!.origin, "https://api.geoapify.com");
+  assert.equal(received!.origin, "https://api-eu.geoapify.com");
   assert.equal(received!.pathname, "/v1/geocode/search");
   assert.deepEqual([...received!.searchParams.keys()].sort(), ["apiKey", "bias", "format", "lang", "limit", "text", "type"]);
   assert.equal(received!.searchParams.get("text"), "Budapest");
@@ -57,6 +58,28 @@ test("only explicit query and fixed parameters reach provider; no profile, clien
   assert.equal(init!.body, undefined);
   assert.ok(init!.signal);
   assert.doesNotMatch(JSON.stringify(result), /apiKey|datasource|secret|test-placeholder/);
+});
+
+test("prunes source digests from completed UTC days under the shared quota lock", async () => {
+  const calls: Array<{ sql: string; values?: unknown[] }> = [];
+  const client = {
+    async query(sql: string, values?: unknown[]) {
+      calls.push({ sql, values });
+      if (sql.includes("to_char((clock_timestamp()")) return { rows: [{ day: "2026-11-08" }], rowCount: null };
+      if (sql.startsWith("DELETE FROM geoapify_quota_sources")) return { rows: [], rowCount: 2 };
+      return { rows: [], rowCount: 0 };
+    },
+    release() {},
+  };
+  const pool = async () => ({ connect: async () => client }) as any;
+
+  assert.equal(await pruneExpiredSourceDigests({ pool }), 2);
+  assert.ok(calls.some(call => call.sql.includes("pg_advisory_xact_lock")));
+  assert.deepEqual(
+    calls.find(call => call.sql.startsWith("DELETE FROM geoapify_quota_sources"))?.values,
+    ["2026-11-08"],
+  );
+  assert.equal(calls.at(-1)?.sql, "COMMIT");
 });
 
 test("no retry or key/error-body disclosure on missing key, denial, quota, timeout, network or malformed response", async () => {

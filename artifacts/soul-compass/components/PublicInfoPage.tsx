@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { PRODUCT } from '@/constants/product';
 import legalContent from '@/constants/legal-documents.json';
+import { useAppText } from '@/localization';
 
 export type InfoAction = {
   label: string;
@@ -28,10 +29,12 @@ type Props = {
   updated: string;
   sections: InfoSection[];
   actions: InfoAction[];
+  showDraftNotice?: boolean;
 };
 
-export function PublicInfoPage({ title, subtitle, updated, sections, actions }: Props) {
+export function PublicInfoPage({ title, subtitle, updated, sections, actions, showDraftNotice = true }: Props) {
   const colors = useColors();
+  const t = useAppText();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useProfile();
@@ -62,30 +65,32 @@ export function PublicInfoPage({ title, subtitle, updated, sections, actions }: 
           <View style={styles.topRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back"
+              accessibilityLabel={t('Back')}
               onPress={goBack}
               hitSlop={10}
               style={styles.backButton}
             >
               <Feather name="arrow-left" size={18} color={palette.secondary} />
-              <Text style={styles.backText}>Back</Text>
+              <Text style={styles.backText}>{t('Back')}</Text>
             </Pressable>
             <Text style={styles.wordmark}>SOUL COMPASS</Text>
           </View>
 
-          <View accessibilityRole="alert" style={styles.draftBanner}>
-            <Feather name="alert-circle" size={17} color={palette.secondary} />
-            <View style={styles.draftCopy}>
-              <Text style={styles.draftTitle}>WORKING DRAFT — NOT FOR PUBLICATION</Text>
-              <Text style={styles.draftText}>
-                This English draft is not legal advice or a final document. Do not rely on it or submit it to an app store until the listed facts and legal review are complete.
-              </Text>
+          {showDraftNotice ? (
+            <View accessibilityRole="alert" style={styles.draftBanner}>
+              <Feather name="alert-circle" size={17} color={palette.secondary} />
+              <View style={styles.draftCopy}>
+                <Text style={styles.draftTitle}>WORKING DRAFT — NOT FOR PUBLICATION</Text>
+                <Text style={styles.draftText}>
+                  This English draft is not legal advice or a final document. Do not rely on it or submit it to an app store until the listed facts and legal review are complete.
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
-          <Text style={styles.updated}>Last updated: {updated}</Text>
+          <Text style={styles.updated}>{t('Updated: {date}').replace('{date}', updated)}</Text>
 
           {sections.map((section) => (
             <View key={section.title} style={styles.section}>

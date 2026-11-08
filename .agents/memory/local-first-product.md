@@ -13,4 +13,16 @@ Preserve server-side astronomy calculations, but send personal birth inputs only
 
 **Why:** the user chose to retain the existing calculation engine and requested one-time consent for future automatic chart refreshes, while keeping that permission revocable.
 
-**How to apply:** require the current consent version before dispatch, minimize payloads, request at most once per app launch, block future requests immediately on revocation and never queue offline birth-data sends. Renew consent when its meaning or frequency changes. Preserve the Supabase project, records, migrations, policies, protected endpoints and Replit secrets. Never weaken API validation, rate limiting, CORS or safe logging.
+**How to apply:** require the current consent version before dispatch, minimize payloads, request at most once per app launch, block future requests immediately on revocation and never queue offline birth-data sends. Renew consent when its meaning or frequency changes. Preserve the Supabase project, records, migrations, policies and Replit secrets; the user has since explicitly approved removing Supabase auth/cloud-profile code and its protected `/api/me/*` routes from workspace source. Never delete live data or weaken API validation, shared rate limiting, CORS or safe logging.
+
+On 8 November 2026, the user manually checked the Supabase dashboard: `public.profiles` exists but is empty; Auth Users and Storage are empty; the project is on Free and has no project backups.
+
+**Why:** this is owner-reported live account state that cannot be established from repository code.
+
+**How to apply:** treat it as a dated dashboard observation, not proof of migration/trigger state or a guarantee that records remain absent later.
+
+The user chose to keep the published API public so the registration-free mobile app can reach chart and city-search endpoints.
+
+**Why:** the current mobile app has no user sign-in, while those features depend on the backend.
+
+**How to apply:** keep validation and shared rate limits enabled; do not restrict the API without first designing and approving another mobile access method.

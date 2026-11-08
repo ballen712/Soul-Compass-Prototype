@@ -9,6 +9,36 @@ type Source = { used: number; times: number[] };
 type PoolLike = Pick<typeof import("@workspace/db").pool, "connect">;
 let poolPromise: Promise<PoolLike> | undefined;
 const defaultPool = () => poolPromise ??= import("@workspace/db").then(db => db.pool);
+
+/** Remove per-source digests from completed UTC days. The API process calls this
+ * at startup and periodically while running; the transaction lock serializes it
+ * with quota writes without reading or exposing stored digests.
+ */
+export async function pruneExpiredSourceDigests(options: {
+  pool?: () => Promise<PoolLike>; bucket?: string;
+} = {}): Promise<number> {
+  const pool = await (options.pool ?? defaultPool)();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SET LOCAL statement_timeout = '2500ms'");
+    await client.query("SET LOCAL lock_timeout = '2000ms'");
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [options.bucket ?? "geoapify"]);
+    const clock = await client.query<{ day: string }>(
+      "SELECT to_char((clock_timestamp() AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS day");
+    const day = clock.rows[0]?.day;
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("Invalid UTC cleanup day");
+    const result = await client.query("DELETE FROM geoapify_quota_sources WHERE utc_day < $1", [day]);
+    await client.query("COMMIT");
+    return result.rowCount ?? 0;
+  } catch {
+    try { await client.query("ROLLBACK"); } catch { /* never log database details */ }
+    throw new Error("Quota digest cleanup failed.");
+  } finally {
+    client.release();
+  }
+}
+
 const validNumber = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 function validTimes(v: unknown): v is number[] {
   return Array.isArray(v) && v.length <= 100 && v.every(validNumber);

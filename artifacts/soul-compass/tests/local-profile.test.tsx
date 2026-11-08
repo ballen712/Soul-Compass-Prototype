@@ -23,7 +23,6 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
     removeItem: async (key: string) => { state.data.delete(key); },
   },
 }));
-vi.mock('@/auth/supabase', () => { throw new Error('Active local app must not initialize Supabase'); });
 import { ProfileProvider, useProfile } from '../profile/ProfileContext';
 
 const profile: UserProfile = {

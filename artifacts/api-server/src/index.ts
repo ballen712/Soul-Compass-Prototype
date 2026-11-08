@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { pruneExpiredSourceDigests } from "./geocoding/postgres";
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +15,15 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+const cleanupExpiredDigests = () => {
+  void pruneExpiredSourceDigests().catch(() => {
+    logger.warn("Geoapify quota digest cleanup failed");
+  });
+};
+cleanupExpiredDigests();
+const digestCleanupTimer = setInterval(cleanupExpiredDigests, 6 * 60 * 60 * 1000);
+digestCleanupTimer.unref();
 
 app.listen(port, (err) => {
   if (err) {

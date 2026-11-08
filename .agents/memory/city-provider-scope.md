@@ -14,3 +14,9 @@ Keep required Geoapify and OpenStreetMap credits visible beside each city search
 **Why:** the user wants to reduce clutter in first-run onboarding without dropping required attribution.
 
 **How to apply:** retain short, readable linked credits next to the picker; do not hide them solely in About.
+
+The server now targets Geoapify's `api-eu.geoapify.com` endpoint, which Geoapify's public DPA identifies as strictly EU-bound. This does not establish that the user's account has accepted or is covered by that DPA.
+
+**Why:** the user asked to apply read-only audit fixes, and the public DPA distinguishes the EU endpoint from the global endpoint's listed US network provider.
+
+**How to apply:** preserve the EU endpoint unless the owner changes the data-region decision. Verify account-specific key support and DPA applicability before making broader legal claims about processing location.

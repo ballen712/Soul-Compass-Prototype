@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "soul-compass",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "app.soulcompass.mobile",
@@ -17,7 +16,7 @@
       "favicon": "./assets/images/icon.png",
       "output": "static"
     },
-    "plugins": [["expo-router", { "asyncRoutes": false }], "expo-secure-store"],
+    "plugins": [["expo-router", { "asyncRoutes": false }]],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

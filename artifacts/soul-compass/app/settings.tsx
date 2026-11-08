@@ -458,7 +458,7 @@ export default function SettingsScreen() {
                   testID="settings-official-website"
                   accessibilityRole="link"
                   onPress={() => void run(async () => {
-                    await Linking.openURL(legalContent.publicUrls.website);
+                    await Linking.openURL(legalContent.publicUrls.about);
                   })}
                   style={styles.secondaryButton}
                 >

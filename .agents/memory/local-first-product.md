@@ -26,3 +26,9 @@ The user chose to keep the published API public so the registration-free mobile 
 **Why:** the current mobile app has no user sign-in, while those features depend on the backend.
 
 **How to apply:** keep validation and shared rate limits enabled; do not restrict the API without first designing and approving another mobile access method.
+
+On 8 November 2026, production API smoke checks passed for health, planetary positions, a synthetic natal chart and one city search. Unauthenticated production `GET /api/me/profile` returned 401, while workspace source returns 404, confirming the cleanup has not been published.
+
+**Why:** this is a live deployment/source divergence that cannot be inferred from workspace code.
+
+**How to apply:** treat legacy profile routes and their server credentials as still present in production until a separately approved publish is verified; do not remove Supabase secrets before that cutover.

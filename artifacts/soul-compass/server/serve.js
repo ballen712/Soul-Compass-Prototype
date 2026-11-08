@@ -124,11 +124,25 @@ function renderLegalPage(pageKey) {
     return `<section><h2>${escapeHtml(section.title)}</h2>${paragraphs}${bullets}</section>`;
   }).join('');
   const actions = page.actions.map((action) => {
-    const route = typeof action.route === 'string' && action.route.startsWith('./')
-      ? `/${action.route.slice(2)}`
-      : action.route;
-    const href = route && legalRoutes.has(route)
-      ? route
+    const routeKey = typeof action.route === 'string' && action.route.startsWith('./')
+      ? action.route.slice(2)
+      : null;
+    const publicUrl = routeKey ? legalDocuments.publicUrls?.[routeKey] : null;
+    const isAllowedPublicUrl = typeof publicUrl === 'string' && (() => {
+      try {
+        const parsed = new URL(publicUrl);
+        return parsed.protocol === 'https:'
+          && parsed.hostname === 'sites.google.com'
+          && parsed.pathname.startsWith('/view/soul-compass-app/');
+      } catch {
+        return false;
+      }
+    })();
+    const internalRoute = routeKey ? `/${routeKey}` : null;
+    const href = isAllowedPublicUrl
+      ? publicUrl
+      : internalRoute && legalRoutes.has(internalRoute)
+        ? internalRoute
       : typeof action.href === 'string' && action.href.startsWith('mailto:soulcompass.support@gmail.com')
         ? action.href
         : null;

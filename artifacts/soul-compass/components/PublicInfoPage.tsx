@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { PRODUCT } from '@/constants/product';
+import legalContent from '@/constants/legal-documents.json';
 
 export type InfoAction = {
   label: string;
@@ -108,7 +109,12 @@ export function PublicInfoPage({ title, subtitle, updated, sections, actions }: 
                 accessibilityRole="link"
                 accessibilityLabel={action.label}
                 onPress={() => {
-                  if (action.route) router.push(action.route);
+                  if (action.route) {
+                    const pageKey = action.route.slice(2) as keyof typeof legalContent.publicUrls;
+                    const publicUrl = legalContent.publicUrls[pageKey];
+                    if (publicUrl) void Linking.openURL(publicUrl);
+                    else router.push(action.route);
+                  }
                   else if (action.href) void Linking.openURL(action.href);
                 }}
                 style={styles.action}

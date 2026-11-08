@@ -453,7 +453,18 @@ export default function SettingsScreen() {
 
           {tab === 'about' ? (
             <>
-              <Section title="About Soul Compass" description={APP_GUIDE_INTRO} />
+              <Section title="About Soul Compass" description={APP_GUIDE_INTRO}>
+                <Pressable
+                  testID="settings-official-website"
+                  accessibilityRole="link"
+                  onPress={() => void run(async () => {
+                    await Linking.openURL(legalContent.publicUrls.website);
+                  })}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryText}>{t('Open the Soul Compass website')}</Text>
+                </Pressable>
+              </Section>
               <Section title="Four ways to explore">
                 <AppGuideCards variant="settings" />
               </Section>
@@ -462,15 +473,17 @@ export default function SettingsScreen() {
                 description={formatAppText('Updated: {date}', locale, { date: legalContent.updated })}
               >
                 {([
-                  { label: 'Privacy Policy', route: './privacy' as const, testID: 'settings-privacy-policy' },
-                  { label: 'Terms of Service', route: './terms' as const, testID: 'settings-terms-of-service' },
-                  { label: 'Contact support', route: './support' as const, testID: 'settings-support-page' },
+                  { label: 'Privacy Policy', url: legalContent.publicUrls.privacy, testID: 'settings-privacy-policy' },
+                  { label: 'Terms of Service', url: legalContent.publicUrls.terms, testID: 'settings-terms-of-service' },
+                  { label: 'Contact support', url: legalContent.publicUrls.support, testID: 'settings-support-page' },
                 ]).map((link) => (
                   <Pressable
-                    key={link.route}
+                    key={link.testID}
                     testID={link.testID}
                     accessibilityRole="link"
-                    onPress={() => router.push(link.route)}
+                    onPress={() => void run(async () => {
+                      await Linking.openURL(link.url);
+                    })}
                     style={styles.secondaryButton}
                   >
                     <Text style={styles.secondaryText}>{t(link.label)}</Text>

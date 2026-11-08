@@ -844,8 +844,6 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
           locale={locale}
           moonSignRange={data.moonSignRange}
           timeKnown={hasKnownBirthMoment}
-          angles={angles}
-          houseCusps={housesAvailable ? data.houseCusps : []}
           majorAspects={aspects}
         />
       </Card>

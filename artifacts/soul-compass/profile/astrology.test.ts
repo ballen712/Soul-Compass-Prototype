@@ -170,8 +170,8 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.notEqual(focus?.crystal.name, change?.crystal.name);
   assert.match(focus!.reason, /today|theme/i);
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
-   assert.match(focus!.reason, /A planetary connection today brings .+ from your birth chart into focus\./i);
-  assert.match(focus!.reason, /can be a reminder to/i);
+  assert.match(focus!.reason, /Today's planetary connection highlights themes from your birth chart: .+\./i);
+  assert.match(focus!.reason, /can remind you of a small step:/i);
   assert.doesNotMatch(focus!.reason, /symbolic prompt|not a guaranteed effect/i);
   assert.notEqual(focus!.reason, change!.reason);
 });
@@ -281,7 +281,7 @@ test('intention-only suggestions are labeled and arbitrary custom words are not 
   assert.equal(result?.basis, 'intention');
   assert.ok(result?.crystal.themes.some((theme) => ['focus', 'clarity', 'attention', 'structure'].includes(theme)));
   assert.deepEqual(result?.matchedIntentions, ['focus']);
-  assert.match(result!.reason, /intention to focus/i);
+  assert.match(result!.reason, /suggestion also reflects your intention: focus/i);
   assert.equal(getIntentionRecommendation({ intentions: ['unmapped custom word'] }), null);
   const replacement = getIntentionRecommendation({ intentions: ['Focus'], hiddenCrystals: ['amethyst'] });
   assert.ok(replacement);
@@ -317,7 +317,7 @@ test('twelve daily feelings produce personal stone suggestions and still respond
   assert.equal(demandingDay?.feelingLabel, 'Feeling tired');
   assert.notEqual(getIntentionRecommendation({ feeling: 'tired', hiddenCrystals: ['amethyst'] })?.crystal.name, 'Amethyst');
   assert.match(steadyDay!.reason, /You chose “feeling tired,/i);
-  assert.match(steadyDay!.reason, /can be a reminder to/i);
+  assert.match(steadyDay!.reason, /can remind you of a small step:/i);
   assert.doesNotMatch(steadyDay!.reason, /ease.*ease/i);
 });
 test('expanded catalog and daily suggestions use more than the original three stones', () => {
@@ -429,6 +429,53 @@ test('natal crystal set has eight unique, chart-weighted stones and respects hid
     item.crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
   )));
 });
+
+test('owned chart matches lead the eight companions while the catalog fills the rest', () => {
+  const chart: NatalElementBalance = {
+    status: 'calculated',
+    counts: { Fire: 5, Air: 1, Water: 2, Earth: 2 },
+    total: 10,
+    dominant: ['Fire'],
+    leastRepresented: ['Air'],
+    preciseBirthMoment: true,
+  };
+  const baseline = getNatalCrystalSuggestions(chart);
+  const owned = baseline[7].crystal.name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const prioritized = getNatalCrystalSuggestions(chart, [], 8, undefined, undefined, [owned]);
+
+  assert.equal(prioritized.length, 8);
+  assert.equal(prioritized[0].crystal.name, baseline[7].crystal.name);
+  assert.equal(new Set(prioritized.map(({ crystal }) => crystal.name)).size, 8);
+});
+
+test('daily suggestions use suitable owned stones first and fall back to the full catalog', () => {
+  const options = { feeling: 'tired', dateKey: '2026-11-06' };
+  const baseline = getCrystalSuggestions(undefined, options, 3);
+  assert.equal(baseline.length, 3);
+  const owned = baseline[2].crystal.name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const prioritized = getCrystalSuggestions(
+    undefined,
+    { ...options, crystalCollection: [owned] },
+    3,
+  );
+
+  assert.equal(prioritized[0].crystal.name, baseline[2].crystal.name);
+  assert.equal(prioritized.length, 3);
+  assert.equal(new Set(prioritized.map(({ crystal }) => crystal.name)).size, 3);
+
+  const hiddenOwned = getCrystalSuggestions(
+    undefined,
+    { ...options, crystalCollection: [owned], hiddenCrystals: [owned] },
+    3,
+  );
+  assert.equal(hiddenOwned.length, 3);
+  assert.ok(hiddenOwned.every(({ crystal }) =>
+    crystal.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') !== owned,
+  ));
+});
+
 test('daily focus and caution stay practical and non-predictive across all major aspects', () => {
   const chart = calculateDailyAstrology(makeProfile(), new Date('2026-11-05T12:00:00Z'));
   assert.equal(chart.status, 'calculated');

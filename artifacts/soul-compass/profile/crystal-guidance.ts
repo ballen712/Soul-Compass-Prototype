@@ -5,6 +5,7 @@ type Calculated = Extract<DailyAstrology, { status: 'calculated' }>;
 type Options = {
   intentions?: string[];
   hiddenCrystals?: string[];
+  crystalCollection?: string[];
   feeling?: string | null;
   dateKey?: string;
 };
@@ -30,6 +31,16 @@ function joinCopy(items: readonly string[], translate: CopyTranslator) {
   return items.slice(0, -1).join(translate(', '))
     + translate(' and ')
     + items[items.length - 1];
+}
+
+function crystalMeaning(note: string, translate: CopyTranslator) {
+  return joinCopy(
+    translate(note)
+      .split(/\s*·\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean),
+    translate,
+  );
 }
 
 export type CrystalRecommendation = {
@@ -60,30 +71,39 @@ function getNatalStoneReason(
   crystal: Crystal,
   balance: NatalElementBalance,
   translate: CopyTranslator,
-  translateStoneName: CopyTranslator,
+  _translateStoneName: CopyTranslator,
 ): string {
   const themes = crystal.themes
     .filter((theme) => elementalThemes[element].includes(theme))
     .slice(0, 2)
-    .map((theme) => translate(plainTheme[theme] ?? theme.replaceAll('-', ' ')));
-  const themeCopy = joinCopy(themes, translate) || translate(crystal.note);
+    .map((theme) =>
+      translate(plainTheme[theme] ?? theme.replaceAll('-', ' ')).replace(/^Crystal theme:\s*/u, ''),
+    );
+  const themeCopy = joinCopy(themes, translate) || crystalMeaning(crystal.note, translate);
   const balanced = balance.dominant.length === zodiacElements.length;
+  const practiceTheme = crystal.themes.find((theme) =>
+    elementalThemes[element].includes(theme) && Boolean(themeAction[theme]),
+  );
+  const action = translate(themeAction[practiceTheme ?? 'grounding']);
+  const elementNote = balance.leastRepresented.includes(element)
+    ? translate(`${element} is less prominent in your chart.`)
+    : translate(`${element} is one of the stronger elements in your chart.`);
   const values = {
-    stone: translateStoneName(crystal.name),
     themes: themeCopy,
-    element: translate(element),
+    elementNote,
+    action,
   };
 
   if (balanced) {
-    return fillCopy(translate('Your chart has a fairly even mix of elements. {stone} connects with {themes} in your chart.'), values);
+    return fillCopy(translate('Your chart has a fairly even mix of elements. This stone was chosen for its connection to {themes}. Use it as a reminder to put one of these qualities into practice today. For example: {action}.'), values);
   }
   if (balance.leastRepresented.includes(element) && !balance.dominant.includes(element)) {
-    return fillCopy(translate('Your chart has fewer {element} placements. {stone} connects with {themes}, bringing attention to that part of your chart.'), values);
+    return fillCopy(translate('{elementNote} This stone was chosen for {themes}. Use it as a reminder to give those qualities more room in everyday life and bring a little balance to your day. For example: {action}.'), values);
   }
   if (balance.dominant.includes(element)) {
-    return fillCopy(translate('Your chart has more {element} placements. {stone} reflects the qualities of {themes} already present in your chart.'), values);
+    return fillCopy(translate('{elementNote} This stone was chosen for {themes}, qualities you may already recognize in yourself. Use it as a reminder to direct those strengths toward one clear choice instead of taking on too much at once. For example: {action}.'), values);
   }
-  return fillCopy(translate('{stone} connects with {themes}, which relate to {element} in your chart.'), values);
+  return fillCopy(translate('This stone was chosen for its connection to {themes}. Use it as a reminder to explore those qualities in everyday life. For example: {action}.'), values);
 }
 
 /**
@@ -95,9 +115,11 @@ export function getNatalCrystalSuggestions(
   limit = 8,
   translate: CopyTranslator = identityCopy,
   translateStoneName: CopyTranslator = identityCopy,
+  crystalCollection: string[] = [],
 ): NatalCrystalRecommendation[] {
   if (limit <= 0) return [];
   const hidden = new Set(hiddenCrystals);
+  const owned = new Set(crystalCollection);
   const candidates = crystalCatalog.flatMap((crystal, index) => {
     if (hidden.has(slugOf(crystal.name))) return [];
     const overlap = Object.fromEntries(
@@ -119,16 +141,22 @@ export function getNatalCrystalSuggestions(
         : balance.dominant.includes(current) ? 1.7 : 1;
       return score + overlap[current] * weight;
     }, 0);
+    if (themeScore <= 0) return [];
     return [{
       crystal,
       element,
       score: themeScore,
       index,
+      owned: owned.has(slugOf(crystal.name)),
       reason: getNatalStoneReason(element, crystal, balance, translate, translateStoneName),
     }];
   });
 
-  candidates.sort((first, second) => second.score - first.score || first.index - second.index);
+  candidates.sort((first, second) =>
+    Number(second.owned) - Number(first.owned)
+    || second.score - first.score
+    || first.index - second.index,
+  );
   const selected: typeof candidates = [];
   const perElement = new Map<ZodiacElement, number>();
   for (const candidate of candidates) {
@@ -247,18 +275,43 @@ function stableScore(value: string): number {
 }
 
 const plainTheme: Record<string, string> = {
-  energy: 'energy', initiative: 'taking a first step', confidence: 'trust in your choices',
-  courage: 'bravery', direction: 'clear priorities', rest: 'rest', reflection: 'reflection',
-  connection: 'connection', communication: 'honest conversation', focus: 'focus',
-  learning: 'learning', values: 'what matters to you', creativity: 'creative ideas',
-  grounding: 'steady, practical steps', patience: 'patience', balance: 'balance',
-  resilience: 'keeping going through difficulty', calm: 'a calmer pace', curiosity: 'curiosity',
-  change: 'adjusting to change', adaptability: 'flexibility', growth: 'growth',
-  perspective: 'another point of view', optimism: 'hope', structure: 'organization',
-  boundaries: 'personal limits', imagination: 'imagination', ease: 'ease',
-  opportunity: 'an opening to try', intuition: 'inner reflection', 'self-trust': 'self-trust',
-  expression: 'saying what you mean', joy: 'joy', comfort: 'comfort',
-  presence: 'being present', freedom: 'freedom', play: 'play',
+  energy: 'Crystal theme: energy',
+  initiative: 'Crystal theme: taking a first step',
+  confidence: 'Crystal theme: trust in your choices',
+  courage: 'Crystal theme: bravery',
+  direction: 'Crystal theme: clear priorities',
+  rest: 'Crystal theme: rest',
+  reflection: 'Crystal theme: reflection',
+  connection: 'Crystal theme: connection',
+  communication: 'Crystal theme: honest conversation',
+  focus: 'Crystal theme: focus',
+  learning: 'Crystal theme: learning',
+  values: 'Crystal theme: what matters to you',
+  creativity: 'Crystal theme: creative ideas',
+  grounding: 'Crystal theme: steady, practical steps',
+  patience: 'Crystal theme: patience',
+  balance: 'Crystal theme: balance',
+  resilience: 'Crystal theme: keeping going through difficulty',
+  calm: 'Crystal theme: a calmer pace',
+  curiosity: 'Crystal theme: curiosity',
+  change: 'Crystal theme: adjusting to change',
+  adaptability: 'Crystal theme: flexibility',
+  growth: 'Crystal theme: growth',
+  perspective: 'Crystal theme: another point of view',
+  optimism: 'Crystal theme: hope',
+  structure: 'Crystal theme: organization',
+  boundaries: 'Crystal theme: personal limits',
+  imagination: 'Crystal theme: imagination',
+  ease: 'Crystal theme: ease',
+  opportunity: 'Crystal theme: an opening to try',
+  intuition: 'Crystal theme: inner reflection',
+  'self-trust': 'Crystal theme: self-trust',
+  expression: 'Crystal theme: saying what you mean',
+  joy: 'Crystal theme: joy',
+  comfort: 'Crystal theme: comfort',
+  presence: 'Crystal theme: being present',
+  freedom: 'Crystal theme: freedom',
+  play: 'Crystal theme: play',
 };
 
 const themeAction: Record<string, string> = {
@@ -383,7 +436,7 @@ function labelThemes(themes: readonly string[], translate: CopyTranslator) {
 
 function rank(
   astrology: Calculated | undefined,
-  { intentions = [], hiddenCrystals = [], feeling, dateKey }: Options,
+  { intentions = [], hiddenCrystals = [], crystalCollection = [], feeling, dateKey }: Options,
   limit = 1,
   translate: CopyTranslator = identityCopy,
   translateStoneName: CopyTranslator = identityCopy,
@@ -396,6 +449,7 @@ function rank(
   if (!hasPersonalContext) return [];
 
   const hidden = new Set(hiddenCrystals);
+  const owned = new Set(crystalCollection);
   const chartTags = getChartThemes(astrology);
   const feelingTags = new Set<string>(selectedFeeling?.themes ?? []);
   const leadAspect = astrology?.aspects[0];
@@ -426,6 +480,7 @@ function rank(
         crystal,
         matched,
         score,
+        owned: owned.has(slugOf(crystal.name)),
         chartMatchCount,
         feelingMatchCount,
         intentionMatchCount,
@@ -438,10 +493,23 @@ function rank(
     .filter((candidate) => candidate.suitable)
     .sort((first, second) => second.score - first.score);
 
-  return selectDiverseCandidates(rankedCandidates, limit)
+  const ownedCandidates = rankedCandidates.filter((candidate) => candidate.owned);
+  const selectedOwned = selectDiverseCandidates(
+    ownedCandidates,
+    Math.min(limit, ownedCandidates.length),
+  );
+  const selectedOwnedNames = new Set(selectedOwned.map(({ crystal }) => crystal.name));
+  const selectedOther = selectDiverseCandidates(
+    rankedCandidates.filter((candidate) =>
+      !candidate.owned && !selectedOwnedNames.has(candidate.crystal.name),
+    ),
+    Math.max(0, limit - selectedOwned.length),
+  );
+
+  return [...selectedOwned, ...selectedOther]
     .map(({ crystal, matched, chartMatchCount, feelingMatchCount }) => {
       const stoneName = translateStoneName(crystal.name);
-      const selectedMeaning = translate(crystal.note).toLocaleLowerCase();
+      const selectedMeaning = crystalMeaning(crystal.note, translate).toLocaleLowerCase();
       const natalLink = chartConnection(astrology, crystal);
       const chartThemes = natalLink?.themes ?? [];
       const feelingThemes = selectedFeeling
@@ -458,7 +526,7 @@ function rank(
           .find(Boolean);
       const intentionText = joinCopy(matched.map((intention) => translate(intention.toLowerCase())), translate);
       const intentionCopy = matched.length
-        ? fillCopy(translate('Your intention to {intentions} also guided this suggestion.'), {
+         ? fillCopy(translate('This suggestion also reflects your intention: {intentions}.'), {
           intentions: intentionText,
         })
         : null;
@@ -467,19 +535,18 @@ function rank(
           ? fillCopy(translate('You chose “{feeling},” which also influenced this suggestion.'), {
             feeling: translate(selectedFeeling.label).toLocaleLowerCase(),
           })
-          : fillCopy(translate('You chose “{feeling},” which connects with {themes}.'), {
-            feeling: translate(selectedFeeling.label).toLocaleLowerCase(),
+          : fillCopy(translate('Your selected feeling connects with these themes: {themes}.'), {
             themes: labelThemes(feelingThemes, translate),
           })
         : null;
        const chartCopy = natalLink
          ? fillCopy(
-           translate('A planetary connection today brings {themes} from your birth chart into focus.'),
+            translate("Today's planetary connection highlights themes from your birth chart: {themes}."),
            { themes: labelThemes(chartThemes, translate) },
          )
          : null;
       const intentionReason = intentionCopy
-        ? `${fillCopy(translate('{stone} shares themes of {meaning}.'), {
+         ? `${fillCopy(translate('The themes associated with {stone} are: {meaning}.'), {
           stone: stoneName,
           meaning: selectedMeaning,
         })} ${intentionCopy}`
@@ -489,16 +556,16 @@ function rank(
         !chartCopy && !feelingCopy ? intentionReason : null,
         feelingCopy,
         chartCopy && feelingCopy && additionalFeelingThemes.length
-          ? fillCopy(translate('This stone also connects with {themes}.'), {
+          ? fillCopy(translate('This stone also reflects these themes: {themes}.'), {
             themes: labelThemes(additionalFeelingThemes, translate),
           })
           : null,
         action
-          ? fillCopy(translate('{stone} can be a reminder to {action}.'), {
+          ? fillCopy(translate('{stone} can remind you of a small step: {action}.'), {
             stone: stoneName,
             action,
           })
-          : fillCopy(translate('{stone} may be a helpful companion for {meaning} as you choose one useful next step.'), {
+          : fillCopy(translate('{stone} can be a helpful companion. Its themes include: {meaning}. It can remind you to choose one useful next step.'), {
             stone: stoneName,
             meaning: selectedMeaning,
           }),

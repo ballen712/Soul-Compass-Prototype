@@ -69,6 +69,12 @@ All seven language versions should read like natural, conversational copy in tha
 
 **How to apply:** review full sentences and dynamic placeholders for case, gender, agreement, and word order; adapt idioms by meaning, not word-for-word. Treat automated checks as coverage/consistency checks, not proof of native editorial quality.
 
+Dynamic crystal guidance must translate both its sentence templates and every inserted theme label. Put theme lists in sentence frames that read naturally without forcing the same grammatical case in every language, and test generated recommendations across all seven locales so missing keys cannot silently fall back to English.
+
+**Why:** the user found English theme fragments and an awkward Russian case ending in otherwise translated crystal recommendations.
+
+**How to apply:** keep dynamic crystal labels in the dedicated guidance dictionary, prefer natural list-introducing punctuation over uninflected fragments after prepositions, and add representative output assertions for each locale.
+
 Planet explanations should end with one or two clearly hypothetical, everyday examples in place of a reflection question. Use “A hypothetical example” as the heading and begin the next line directly with the scenario, without repeating “For example.”
 
 **Why:** the user wants readers to see how a planet-sign-house combination could show up in ordinary life, without presenting it as a fact about them.
@@ -87,11 +93,17 @@ The Cosmos tab should use a star-only night sky with no moon, extending to the t
 
 **How to apply:** keep the star field subtle around text, fade the top image just below “Today’s reflection,” and phrase focus/caution as reflective suggestions rather than predictions.
 
-Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app. Keep the wordmark, settings control, page-title baseline, horizontal gutter, and subtitle spacing consistent across all three tabs. In Settings, keep Profile, Privacy, and About intact; keep Preferences brief and give Your Collection its own menu item.
+Use the same cosmic starfield, dark-blue cards, wordmark, and typography across Cosmos and Natal Chart. Keep Crystals’ outer background warm beige, but reuse the shared typography and cosmic card accents so it still feels like the same app. Keep the wordmark, settings control, page-title baseline, horizontal gutter, and subtitle spacing consistent across all three tabs. In Settings, keep Profile, Privacy, and About intact; keep Preferences limited to language and appearance, keep the daily feeling selector only on Crystals, and give Your Collection its own menu item.
 
-**Why:** the user asked for consistent tab styling while keeping Crystals beige, and chose a separate collection menu to avoid crowding Preferences.
+**Why:** the user asked for consistent tab styling while keeping Crystals beige, chose a separate collection menu, and later said the daily feeling control is already convenient on Crystals and should not be duplicated in Settings.
 
 **How to apply:** use the shared tab header and layout tokens, align screen headings, wordmark, font scale, card shapes, and blue/gold accents; do not add an unrelated decorative image to Crystals. Keep the collection catalog and hidden-stone controls together under Your Collection.
+
+Within Settings → Your Collection, show one searchable stone list with an ownership action and a hide/show action next to each stone. Do not split hidden stones into a second list.
+
+**Why:** the user wants to add or hide a stone directly from its row instead of scrolling between separate lists.
+
+**How to apply:** keep each action reversible, save owned and hidden state independently, and keep both controls visible for every filtered stone.
 
 Cosmos overview, focus, caution, and reflection should offer complementary perspectives, not repeat one instruction in different words. Small ritual ideas should change daily; repetition after some time is acceptable.
 
@@ -117,11 +129,11 @@ The daily feeling is optional and resets at the next calendar day on the device,
 
 **How to apply:** preserve today's mood across same-day restarts, expire it on startup, local midnight and foreground return, and leave birth details, collection, language and hidden stones unchanged. Undated legacy moods cannot be assumed to belong to today.
 
-Birth-chart stone pairings should use reliable natal planet-sign elements, remain a local calculation, and explain why each stone appears. The guide's stone-to-element links are Soul Compass's symbolic editorial system, not proven balancing effects or medical advice. Unknown birth times must omit sign placements the existing chart engine considers uncertain.
+Birth-chart stone pairings should use reliable natal planet-sign elements, remain a local calculation, and explain why each stone appears. Each companion reason should connect the chart pattern to the stone's specific qualities and give a practical way to use them; generic tag lists, repeated “crystal theme” wording, and claims that stones change the chart or remove negative traits are not useful. For both the eight chart companions and daily picks, suitable stones already in Your Collection take priority; if too few match, fill from suitable stones in the full catalog. Ownership never makes an irrelevant stone suitable. The guide's stone-to-element links are Soul Compass's symbolic editorial system, not proven balancing effects or medical advice. Unknown birth times must omit sign placements the existing chart engine considers uncertain.
 
-**Why:** the user requested a 5–10-stone natal-chart shortlist with a readable reason for each choice and a way to add meaningful stones to a personal collection.
+**Why:** the user requested a 5–10-stone natal-chart shortlist with a readable reason for each choice, and later asked that suitable stones already owned be recommended before stones the person does not have.
 
-**How to apply:** keep the shortlist separate from daily-transit picks, honor hidden-stone settings, preserve the engine's timed/untimed precision, and never send profile data to a new service for these explanations.
+**How to apply:** keep the shortlist separate from daily-transit picks, rank relevant owned stones first, then fill remaining places from relevant catalog matches. Honor hidden-stone settings, preserve the engine's timed/untimed precision, leave daily suggestions empty when no candidate is relevant, and never send profile data to a new service for these explanations.
 
 Never show one stone's photograph under another stone's name. Use clearly identified symbolic artwork until a correctly identified, appropriately licensed image is available.
 

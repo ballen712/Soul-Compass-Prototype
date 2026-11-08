@@ -63,6 +63,7 @@ const rows = [
   ['Remove', 'Eltávolítás', 'Rimuovi', 'Entfernen', 'Retirer', 'Quitar', 'Убрать'],
   ['Add', 'Hozzáadás', 'Aggiungi', 'Hinzufügen', 'Ajouter', 'Añadir', 'Добавить'],
   ['Hide', 'Elrejtés', 'Nascondi', 'Ausblenden', 'Masquer', 'Ocultar', 'Скрыть'],
+  ['Show', 'Mutasd', 'Mostra', 'Einblenden', 'Afficher', 'Mostrar', 'Показать'],
   ['Restore', 'Visszaállítás', 'Ripristina', 'Wiederherstellen', 'Rétablir', 'Restaurar', 'Вернуть'],
   ['Hidden stones', 'Elrejtett kövek', 'Pietre nascoste', 'Ausgeblendete Steine', 'Pierres masquées', 'Piedras ocultas', 'Скрытые камни'],
   ['If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time.', 'Ha egy kő nem tetszik, itt elrejtheted. Az elrejtett kövek nem jelennek meg az ajánlásokban. Bármikor visszaállíthatod őket.', 'Se una pietra non ti piace, puoi nasconderla qui. Le pietre nascoste non verranno suggerite. Puoi ripristinarle quando vuoi.', 'Wenn dir ein Stein nicht zusagt, kannst du ihn hier ausblenden. Ausgeblendete Steine werden nicht vorgeschlagen. Du kannst sie jederzeit wiederherstellen.', 'Si une pierre ne te plaît pas, tu peux la masquer ici. Les pierres masquées ne seront pas suggérées. Tu peux les rétablir à tout moment.', 'Si no te gusta una piedra, puedes ocultarla aquí. No aparecerá en las sugerencias. Puedes restaurarla cuando quieras.', 'Если камень тебе не нравится, скрой его здесь. Скрытые камни не будут предлагаться. Их можно вернуть в любое время.'],

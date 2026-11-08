@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, type PropsWithChildren }
 import { useProfile } from '@/profile/ProfileContext';
 import { cosmosTranslations } from './cosmos';
 import crystalUiTranslations from './crystal-ui-translations.json';
+import crystalGuidanceTranslations from './crystal-guidance-translations.json';
 import { onboardingTranslations } from './onboarding';
 import { screenTranslations } from './screen-copy';
 import { natalTranslations } from './natal-copy';
@@ -21,6 +22,10 @@ export const APP_LANGUAGE_LABELS: Record<AppLocale, string> = {
 };
 
 const crystalUiCopy = crystalUiTranslations as unknown as Record<
+  Exclude<AppLocale, 'en'>,
+  Record<string, string>
+>;
+const crystalGuidanceCopy = crystalGuidanceTranslations as unknown as Record<
   Exclude<AppLocale, 'en'>,
   Record<string, string>
 >;
@@ -398,6 +403,7 @@ export function translateText(source: string, locale: AppLocale): string {
     ?? localizedText[locale][source]
     ?? cosmosTranslations[locale][source]
     ?? onboardingTranslations[locale][source]
+    ?? crystalGuidanceCopy[locale]?.[source]
     ?? crystalUiCopy[locale]?.[source]
     ?? screenTranslations[locale][source]
     ?? natalTranslations[locale][source]

@@ -1,12 +1,17 @@
 import type { NatalChartResponse } from '@workspace/api-client-react';
 import React, { useMemo } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Text as SvgText, TSpan } from 'react-native-svg';
 
 type PlanetPosition = NatalChartResponse['planets'][number];
 type Aspect = NatalChartResponse['aspects'][number];
-type HouseCusp = NatalChartResponse['houseCusps'][number];
-type Angles = NonNullable<NatalChartResponse['angles']>;
+type PlanetLabel = {
+  planet: PlanetPosition;
+  name: string;
+  label: string;
+  width: number;
+  targetAngle: number;
+};
 type Palette = {
   card: string;
   border: string;
@@ -59,12 +64,13 @@ function normalizeDegrees(value: number) {
 
 function layoutPlanetLabels(
   planets: PlanetPosition[],
-  radius: number,
   center: number,
-  size: number,
+  baseSize: number,
+  scale: number,
   translate: (source: string) => string,
 ) {
-  const sorted = planets
+  const fontSize = (baseSize < 260 ? 6.8 : 7.6) * scale;
+  const labels: PlanetLabel[] = planets
     .map((planet) => {
       const name = normalizedPlanetName(planet.planet);
       const label = translate(name);
@@ -72,54 +78,100 @@ function layoutPlanetLabels(
         planet,
         name,
         label,
-        width: size < 260
-          ? Math.max(34, Math.min(45, 20 + label.length * 3.1))
-          : Math.max(42, Math.min(60, 20 + label.length * 4.3)),
+        width: Math.max(32, Math.min(68, 20 + label.length * 4.2)) * scale,
         targetAngle: normalizeDegrees(planet.longitude),
       };
     })
-    .sort((first, second) => first.targetAngle - second.targetAngle);
+    .sort((first, second) =>
+      second.width - first.width || first.targetAngle - second.targetAngle,
+    );
 
-  if (sorted.length === 0) return [];
+  const markerRadius = center * 0.5;
+  const radii = [0.42, 0.35, 0.28].map((ratio) => center * ratio);
+  const angleOffsets = [0, 6, -6, 12, -12, 18, -18, 24, -24, 30, -30, 36, -36];
+  const placed: Array<{
+    label: PlanetLabel & { x: number; y: number };
+    box: { left: number; right: number; top: number; bottom: number };
+  }> = [];
 
-  const requiredGaps = sorted.map((item, index) => {
-    const next = sorted[(index + 1) % sorted.length];
-    return ((item.width + next.width) / 2 + 5) / radius * (180 / Math.PI);
-  });
-  const requiredTotal = requiredGaps.reduce((sum, gap) => sum + gap, 0);
-  const gapScale = requiredTotal > 359 ? 359 / requiredTotal : 1;
-  const minimumGaps = requiredGaps.map((gap) => gap * gapScale);
-  const available = 360 - minimumGaps.reduce((sum, gap) => sum + gap, 0);
-  const targetGaps = sorted.map((item, index) => {
-    const next = sorted[(index + 1) % sorted.length];
-    return normalizeDegrees(next.targetAngle - item.targetAngle);
-  });
-  const surplus = targetGaps.map((gap, index) => Math.max(0, gap - minimumGaps[index]));
-  const totalSurplus = surplus.reduce((sum, gap) => sum + gap, 0);
-  const displayGaps = minimumGaps.map((gap, index) =>
-    gap + (totalSurplus > 0 ? available * surplus[index] / totalSurplus : available / sorted.length),
-  );
-  const displayAngles: number[] = [];
+  for (const label of labels) {
+    const marker = polarPoint(label.planet.longitude, markerRadius, center);
+    const ringCandidates = radii.flatMap((radius) => angleOffsets.map((offset) => {
+      const angle = label.targetAngle + offset;
+      const point = polarPoint(angle, radius, center);
+      const distance = Math.hypot(point.x - marker.x, point.y - marker.y);
+      const box = {
+        left: point.x - label.width / 2 - scale,
+        right: point.x + label.width / 2 + scale,
+        top: point.y - fontSize + 1.5 * scale,
+        bottom: point.y + 3.5 * scale,
+      };
+      const farthestCorner = Math.hypot(
+        Math.abs(point.x - center) + label.width / 2,
+        Math.abs(point.y - center) + fontSize / 2,
+      );
+      return { point, distance, offset, box, farthestCorner };
+    }));
+    const inwardX = (center - marker.x) / markerRadius;
+    const inwardY = (center - marker.y) / markerRadius;
+    const tangentX = -inwardY;
+    const tangentY = inwardX;
+    const nearbyCandidates: Array<{
+      point: { x: number; y: number };
+      distance: number;
+      offset: number;
+      box: { left: number; right: number; top: number; bottom: number };
+      farthestCorner: number;
+    }> = [];
+    for (let inward = 8 * scale; inward <= 80 * scale; inward += 8 * scale) {
+      for (let tangent = -72 * scale; tangent <= 72 * scale; tangent += 8 * scale) {
+        const point = {
+          x: marker.x + inwardX * inward + tangentX * tangent,
+          y: marker.y + inwardY * inward + tangentY * tangent,
+        };
+        const distance = Math.hypot(point.x - marker.x, point.y - marker.y);
+        const box = {
+          left: point.x - label.width / 2 - scale,
+          right: point.x + label.width / 2 + scale,
+          top: point.y - fontSize + 1.5 * scale,
+          bottom: point.y + 3.5 * scale,
+        };
+        const farthestCorner = Math.hypot(
+          Math.abs(point.x - center) + label.width / 2,
+          Math.abs(point.y - center) + fontSize / 2,
+        );
+        nearbyCandidates.push({ point, distance, offset: tangent, box, farthestCorner });
+      }
+    }
+    const candidates = [...ringCandidates, ...nearbyCandidates].filter((candidate) =>
+      candidate.distance <= center * 0.5
+      && candidate.farthestCorner <= center * 0.57,
+    ).filter(({ box }) =>
+      marker.x < box.left - 2
+      || marker.x > box.right + 2
+      || marker.y < box.top - 2
+      || marker.y > box.bottom + 2,
+    ).sort((first, second) =>
+      first.distance - second.distance || Math.abs(first.offset) - Math.abs(second.offset),
+    );
 
-  for (let index = 0; index < sorted.length; index += 1) {
-    displayAngles.push(index === 0 ? 0 : displayAngles[index - 1] + displayGaps[index - 1]);
+    const available = candidates.find(({ box }) =>
+      placed.every((other) =>
+        box.right + 2 <= other.box.left
+        || box.left - 2 >= other.box.right
+        || box.bottom + 2 <= other.box.top
+        || box.top - 2 >= other.box.bottom,
+      ),
+    );
+    const candidate = available;
+    if (!candidate) continue;
+    placed.push({
+      label: { ...label, x: candidate.point.x, y: candidate.point.y },
+      box: candidate.box,
+    });
   }
 
-  const offsetX = sorted.reduce(
-    (sum, item, index) => sum + Math.cos((item.targetAngle - displayAngles[index]) * Math.PI / 180),
-    0,
-  );
-  const offsetY = sorted.reduce(
-    (sum, item, index) => sum + Math.sin((item.targetAngle - displayAngles[index]) * Math.PI / 180),
-    0,
-  );
-  const offset = Math.atan2(offsetY, offsetX) * 180 / Math.PI;
-
-  return sorted.map((item, index) => {
-    const angle = normalizeDegrees(displayAngles[index] + offset);
-    const point = polarPoint(angle, radius, center);
-    return { ...item, angle, x: point.x, y: point.y };
-  });
+  return placed.map(({ label }) => label);
 }
 
 export function NatalChartWheel({
@@ -129,8 +181,6 @@ export function NatalChartWheel({
   locale,
   moonSignRange,
   timeKnown,
-  angles,
-  houseCusps,
   majorAspects,
 }: {
   planets: PlanetPosition[];
@@ -139,24 +189,20 @@ export function NatalChartWheel({
   locale: string;
   moonSignRange: string[];
   timeKnown: boolean;
-  angles: Angles | null;
-  houseCusps: HouseCusp[];
   majorAspects: Aspect[];
 }) {
   const { width } = useWindowDimensions();
-  const size = Math.min(354, Math.max(220, width - 78));
+  const baseSize = Math.min(380, Math.max(220, width - 64));
+  const size = Math.min(450, width - 12, Math.round(baseSize * 1.18));
+  const scale = size / baseSize;
   const center = size / 2;
-  const outerRadius = center * 0.96;
   const zodiacOuterRadius = center * 0.74;
   const zodiacInnerRadius = center * 0.59;
   const signRadius = center * 0.665;
-  const planetRadius = center * (size < 260 ? 0.47 : 0.5);
-  const labelRadius = center * (size < 260 ? 0.78 : 0.8);
-  const houseTickInnerRadius = center * 0.93;
-  const houseNumberRadius = center * 0.91;
+  const planetRadius = center * 0.5;
   const labels = useMemo(
-    () => layoutPlanetLabels(planets, labelRadius, center, size, translate),
-    [planets, labelRadius, center, size, translate],
+    () => layoutPlanetLabels(planets, center, baseSize, scale, translate),
+    [planets, center, baseSize, scale, translate],
   );
   const markers = useMemo(
     () => planets.map((planet) => ({
@@ -172,23 +218,6 @@ export function NatalChartWheel({
   const markersByPlanet = useMemo(
     () => new Map(markers.map((marker) => [marker.planet.planet.toLowerCase(), marker])),
     [markers],
-  );
-  const orderedHouses = useMemo(
-    () => [...houseCusps].sort((first, second) => first.house - second.house),
-    [houseCusps],
-  );
-  const houseLabels = useMemo(
-    () => orderedHouses.map((house, index) => {
-      const next = orderedHouses[(index + 1) % orderedHouses.length];
-      const midpoint = next
-        ? normalizeDegrees(house.longitude + normalizeDegrees(next.longitude - house.longitude) / 2)
-        : house.longitude;
-      return {
-        house: house.house,
-        ...polarPoint(midpoint, houseNumberRadius, center),
-      };
-    }),
-    [orderedHouses, houseNumberRadius, center],
   );
   const aspectLines = useMemo(() => {
     return majorAspects.flatMap((aspect, index) => {
@@ -229,22 +258,19 @@ export function NatalChartWheel({
       accessibilityLabel={`${translate('PLANETS')}: ${accessiblePositions}`}
       style={styles.container}
     >
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <Circle
-          cx={center}
-          cy={center}
-          r={outerRadius}
-          fill={palette.card}
-          stroke={palette.border}
-          strokeWidth={1}
-        />
+      <Svg
+        testID="natal-chart-wheel-svg"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+      >
         <Circle
           cx={center}
           cy={center}
           r={zodiacOuterRadius}
           fill="none"
           stroke={palette.border}
-          strokeWidth={1}
+          strokeWidth={scale}
           opacity={0.55}
         />
         <Circle
@@ -253,7 +279,7 @@ export function NatalChartWheel({
           r={zodiacInnerRadius}
           fill="none"
           stroke={palette.border}
-          strokeWidth={1}
+          strokeWidth={scale}
           opacity={0.55}
         />
         <Circle
@@ -262,7 +288,7 @@ export function NatalChartWheel({
           r={planetRadius}
           fill="none"
           stroke={palette.border}
-          strokeWidth={0.9}
+          strokeWidth={0.9 * scale}
           opacity={0.7}
         />
         {SIGN_GLYPHS.map((_, index) => {
@@ -276,41 +302,10 @@ export function NatalChartWheel({
               x2={outerPoint.x}
               y2={outerPoint.y}
               stroke={palette.border}
-              strokeWidth={0.8}
+              strokeWidth={0.8 * scale}
             />
           );
         })}
-        {orderedHouses.map((house) => {
-          const point = polarPoint(house.longitude, outerRadius, center);
-          const tickStart = polarPoint(house.longitude, houseTickInnerRadius, center);
-          return (
-            <Line
-              key={`house-cusp-${house.house}`}
-              testID={`natal-house-tick-${house.house}`}
-              x1={tickStart.x}
-              y1={tickStart.y}
-              x2={point.x}
-              y2={point.y}
-              stroke={palette.border}
-              strokeWidth={0.8}
-              opacity={0.8}
-            />
-          );
-        })}
-        {houseLabels.map(({ house, x, y }) => (
-          <SvgText
-            key={`house-number-${house}`}
-            testID={`natal-house-number-${house}`}
-            x={x}
-            y={y + 2.5}
-            textAnchor="middle"
-            fontFamily="Inter"
-            fontSize={size < 260 ? 6.5 : 7.5}
-            fill={palette.mutedForeground}
-          >
-            {house}
-          </SvgText>
-        ))}
         {SIGN_GLYPHS.map((glyph, index) => {
           const point = polarPoint(index * 30 + 15, signRadius, center);
           return (
@@ -321,7 +316,7 @@ export function NatalChartWheel({
               y={point.y + 5}
               textAnchor="middle"
               fontFamily="Georgia"
-              fontSize={size < 260 ? 12 : 14}
+              fontSize={(baseSize < 260 ? 12 : 14) * scale}
               fill={palette.secondary}
             >
               {`${glyph}\uFE0E`}
@@ -341,53 +336,13 @@ export function NatalChartWheel({
               x2={second.x}
               y2={second.y}
               stroke={palette.secondary}
-              strokeWidth={0.8 + strength * 0.25}
+              strokeWidth={(0.8 + strength * 0.25) * scale}
               strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
               strokeLinecap="round"
               opacity={uncertainMoon ? 0.2 : 0.32 + strength * 0.2}
             />
           );
         })}
-        {angles ? (
-          [
-            { key: 'asc', label: 'ASC', longitude: angles.ascendant },
-            { key: 'mc', label: 'MC', longitude: angles.midheaven },
-          ].map(({ key, label, longitude }) => {
-            const point = polarPoint(longitude, outerRadius, center);
-            const tickStart = polarPoint(longitude, outerRadius - 7, center);
-          const labelPoint = polarPoint(longitude, outerRadius - 18, center);
-            return (
-              <React.Fragment key={key}>
-                <Line
-                  x1={tickStart.x}
-                  y1={tickStart.y}
-                  x2={point.x}
-                  y2={point.y}
-                  stroke={palette.secondary}
-                  strokeWidth={1.4}
-                />
-                <Circle
-                  testID={`natal-angle-marker-${key}`}
-                  cx={point.x}
-                  cy={point.y}
-                  r={2.8}
-                  fill={palette.secondary}
-                />
-                <SvgText
-                  x={labelPoint.x}
-                  y={labelPoint.y + 3}
-                  textAnchor="middle"
-                  fontFamily="Inter"
-                  fontSize={8}
-                  fontWeight="700"
-                  fill={palette.secondary}
-                >
-                  {label}
-                </SvgText>
-              </React.Fragment>
-            );
-          })
-        ) : null}
         {markers.map(({ planet, x, y }) => {
           const name = normalizedPlanetName(planet.planet);
           const isUncertainMoon = !timeKnown && name === 'Moon';
@@ -395,73 +350,43 @@ export function NatalChartWheel({
           if (!label) return null;
           return (
             <React.Fragment key={planet.planet}>
-              <Line
-                testID={`natal-planet-leader-${name.toLowerCase()}`}
-                x1={x}
-                y1={y}
-                x2={label.x}
-                y2={label.y}
-                stroke={palette.mutedForeground}
-                strokeWidth={0.65}
-                opacity={0.56}
-              />
               <Circle
                 testID={`natal-planet-marker-${name.toLowerCase()}`}
                 cx={x}
                 cy={y}
-                r={size < 260 ? 2.8 : 3.2}
+                r={(baseSize < 260 ? 2.8 : 3.2) * scale}
                 fill={isUncertainMoon ? palette.card : palette.secondary}
                 stroke={isUncertainMoon ? palette.mutedForeground : palette.secondary}
-                strokeWidth={1.2}
-                strokeDasharray={isUncertainMoon ? '2 2' : undefined}
-              />
-              <Rect
-                testID={`natal-planet-label-${name.toLowerCase()}`}
-                x={label.x - label.width / 2}
-                y={label.y - 9}
-                width={label.width}
-                height={18}
-                rx={9}
-                fill={palette.card}
-                stroke={isUncertainMoon ? palette.mutedForeground : palette.border}
-                strokeWidth={0.9}
+                strokeWidth={1.2 * scale}
                 strokeDasharray={isUncertainMoon ? '2 2' : undefined}
               />
               <SvgText
-                testID={`natal-planet-glyph-${name.toLowerCase()}`}
-                x={label.x - label.width / 2 + 10}
-                y={label.y + 3}
+                testID={`natal-planet-label-${name.toLowerCase()}`}
+                x={label.x}
+                y={label.y + 2.5 * scale}
                 textAnchor="middle"
                 fontFamily="Inter"
-                fontSize={size < 260 ? 9.5 : 11}
-                fill={palette.secondary}
+                fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
               >
-                {`${PLANET_GLYPHS[name] ?? name.slice(0, 1)}\uFE0E`}
-              </SvgText>
-              <SvgText
-                testID={`natal-planet-name-${name.toLowerCase()}`}
-                x={label.x - label.width / 2 + 19}
-                y={label.y + 3}
-                textAnchor="start"
-                fontFamily="Inter"
-                fontSize={size < 260 ? 7.4 : 8.5}
-                fontWeight="600"
-                fill={palette.foreground}
-              >
-                {label.label}
-              </SvgText>
-              {isUncertainMoon ? (
-                <SvgText
-                  x={label.x + label.width / 2 - 3}
-                  y={label.y - 5}
-                  textAnchor="middle"
-                  fontSize={8}
-                  fontWeight="700"
-                  fill={palette.mutedForeground}
+                <TSpan
+                  testID={`natal-planet-glyph-${name.toLowerCase()}`}
+                  fontFamily="Georgia"
+                  fill={palette.secondary}
                 >
-                  ?
-                </SvgText>
-              ) : null}
+                  {`${PLANET_GLYPHS[name] ?? name.slice(0, 1)}\uFE0E`}
+                </TSpan>
+                <TSpan
+                  testID={`natal-planet-name-${name.toLowerCase()}`}
+                  fontFamily="Inter"
+                  fontWeight="600"
+                  fill={palette.foreground}
+                >
+                  {` ${label.label}`}
+                </TSpan>
+                {isUncertainMoon ? (
+                  <TSpan fill={palette.mutedForeground}>?</TSpan>
+                ) : null}
+              </SvgText>
             </React.Fragment>
           );
         })}

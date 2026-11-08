@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { LOCAL_KEY, emptyRecord } from '../profile/local';
+import { LOCAL_KEY, emptyRecord, localDayKey } from '../profile/local';
 import { APP_GUIDE_INTRO } from '../constants/app-guide';
 import type { HomeLocation, UserProfile } from '../profile/profile';
 
@@ -583,7 +583,7 @@ test('About contains the single crystal-image disclosure', async () => {
   expect(findTextNode(root, APP_GUIDE_INTRO)).toBeDefined();
 });
 
-test('catalog search keeps collection and hidden-stone changes saved locally', async () => {
+test('one collection list lets users add or hide each stone and saves both choices', async () => {
   state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
@@ -591,49 +591,51 @@ test('catalog search keeps collection and hidden-stone changes saved locally', a
   await act(async () => {
     root.findByProps({ accessibilityLabel: 'Search stones in the collection catalog' }).props.onChangeText('ROSE');
   });
-  expect(root.findAllByProps({ testID: 'settings-collect-amethyst' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'settings-stone-row-amethyst' })).toHaveLength(0);
+  const roseRow = root.findByProps({ testID: 'settings-stone-row-rose-quartz' });
+  expect(roseRow.findAllByType(Pressable).map((button) => button.props.testID)).toEqual([
+    'settings-collect-rose-quartz',
+    'settings-hide-rose-quartz',
+  ]);
   await act(async () => { root.findByProps({ testID: 'settings-collect-rose-quartz' }).props.onPress(); });
+  expect(root.findByProps({ testID: 'settings-collect-rose-quartz' }).findByType(Text).props.children).toBe('Remove');
   expect(profileState.preferences.crystalCollection).toContain('rose-quartz');
-  await act(async () => {
-    root.findByProps({ accessibilityLabel: 'Search stones to hide or restore' }).props.onChangeText('rose');
-  });
+
+  await act(async () => { root.findByProps({ testID: 'settings-hide-rose-quartz' }).props.onPress(); });
+  expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
+  expect(root.findByProps({ testID: 'settings-hide-rose-quartz' }).findByType(Text).props.children).toBe('Show');
+  await act(async () => { root.findByProps({ testID: 'settings-hide-rose-quartz' }).props.onPress(); });
+  expect(profileState.preferences.crystalPreferences.hiddenCrystals).not.toContain('rose-quartz');
   await act(async () => { root.findByProps({ testID: 'settings-hide-rose-quartz' }).props.onPress(); });
   expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
   expect(profileState.profile).toEqual(existingProfile);
+
   await act(async () => renderer?.unmount());
   await render(<ProfileProvider><ProfileProbe /></ProfileProvider>);
   expect(profileState.preferences.crystalCollection).toContain('rose-quartz');
   expect(profileState.preferences.crystalPreferences.hiddenCrystals).toContain('rose-quartz');
 });
 
-test('preferences offers daily feelings without intentions and supports changing or clearing the choice', async () => {
-  state.storage.set(LOCAL_KEY, JSON.stringify({ ...emptyRecord(), profile: existingProfile }));
+test('Preferences no longer duplicates the daily feeling picker or intentions', async () => {
+  const record = emptyRecord();
+  record.profile = existingProfile;
+  record.preferences.crystalPreferences.feeling = 'energized';
+  record.preferences.crystalPreferences.feelingDate = localDayKey();
+  state.storage.set(LOCAL_KEY, JSON.stringify(record));
   await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
   const root = renderer!.root;
   await act(async () => { await pressText(root, 'Preferences'); });
-  expect(findTextNode(root, 'How are you feeling today?')).toBeDefined();
+  expect(findTextNode(root, 'How are you feeling today?')).toBeUndefined();
   for (const label of ['Intentions', 'Rest', 'Focus', 'Reflection', 'Courage', 'Connection', 'Change', 'Save custom intentions']) {
     expect(findTextNode(root, label)).toBeUndefined();
   }
   expect(root.findAllByType(TextInput).some(node =>
     node.props.accessibilityLabel === 'Custom intentions, comma separated',
   )).toBe(false);
-  expect(root.findAllByType(Text).some(node =>
-    textContent(node.props.children).includes('resets at midnight on your device'),
-  )).toBe(true);
-  const choices = root.findAllByType(Pressable).filter(node =>
-    node.props.testID?.startsWith('settings-feeling-'),
-  );
-  expect(choices).toHaveLength(12);
-  const first = choices[0].props.testID;
-  const second = choices[1].props.testID;
-  await act(async () => { root.findByProps({ testID: first }).props.onPress(); });
-  expect(root.findByProps({ testID: first }).props.accessibilityState.checked).toBe(true);
-  await act(async () => { root.findByProps({ testID: second }).props.onPress(); });
-  expect(root.findByProps({ testID: first }).props.accessibilityState.checked).toBe(false);
-  expect(root.findByProps({ testID: second }).props.accessibilityState.checked).toBe(true);
-  await act(async () => { root.findByProps({ testID: second }).props.onPress(); });
-  expect(profileState.preferences.crystalPreferences.feeling).toBeNull();
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string' && node.props.testID.startsWith('settings-feeling-'),
+  )).toHaveLength(0);
+  expect(profileState.preferences.crystalPreferences.feeling).toBe('energized');
   expect(profileState.profile).toEqual(existingProfile);
 });
 

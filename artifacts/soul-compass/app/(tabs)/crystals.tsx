@@ -232,6 +232,14 @@ function HiddenNote({ count }: { count: number }) {
   );
 }
 
+function titleCaseCrystalTag(value: string, locale: string) {
+  return value.split(/([\s·\/–—-]+)/u).map((part) =>
+    /\p{L}/u.test(part)
+      ? `${part.charAt(0).toLocaleUpperCase(locale)}${part.slice(1)}`
+      : part,
+  ).join('');
+}
+
 function describeElementBalance(
   balance: Extract<ReturnType<typeof calculateNatalElementBalance>, { status: 'calculated' }>,
   suggestionCount: number,
@@ -320,9 +328,16 @@ export default function CrystalsScreen() {
   );
   const natalStoneSuggestions = useMemo(
     () => natalElementResult?.status === 'calculated'
-      ? getNatalCrystalSuggestions(natalElementResult, hidden, 8, t, translateStoneName)
+      ? getNatalCrystalSuggestions(
+        natalElementResult,
+        hidden,
+        8,
+        t,
+        translateStoneName,
+        preferences.crystalCollection,
+      )
       : [],
-    [natalElementResult, hidden, t, locale],
+    [natalElementResult, hidden, preferences.crystalCollection, t, locale],
   );
   const astrology = useMemo(
     () => (profile ? getDailyAstrology(profile, now) : null),
@@ -333,6 +348,7 @@ export default function CrystalsScreen() {
       astrology?.status === 'calculated' ? astrology : undefined,
       {
         hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
+        crystalCollection: preferences.crystalCollection,
         feeling: preferences.crystalPreferences.feeling,
         dateKey: profile
           ? getHomeLocalDate(now, profile.currentResidence ?? profile.birthPlace)
@@ -342,7 +358,7 @@ export default function CrystalsScreen() {
       t,
       translateStoneName,
     ),
-    [astrology, preferences.crystalPreferences, now, t, locale],
+    [astrology, preferences.crystalPreferences, preferences.crystalCollection, now, t, locale],
   );
   const recommendation = crystalSuggestions[0] ?? null;
   const catalog = crystalCatalog;
@@ -575,7 +591,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.secondary },
                     ]}
                   >
-                    {localizeCrystal(recommendation.crystal, locale).note}
+                    {titleCaseCrystalTag(localizeCrystal(recommendation.crystal, locale).note, locale)}
                   </Text>
                 </View>
               </View>
@@ -648,7 +664,7 @@ export default function CrystalsScreen() {
                       { color: colors.cosmos.secondary },
                     ]}
                   >
-                    {localizeCrystal(suggestion.crystal, locale).note}
+                    {titleCaseCrystalTag(localizeCrystal(suggestion.crystal, locale).note, locale)}
                   </Text>
                   <Text style={[styles.alternativeDescription, { color: colors.cosmos.mutedForeground }]}>
                     {suggestion.reason}
@@ -842,6 +858,9 @@ export default function CrystalsScreen() {
                 {formatCopy(t('The guide includes {count} stones and gemstone varieties. A day may have one main companion and up to two alternatives, but only when there is a clear match. Some days no stone is suggested. Browse or search the full list in Settings under Your collection.'), { count: crystalCatalog.length })}
               </Text>
               <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {t('The guide checks stones in Your Collection first. When one matches your birth chart or today’s themes, it gets priority. If there are not enough suitable stones in your collection, the guide considers matching stones from the full catalog. If nothing fits, it leaves the suggestion empty.')}
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
                 {t('With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
               </Text>
               <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
@@ -865,6 +884,9 @@ export default function CrystalsScreen() {
                       <View style={styles.natalStoneList}>
                         {natalStoneSuggestions.map((suggestion, index) => {
                           const crystalCopy = localizeCrystal(suggestion.crystal, locale);
+                          const isOwned = preferences.crystalCollection.includes(
+                            slugOf(suggestion.crystal.name),
+                          );
                           return (
                             <Pressable
                               key={suggestion.crystal.name}
@@ -892,7 +914,8 @@ export default function CrystalsScreen() {
                                     {index + 1}. {crystalCopy.name}
                                   </Text>
                                   <Text style={[styles.natalStoneMeta, { color: colors.cosmos.mutedForeground }]}>
-                                    {t(suggestion.element)} · {crystalCopy.note}
+                                    {titleCaseCrystalTag(`${t(suggestion.element)} · ${crystalCopy.note}`, locale)}
+                                    {isOwned ? ` · ${t('In Your Collection')}` : ''}
                                   </Text>
                                 </View>
                                 <Feather name="chevron-right" size={17} color={colors.cosmos.secondary} />
@@ -1155,7 +1178,7 @@ export default function CrystalsScreen() {
                           {localizeCrystal(stone, locale).name}
                         </Text>
                         <Text style={[styles.catalogStoneNote, { color: colors.crystals.secondary }]}>
-                          {localizeCrystal(stone, locale).note}
+                          {titleCaseCrystalTag(localizeCrystal(stone, locale).note, locale)}
                         </Text>
                         <Text
                           numberOfLines={2}

@@ -20,5 +20,16 @@ export function getLocalizedCrystalCopy(
   locale: CrystalLocale,
 ): LocalizedCrystalCopy | null {
   if (locale === 'en') return null;
-  return translations[locale]?.[englishName] ?? null;
+  const copy = translations[locale]?.[englishName];
+  if (!copy) return null;
+  const decode = (value: string) => value
+    .replaceAll('&agrave;', 'à')
+    .replaceAll('&eacute;', 'é');
+  return {
+    name: decode(copy.name),
+    note: decode(copy.note),
+    description: decode(copy.description),
+    guideDescription: decode(copy.guideDescription),
+    specimenDescription: decode(copy.specimenDescription),
+  };
 }

@@ -9,7 +9,6 @@ import { useProfile } from '@/profile/ProfileContext';
 import { CONSENT_VERSION } from '@/profile/local';
 import type { UserProfile } from '@/profile/profile';
 import { crystalCatalog } from '@/constants/content';
-import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
 import { PRODUCT } from '@/constants/product';
 import { APP_GUIDE_INTRO } from '@/constants/app-guide';
 import { AppGuideCards } from '@/components/AppGuideContent';
@@ -41,33 +40,6 @@ function Chip({ label, active, onPress, testID }: { label: string; active: boole
   return (
     <Pressable testID={testID} accessibilityRole="switch" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function FeelingChoice({ option, selected, onPress }: {
-  option: (typeof FEELING_OPTIONS)[number];
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const t = useAppText();
-  const colors = useColors();
-  const styles = useMemo(() => createSettingsStyles(colors), [colors.mode]);
-  return (
-    <Pressable
-      testID={`settings-feeling-${option.id}`}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={[styles.feelingChoice, selected && styles.feelingChoiceActive]}
-    >
-      <View style={styles.feelingCopy}>
-        <Text style={[styles.feelingTitle, selected && styles.feelingTitleActive]}>{t(option.label)}</Text>
-        <Text style={styles.feelingDescription}>{t(option.description)}</Text>
-      </View>
-      <View style={[styles.feelingIndicator, selected && styles.feelingIndicatorActive]}>
-        {selected ? <View style={styles.feelingDot} /> : null}
-      </View>
     </Pressable>
   );
 }
@@ -105,16 +77,12 @@ export default function SettingsScreen() {
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState('');
-  const [hiddenSearch, setHiddenSearch] = useState('');
   useEffect(() => {
     if (section === 'profile') setTab('profile');
   }, [section]);
   const stoneName = (name: string) => getLocalizedCrystalCopy(name, locale)?.name ?? name;
   const collectionMatches = CATALOG.filter((c) =>
     `${c.name} ${stoneName(c.name)}`.toLocaleLowerCase(locale).includes(collectionSearch.trim().toLocaleLowerCase(locale)),
-  ).sort((a, b) => stoneName(a.name).localeCompare(stoneName(b.name), locale));
-  const hiddenMatches = CATALOG.filter((c) =>
-    `${c.name} ${stoneName(c.name)}`.toLocaleLowerCase(locale).includes(hiddenSearch.trim().toLocaleLowerCase(locale)),
   ).sort((a, b) => stoneName(a.name).localeCompare(stoneName(b.name), locale));
 
   async function run(
@@ -168,13 +136,6 @@ export default function SettingsScreen() {
     }
   }
 
-  const toggleFeeling = (id: string) => {
-    const feeling = preferences.crystalPreferences.feeling === id ? null : id;
-    void run(() => savePreferences({
-      ...preferences,
-      crystalPreferences: { ...preferences.crystalPreferences, feeling },
-    }), feeling ? 'Today’s feeling saved. It will guide stone suggestions alongside transits when available.' : 'Today’s feeling cleared.');
-  };
   const toggleHidden = (id: string) => {
     const cur = preferences.crystalPreferences.hiddenCrystals;
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
@@ -199,7 +160,7 @@ export default function SettingsScreen() {
     </View>
   );
   const sections: { key: Tab; label: string; description?: string }[] = [
-    { key: 'profile', label: 'Profile', description: 'Birth details' },
+    { key: 'profile', label: 'Profile', description: 'Birth details and places' },
     { key: 'preferences', label: 'Preferences' },
     { key: 'collection', label: 'Your collection' },
     { key: 'privacy', label: 'Privacy', description: 'Permission and local storage' },
@@ -342,21 +303,6 @@ export default function SettingsScreen() {
               <Section title="Appearance" description="Choose how Soul Compass looks. System follows your device setting.">
                 {appearanceControl}
               </Section>
-                <Section
-                  title="How are you feeling today?"
-                  description="Choose how you feel today, or leave this blank for the usual chart-based suggestions. Your choice resets at midnight on your device. You can change or clear it at any time."
-                >
-                  <View style={styles.feelingList}>
-                    {FEELING_OPTIONS.map((option) => (
-                      <FeelingChoice
-                        key={option.id}
-                        option={option}
-                        selected={preferences.crystalPreferences.feeling === option.id}
-                        onPress={() => toggleFeeling(option.id)}
-                      />
-                    ))}
-                  </View>
-                </Section>
             </>
           ) : null}
 
@@ -364,11 +310,14 @@ export default function SettingsScreen() {
             <>
               <Section
                 title="Your collection"
-                description={formatAppText(
-                  'This guide currently has {count} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today’s suggestion. Your collection does not limit recommendations.',
-                  locale,
-                  { count: CATALOG.length },
-                )}
+                description={[
+                  formatAppText(
+                    'This guide currently has {count} stones. Mark the stones or jewelry you already own to keep track of your collection. Owned stones are marked here and on today’s suggestion. Your collection does not limit recommendations.',
+                    locale,
+                    { count: CATALOG.length },
+                  ),
+                  t('If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time.'),
+                ].join(' ')}
               >
                 <TextInput
                   accessibilityLabel={t('Search stones in the collection catalog')}
@@ -383,12 +332,16 @@ export default function SettingsScreen() {
                 ) : null}
                 {collectionMatches.map((c) => {
                   const owned = preferences.crystalCollection.includes(c.id);
+                  const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
                   return (
-                    <View key={c.id} style={styles.row}>
-                      <Text style={styles.rowLabel}>{stoneName(c.name)}</Text>
+                    <View key={c.id} testID={`settings-stone-row-${c.id}`} style={styles.row}>
+                      <Text style={styles.rowLabel} numberOfLines={2}>{stoneName(c.name)}</Text>
+                      <View style={styles.stoneActions}>
                       <Pressable
                         testID={`settings-collect-${c.id}`}
                         accessibilityRole="button"
+                        accessibilityLabel={`${t(owned ? 'Remove' : 'Add')} ${stoneName(c.name)}`}
+                        accessibilityState={{ checked: owned }}
                         disabled={busy}
                         onPress={() => void run(() => toggleCrystal(c.id), undefined, { clearMessage: false })}
                         style={[styles.smallButton, owned && styles.smallButtonActive]}
@@ -397,41 +350,20 @@ export default function SettingsScreen() {
                           {t(owned ? 'Remove' : 'Add')}
                         </Text>
                       </Pressable>
-                    </View>
-                  );
-                })}
-              </Section>
-              <Section
-                title="Hidden stones"
-                description="If a stone does not appeal to you, hide it here. Hidden stones will not be suggested. You can restore them at any time."
-              >
-                <TextInput
-                  accessibilityLabel={t('Search stones to hide or restore')}
-                  placeholder={t('Search stones')}
-                  value={hiddenSearch}
-                  onChangeText={setHiddenSearch}
-                  autoCorrect={false}
-                  style={styles.catalogSearch}
-                />
-                {hiddenMatches.length === 0 ? (
-                  <Text style={styles.body}>{t('No stones match your search.')}</Text>
-                ) : null}
-                {hiddenMatches.map((c) => {
-                  const hidden = preferences.crystalPreferences.hiddenCrystals.includes(c.id);
-                  return (
-                    <View key={c.id} style={styles.row}>
-                      <Text style={styles.rowLabel}>{stoneName(c.name)}</Text>
                       <Pressable
                         testID={`settings-hide-${c.id}`}
                         accessibilityRole="button"
+                        accessibilityLabel={`${t(hidden ? 'Show' : 'Hide')} ${stoneName(c.name)}`}
+                        accessibilityState={{ checked: hidden }}
                         disabled={busy}
                         onPress={() => toggleHidden(c.id)}
                         style={[styles.smallButton, hidden && styles.smallButtonActive]}
                       >
                         <Text style={[styles.smallButtonText, hidden && styles.smallButtonTextActive]}>
-                          {t(hidden ? 'Restore' : 'Hide')}
+                          {t(hidden ? 'Show' : 'Hide')}
                         </Text>
                       </Pressable>
+                      </View>
                     </View>
                   );
                 })}
@@ -670,21 +602,12 @@ function createSettingsStyles(colors: ReturnType<typeof useColors>) {
     chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     chipText: { color: colors.foreground, fontSize: 13 },
     chipTextActive: { color: colors.primaryForeground },
-    feelingList: { gap: 8 },
-    feelingChoice: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.card, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 12 },
-    feelingChoiceActive: { borderColor: colors.primary, backgroundColor: colors.muted },
-    feelingCopy: { flex: 1, gap: 3 },
-    feelingTitle: { color: colors.foreground, fontSize: 14, fontWeight: '600' },
-    feelingTitleActive: { color: colors.tint },
-    feelingDescription: { color: colors.mutedForeground, fontSize: 12, lineHeight: 17 },
-    feelingIndicator: { width: 19, height: 19, borderWidth: 1, borderColor: colors.mutedForeground, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    feelingIndicatorActive: { borderColor: colors.tint },
-    feelingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.tint },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-    rowLabel: { color: colors.foreground, fontSize: 15 },
-    smallButton: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6, minWidth: 76, alignItems: 'center' },
+     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+     rowLabel: { color: colors.foreground, fontSize: 14, flex: 1, flexShrink: 1, minWidth: 0, marginRight: 8 },
+     stoneActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+     smallButton: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 7, minWidth: 68, minHeight: 34, alignItems: 'center', justifyContent: 'center' },
     smallButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-    smallButtonText: { color: colors.tint, fontSize: 13, fontWeight: '600' },
+     smallButtonText: { color: colors.tint, fontSize: 11, lineHeight: 14, fontWeight: '600', textAlign: 'center' },
     smallButtonTextActive: { color: colors.primaryForeground },
     secondaryButton: { minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, alignSelf: 'flex-start' },
     secondaryText: { color: colors.tint, fontSize: 14, fontWeight: '600' },

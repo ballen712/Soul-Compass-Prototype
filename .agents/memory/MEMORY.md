@@ -1,4 +1,5 @@
 - [Expo Go tunnels](expo-go-tunnels.md) — Use a public Expo tunnel for iPhone testing; Replit development hostnames may not resolve on-device.
+- [TestFlight builds in Replit](expo-testflight-launch.md) — Use Publishing → Launch; Replit does not support EAS CLI or EAS project linking for Expo builds.
 - [Astrology profile rules](astrology-profile-rules.md) — Residence is optional in Settings; daily dates use its time zone when set, otherwise the birthplace time zone.
 - [Security boundaries](security-boundaries.md) — No paid security products, unnecessary third-party birth-data disclosure, or weakened protections to clear scans.
 - [Local-first product](local-first-product.md) — Registration-free AsyncStorage app; birth-data requests require revocable consent; dormant Supabase infrastructure stays untouched.
@@ -11,5 +12,6 @@
 - [Onboarding-gated visual checks](onboarding-gated-visual-tests.md) — Use an isolated browser profile with synthetic local data and revoked consent; this does not replace native device testing.
 - [Crystal catalog return position](crystal-catalog-return.md) — Keep the list mounted under details and center the opened stone; remounting can lose virtualized row measurements.
 - [Crystal image zoom](crystal-image-zoom.md) — Pinch and drag only the stone image across the visible screen; keep nearby text and controls fixed, then reset on release.
-- [Equal-width tab navigation](equal-width-tab-navigation.md) — Keep four localized tabs in equal-width Classic Tabs; consistency outweighs iOS 26 Liquid Glass.
+- [Tab navigation](equal-width-tab-navigation.md) — Use Liquid Glass when supported, classic tabs elsewhere, and keep the established icons consistent.
+- [Natal chart wheel](astrology-profile-rules.md) — Keep the chart graphic minimal: zodiac ring, planet orbit, aspect lines, and plain labels inside.
 - [Localization dictionary precedence](localization-dictionary-precedence.md) — Keep established locale maps ahead of supplemental screen, natal, and daily-copy dictionaries to avoid overwriting reviewed wording.

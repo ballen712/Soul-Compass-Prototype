@@ -35,6 +35,7 @@ vi.mock('react-native-svg', () => ({
   Line: 'SvgLine',
   Rect: 'SvgRect',
   Text: 'SvgText',
+  TSpan: 'SvgTSpan',
 }));
 vi.mock('expo-router', () => ({
   useRouter: () => ({ push: vi.fn(), navigate: vi.fn() }),
@@ -453,14 +454,18 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(wheel.props.accessibilityLabel).toContain('Moon');
   expect(root.findByProps({ testID: 'natal-planet-glyph-sun' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-planet-name-sun' }).props.children).toBe('Sun');
+  expect(root.findByProps({ testID: 'natal-planet-name-sun' }).props.children.trim()).toBe('Sun');
   expect(root.findByProps({ testID: 'natal-planet-label-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-house-number-1' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-house-tick-1' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-angle-marker-asc' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-angle-marker-mc' })).toBeDefined();
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string'
+      && /^(natal-house-(number|tick)|natal-angle-marker)-/.test(node.props.testID),
+  )).toHaveLength(0);
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string'
+      && node.props.testID.startsWith('natal-planet-leader-'),
+  )).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
 
   await act(async () => { root.findByProps({ testID: 'natal-planet-sun' }).props.onPress(); });
@@ -604,8 +609,6 @@ test('timed chart keeps angles but omits Placidus houses when the location canno
   expect(root.findByProps({ testID: 'natal-angle-ascendant' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
-  expect(root.findAllByProps({ testID: 'natal-house-number-1' })).toHaveLength(0);
-  expect(root.findAllByProps({ testID: 'natal-house-tick-1' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('no substitute house system was used'),
@@ -734,14 +737,16 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
         locale="en"
         moonSignRange={[]}
         timeKnown
-        angles={chartResult.angles!}
-        houseCusps={chartResult.houseCusps}
         majorAspects={aspects}
       />,
     );
   });
 
   const root = renderer!.root;
+  const wheelSvg = root.findByProps({ testID: 'natal-chart-wheel-svg' });
+  expect(Number(wheelSvg.props.width) / (402 - 64)).toBeGreaterThanOrEqual(1.15);
+  expect(Number(wheelSvg.props.width)).toBeLessThanOrEqual(402 - 12);
+  const center = Number(wheelSvg.props.width) / 2;
   const labels = root.findAll((node) =>
     typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-planet-label-'),
   );
@@ -749,31 +754,45 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
   const markers = planetNames.map((planet) =>
     root.findByProps({ testID: `natal-planet-marker-${planet.toLowerCase()}` }).props,
   );
-  const markerRadii = markers.map((marker) => Math.hypot(marker.cx - 162, marker.cy - 162));
+  const markerRadii = markers.map((marker) => Math.hypot(marker.cx - center, marker.cy - center));
   expect(Math.max(...markerRadii) - Math.min(...markerRadii)).toBeLessThan(0.001);
-  const sunLabel = root.findByProps({ testID: 'natal-planet-label-sun' }).props;
   const signGlyph = root.findByProps({ testID: 'natal-zodiac-sign-0' }).props;
-  const houseNumber = root.findByProps({ testID: 'natal-house-number-1' }).props;
-  const radiusFromCenter = (x: number, y: number) => Math.hypot(x - 162, y - 162);
-  const houseTick = root.findByProps({ testID: 'natal-house-tick-1' }).props;
-  expect(radiusFromCenter(sunLabel.x + sunLabel.width / 2, sunLabel.y + sunLabel.height / 2)).toBeGreaterThan(
-    radiusFromCenter(signGlyph.x, signGlyph.y - 5),
-  );
-  expect(radiusFromCenter(houseNumber.x, houseNumber.y - 2.5)).toBeGreaterThan(
-    radiusFromCenter(sunLabel.x + sunLabel.width / 2, sunLabel.y + sunLabel.height / 2),
-  );
-  expect(radiusFromCenter(houseTick.x1, houseTick.y1)).toBeGreaterThan(145);
-  expect(radiusFromCenter(houseTick.x2, houseTick.y2)).toBeGreaterThan(145);
+  const radiusFromCenter = (x: number, y: number) => Math.hypot(x - center, y - center);
+  const signRingRadius = radiusFromCenter(signGlyph.x, signGlyph.y - 5);
+  const labelBoxes = labels.map((label) => {
+    const spans = Array.isArray(label.props.children) ? label.props.children : [label.props.children];
+    const nameSpan = spans.find((span: any) =>
+      span?.props?.testID?.startsWith('natal-planet-name-'),
+    );
+    const name = String(nameSpan?.props?.children ?? '');
+    const width = Math.max(32, Math.min(68, 16 + name.length * 4.2));
+    const radius = radiusFromCenter(label.props.x, label.props.y - 2.5);
+    expect(radius).toBeLessThan(signRingRadius);
+    const planet = String(label.props.testID).replace('natal-planet-label-', '');
+    const marker = root.findByProps({ testID: `natal-planet-marker-${planet}` }).props;
+    const markerDistance = Math.hypot(
+      label.props.x - marker.cx,
+      label.props.y - 2.5 - marker.cy,
+    );
+    expect(markerDistance).toBeLessThanOrEqual(center * 0.5 + 0.01);
+    return {
+      x: label.props.x - width / 2,
+      y: label.props.y - label.props.fontSize,
+      width,
+      height: label.props.fontSize + 1,
+      testID: label.props.testID,
+    };
+  });
 
-  for (let first = 0; first < labels.length; first += 1) {
-    for (let second = first + 1; second < labels.length; second += 1) {
-      const a = labels[first].props;
-      const b = labels[second].props;
+  for (let first = 0; first < labelBoxes.length; first += 1) {
+    for (let second = first + 1; second < labelBoxes.length; second += 1) {
+      const a = labelBoxes[first];
+      const b = labelBoxes[second];
       const overlaps = a.x < b.x + b.width
         && a.x + a.width > b.x
         && a.y < b.y + b.height
         && a.y + a.height > b.y;
-      expect(overlaps, `${a.testID} and ${b.testID}`).toBe(false);
+      expect(overlaps, `${a.testID} and ${b.testID}: ${JSON.stringify({ a, b })}`).toBe(false);
     }
   }
 
@@ -800,8 +819,88 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
     expect(line.props.y2).toBe(secondMarker.cy);
     expect(line.props.strokeDasharray).toBe(expectedAspectDashes[index]);
   }
-  expect(root.findAllByProps({ cx: 162, cy: 162, r: 2.5 })).toHaveLength(0);
+  expect(root.findAllByProps({ cx: center, cy: center, r: 2.5 })).toHaveLength(0);
 });
+
+test.each([0, 90, 180, 270])(
+  'all planet labels stay near a clustered marker at longitude %i',
+  async (baseLongitude) => {
+    const planetNames = [
+      'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
+      'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
+    ];
+    const planets = planetNames.map((planet, index) => ({
+      planet,
+      sign: 'Cancer',
+      degreeInSign: 10,
+      retrograde: false,
+      longitude: baseLongitude + index * 0.25,
+      latitude: 0,
+      speedDegreesPerDay: 0,
+    })) as unknown as NatalChartResponse['planets'];
+
+    let renderer: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(
+        <NatalChartWheel
+          planets={planets}
+          palette={{
+            card: '#192A42',
+            border: '#304158',
+            foreground: '#F4F0E7',
+            secondary: '#D9C49B',
+            mutedForeground: '#AAB5C5',
+          }}
+          translate={(copy) => copy}
+          locale="en"
+          moonSignRange={[]}
+          timeKnown
+          majorAspects={[]}
+        />,
+      );
+    });
+
+    const root = renderer!.root;
+    const center = Number(root.findByProps({ testID: 'natal-chart-wheel-svg' }).props.width) / 2;
+    const labels = root.findAll((node) =>
+      typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-planet-label-'),
+    );
+    expect(labels).toHaveLength(planetNames.length);
+    const boxes = labels.map((label) => {
+      const planet = String(label.props.testID).replace('natal-planet-label-', '');
+      const marker = root.findByProps({ testID: `natal-planet-marker-${planet}` }).props;
+      const markerDistance = Math.hypot(
+        label.props.x - marker.cx,
+        label.props.y - 2.5 - marker.cy,
+      );
+      expect(markerDistance).toBeLessThanOrEqual(center * 0.5 + 0.01);
+      const spans = Array.isArray(label.props.children) ? label.props.children : [label.props.children];
+      const nameSpan = spans.find((span: any) =>
+        span?.props?.testID?.startsWith('natal-planet-name-'),
+      );
+      const width = Math.max(32, Math.min(68, 16 + String(nameSpan?.props?.children ?? '').length * 4.2));
+      return {
+        left: label.props.x - width / 2,
+        right: label.props.x + width / 2,
+        top: label.props.y - label.props.fontSize,
+        bottom: label.props.y + 1,
+        testID: label.props.testID,
+      };
+    });
+
+    for (let first = 0; first < boxes.length; first += 1) {
+      for (let second = first + 1; second < boxes.length; second += 1) {
+        const a = boxes[first];
+        const b = boxes[second];
+        const overlaps = a.left < b.right
+          && a.right > b.left
+          && a.top < b.bottom
+          && a.bottom > b.top;
+        expect(overlaps, `${a.testID} and ${b.testID}`).toBe(false);
+      }
+    }
+  },
+);
 
 const supportedTranslationLocales: Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];
 

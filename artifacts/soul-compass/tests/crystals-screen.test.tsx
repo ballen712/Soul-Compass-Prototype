@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   homeLocalDate: vi.fn(() => '2026-11-06'),
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
+  natalCollection: [] as string[],
   pinchGestures: [] as Array<Record<string, (...args: any[]) => void>>,
   panGestures: [] as Array<Record<string, (...args: any[]) => void>>,
   zoomScales: [] as Array<{ value: number }>,
@@ -24,7 +25,7 @@ const state = vi.hoisted(() => ({
   profileContext: {
     profile: null as null | Record<string, unknown>,
     preferences: {
-      crystalCollection: [],
+      crystalCollection: [] as string[],
       crystalPreferences: { intentions: [], hiddenCrystals: [], feeling: null },
     },
     toggleCrystal: vi.fn(),
@@ -237,7 +238,17 @@ vi.mock('@/profile/astrology', () => ({
     return state.suggestions;
   },
   getHomeLocalDate: state.homeLocalDate,
-  getNatalCrystalSuggestions: () => state.natalRecommendations,
+  getNatalCrystalSuggestions: (
+    _balance: unknown,
+    _hidden: string[],
+    _limit: number,
+    _translate: unknown,
+    _translateStoneName: unknown,
+    crystalCollection: string[],
+  ) => {
+    state.natalCollection = crystalCollection;
+    return state.natalRecommendations;
+  },
   getSampleAlternatives: () => [state.amethyst, state.labradorite],
   getSampleCrystal: () => state.moonstone,
 }));
@@ -280,6 +291,7 @@ afterEach(async () => {
   state.suggestions = [];
   state.natalBalance = null;
   state.natalRecommendations = [];
+  state.natalCollection = [];
   state.pinchGestures.length = 0;
   state.panGestures.length = 0;
   state.zoomScales.length = 0;
@@ -743,6 +755,7 @@ test('the Crystals feeling picker uses the Settings choices and updates daily su
 test('birth-chart companions show image cards and open the matching full-catalog detail', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.profileContext.profile = { birthDate: '2000-01-01' };
+  state.profileContext.preferences.crystalCollection = ['rose-quartz'];
   state.natalBalance = {
     status: 'calculated',
     counts: { Fire: 5, Air: 1, Water: 2, Earth: 2 },
@@ -764,12 +777,14 @@ test('birth-chart companions show image cards and open the matching full-catalog
     },
     element: index === 0 ? 'Air' : 'Fire',
     reason: index === 0
-      ? 'Your chart has fewer air placements. Rose Quartz is a good fit for care and connection in your chart.'
+      ? 'Air is less prominent in your chart. This stone is linked with care and connection. Try this small practice: check in with someone without trying to fix everything.'
       : 'This stone is a good fit for a different part of your chart.',
   }));
 
   await act(async () => { renderer = create(<CrystalsScreen />); });
   const root = renderer!.root;
+  expect(state.natalCollection).toEqual(['rose-quartz']);
+  expect(state.crystalOptions?.crystalCollection).toEqual(['rose-quartz']);
   await act(async () => { root.findByProps({ testID: 'stone-guide-info' }).props.onPress(); });
   expect(root.findAll((node) =>
     node.type === Pressable && String(node.props.testID ?? '').startsWith('natal-stone-'),
@@ -778,7 +793,16 @@ test('birth-chart companions show image cards and open the matching full-catalog
     String(node.props.testID ?? '').startsWith('natal-stone-artwork-'),
   )).toHaveLength(8);
   expect(root.findAllByType(Text).some((node) =>
-    String(node.props.children).includes('Your chart has fewer air placements'),
+    String(node.props.children).includes('Air is less prominent in your chart.'),
+  )).toBe(true);
+  expect(root.findAllByType(Text).some((node) => {
+    const rendered = Array.isArray(node.props.children)
+      ? node.props.children.join('')
+      : node.props.children;
+    return rendered === 'Air · Connection · Care · In Your Collection';
+  })).toBe(true);
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('The guide checks stones in Your Collection first.'),
   )).toBe(true);
   expect(root.findByProps({ testID: 'crystal-artwork-rose-quartz-catalog' })).toBeDefined();
 

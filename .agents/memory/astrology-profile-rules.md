@@ -29,11 +29,11 @@ When saved birth date, time, or birthplace changes, invalidate the old chart by 
 
 **How to apply:** keep chart refreshes keyed to birth date, time, and birthplace; refresh after a valid local save only while consent remains active, and test changes while a previous chart request is still in flight.
 
-The Natal Chart wheel should use concentric rings for zodiac signs, planetary positions, and the inner chart; place every planet marker on one shared orbit at its actual longitude, and draw major-aspect lines directly between those markers. Keep planet names legible in the app font and theme colors, and omit visible degree values. Show houses, Ascendant, and Midheaven only when the birth time supports them.
+The Natal Chart wheel should stay visually minimal: retain the zodiac-sign ring, planetary orbit, and major-aspect lines, but omit the outer house/tick ring and angle callouts. Place each planet glyph and localized name as plain text inside the open center near its marker, without leader lines or label chips. Keep actual longitudes and theme colors; omit visible degree values. House, Ascendant, and Midheaven information can remain in the explanatory sections when birth time supports it.
 
-**Why:** the user supplied a traditional multi-ring chart as a visual reference and asked for a minimal version that preserves actual placements, joins aspect points, and fits both light and dark themes without crowding.
+**Why:** the user tried the outer house markings and found them cluttered; they specifically preferred a cleaner wheel that emphasizes signs, planet positions, and aspects.
 
-**How to apply:** do not move planetary points to avoid overlap; instead, distribute their labels with leader lines outside the zodiac-sign band. Show house cusps as short ticks at the outer rim, with house numbers between adjacent cusps; do not draw house divisions as full pizza-slice rays. Use actual house cusps and angles only when available, and preserve the existing unknown-birth-time uncertainty treatment.
+**How to apply:** do not move planetary points to avoid overlap. Keep each glyph-and-name label tied to its actual marker; resolve collisions locally around clusters rather than redistributing names around the ring. Keep labels inside the sign ring and never add exterior house ticks, leader lines, or label chips. Preserve the existing unknown-birth-time uncertainty treatment.
 
 For daily crystal suggestions, the current residence's time zone sets the local calendar date when available; otherwise use the birthplace time zone. Planetary factors remain geocentric at the current instant, and neither city's coordinates directly affect the stone score. Do not add location-specific crystal scoring without an evidence-backed method and a product decision.
 

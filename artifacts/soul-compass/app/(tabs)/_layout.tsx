@@ -158,19 +158,37 @@ function LiquidGlassTabLayout() {
       labelStyle={labelStyle}
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf={{ default: 'sun.max', selected: 'sun.max.fill' }} />
+        <NativeTabs.Trigger.Icon
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={Feather}
+              name="sun"
+            />
+          }
+        />
         <NativeTabs.Trigger.Label>{t('COSMOS')}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="crystals">
-        <NativeTabs.Trigger.Icon sf={{ default: 'diamond', selected: 'diamond.fill' }} />
+        <NativeTabs.Trigger.Icon
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={MaterialCommunityIcons}
+              name="diamond-stone"
+            />
+          }
+        />
         <NativeTabs.Trigger.Label>{t('CRYSTALS')}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="natal">
-        <NativeTabs.Trigger.Icon sf={{ default: 'scope', selected: 'scope' }} />
+        <NativeTabs.Trigger.Icon
+          src={<NativeTabs.Trigger.VectorIcon family={Feather} name="target" />}
+        />
         <NativeTabs.Trigger.Label>{t('NATAL CHART')}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} />
+        <NativeTabs.Trigger.Icon
+          src={<NativeTabs.Trigger.VectorIcon family={Feather} name="compass" />}
+        />
         <NativeTabs.Trigger.Label>{t('EXPLORE')}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>

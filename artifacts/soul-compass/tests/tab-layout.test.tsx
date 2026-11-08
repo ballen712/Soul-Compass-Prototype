@@ -26,8 +26,10 @@ vi.mock('expo-router/native-tabs', () => {
     React.createElement('NativeTabs', props, children);
   const Trigger: any = ({ name, children }: any) =>
     React.createElement('NativeTabTrigger', { name }, children);
-  Trigger.Icon = ({ sf }: any) => React.createElement('NativeTabIcon', { sf });
+  Trigger.Icon = ({ src, sf }: any) => React.createElement('NativeTabIcon', { src, sf });
   Trigger.Label = ({ children }: any) => React.createElement('NativeTabLabel', {}, children);
+  Trigger.VectorIcon = ({ family, name, size }: any) =>
+    React.createElement('NativeVectorIcon', { family, name, size });
   NativeTabs.Trigger = Trigger;
   return { NativeTabs };
 });
@@ -134,6 +136,13 @@ test('supported iOS uses native Liquid Glass tabs with localized labels', async 
     'CRYSTALS',
     'NATAL CHART',
     'EXPLORE',
+  ]);
+  const nativeIcons = root.findAllByType('NativeTabIcon' as any);
+  expect(nativeIcons.map((icon) => icon.props.src.props)).toEqual([
+    { family: 'Feather', name: 'sun' },
+    { family: 'MaterialCommunityIcons', name: 'diamond-stone' },
+    { family: 'Feather', name: 'target' },
+    { family: 'Feather', name: 'compass' },
   ]);
   expect(tabLayoutState.detectorCalls).toBe(1);
 

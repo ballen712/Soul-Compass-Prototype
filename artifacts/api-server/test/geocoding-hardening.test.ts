@@ -134,6 +134,19 @@ test("normalized cache and in-flight dedup consume one credit, expire, and never
   await assert.rejects(failed("Paris",failureSource),{status:504});
   await assert.rejects(failed("Paris",failureSource),{status:504});
   assert.equal(failures,2); assert.equal((await used(failedScope.bucket)).used,2);
+
+  const persistedState = await pool.query(
+    "SELECT bucket,value FROM geoapify_quota_state WHERE bucket=ANY($1::text[])",
+    [[s.bucket, failedScope.bucket]],
+  );
+  const persistedSources = await pool.query(
+    "SELECT source_hash,value FROM geoapify_quota_sources WHERE source_hash=ANY($1::text[])",
+    [[...hashes]],
+  );
+  assert.doesNotMatch(
+    JSON.stringify({ state: persistedState.rows, sources: persistedSources.rows }),
+    /Budapest|BUDAPEST|Paris|test-placeholder|apiKey=/,
+  );
 });
 
 test("quota-store outage fails closed and operational events contain no connection or credential details", async () => {

@@ -96,8 +96,9 @@ export function createCitySearch(options: {
       if (error instanceof QuotaBlocked) throw new CitySearchError(429, unavailable, error.retryAfter);
       event("geoapify_quota_store_unavailable"); throw new CitySearchError(503, unavailable);
     }
-    const normalized = query.trim().normalize("NFC").toLocaleLowerCase("en");
-    const cacheKey = createHmac("sha256", key).update(`city-cache:v1:${normalized}`).digest("hex");
+    const normalizedQuery = query.trim().normalize("NFC");
+    const cacheKey = createHmac("sha256", key)
+      .update(`city-cache:v1:${normalizedQuery.toLocaleLowerCase("en")}`).digest("hex");
     const current = now();
     for (const [id, entry] of cache) if (entry.expires <= current) cache.delete(id);
     const cached = cache.get(cacheKey);
@@ -124,7 +125,7 @@ export function createCitySearch(options: {
     try {
       const url = new URL("https://api-eu.geoapify.com/v1/geocode/search");
       url.search = new URLSearchParams({
-        text: query.trim(), type: "city", format: "json", lang: "en", limit: "8",
+        text: normalizedQuery, type: "city", format: "json", lang: "en", limit: "8",
         bias: "countrycode:none", apiKey: key,
       }).toString();
       const response = await request(url, {

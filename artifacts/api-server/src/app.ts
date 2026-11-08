@@ -10,6 +10,7 @@ import { sharedCalculationRateLimit, type CalculationRateLimitStore } from "./mi
 export function createApp(options: {
   allowedOrigins?: readonly string[];
   calculationRateLimitStore?: CalculationRateLimitStore;
+  requestLogger?: typeof logger;
 } = {}): Express {
 const app = express();
 app.disable("x-powered-by");
@@ -18,7 +19,7 @@ app.set("trust proxy", false);
 
 app.use(
   pinoHttp({
-    logger,
+    logger: options.requestLogger ?? logger,
     serializers: {
       req(req) {
         return {

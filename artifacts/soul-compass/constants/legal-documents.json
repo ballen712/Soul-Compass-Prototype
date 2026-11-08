@@ -68,11 +68,11 @@
           ]
         },
         {
-          "title": "Service providers and legacy account routes",
+          "title": "Service providers and historical data",
           "paragraphs": [
             "Replit hosts the app API and its operational PostgreSQL quota data. Geoapify provides city-search results. The app currently has no advertising, payment, analytics or crash-reporting SDK that was identified in the source and dependency review.",
             "Replit's published documentation says its hosted deployments are primarily processed in the United States. This project's exact hosting region and transfer safeguards still need confirmation. Geoapify's exact processing locations and retention terms have not been verified.",
-            "The API also contains protected legacy Supabase account/profile routes, and Supabase configuration is present in the production environment. The current mobile interface has no sign-in or cloud-sync feature and does not call these routes. We have not inspected Supabase records, so we cannot confirm whether any existing cloud profiles exist or claim that no cloud-profile processing has ever occurred."
+            "The active Soul Compass mobile app and API do not use Supabase for sign-in, account/profile routes or cloud profile storage. Supabase environment configuration may still be present, but this correction did not inspect or change it. The separate Supabase project and its historical records were not inspected, so their current status cannot be confirmed."
           ]
         },
         {
@@ -98,7 +98,7 @@
           "title": "Items to confirm before publication",
           "bullets": [
             "Replit and Geoapify processing roles, agreements, exact regions, backups and retention settings.",
-            "Whether any legacy Supabase profile records exist and whether the protected routes should remain available.",
+            "Whether any historical Supabase profile records exist; this has not been verified.",
             "A documented GDPR legal basis for each data flow, a rights-request procedure and any required processor agreements.",
             "Age wording, the applicable supervisory-authority details and whether a Data Protection Officer is required.",
             "Review by a qualified Hungarian/EU privacy professional and translations of the legal pages."

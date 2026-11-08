@@ -33,7 +33,7 @@ The Natal Chart wheel should use concentric rings for zodiac signs, planetary po
 
 **Why:** the user supplied a traditional multi-ring chart as a visual reference and asked for a minimal version that preserves actual placements, joins aspect points, and fits both light and dark themes without crowding.
 
-**How to apply:** do not move planetary points to avoid overlap; instead, distribute their labels with leader lines. Use actual house cusps and angles only when available, and preserve the existing unknown-birth-time uncertainty treatment.
+**How to apply:** do not move planetary points to avoid overlap; instead, distribute their labels with leader lines outside the zodiac-sign band. Show house cusps as short ticks at the outer rim, with house numbers between adjacent cusps; do not draw house divisions as full pizza-slice rays. Use actual house cusps and angles only when available, and preserve the existing unknown-birth-time uncertainty treatment.
 
 For daily crystal suggestions, the current residence's time zone sets the local calendar date when available; otherwise use the birthplace time zone. Planetary factors remain geocentric at the current instant, and neither city's coordinates directly affect the stone score. Do not add location-specific crystal scoring without an evidence-backed method and a product decision.
 

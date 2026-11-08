@@ -458,7 +458,7 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-house-number-1' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-house-cusp-line-1' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-tick-1' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-marker-asc' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-marker-mc' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
@@ -605,7 +605,7 @@ test('timed chart keeps angles but omits Placidus houses when the location canno
   expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-house-number-1' })).toHaveLength(0);
-  expect(root.findAllByProps({ testID: 'natal-house-cusp-line-1' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-house-tick-1' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('no substitute house system was used'),
@@ -751,6 +751,19 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
   );
   const markerRadii = markers.map((marker) => Math.hypot(marker.cx - 162, marker.cy - 162));
   expect(Math.max(...markerRadii) - Math.min(...markerRadii)).toBeLessThan(0.001);
+  const sunLabel = root.findByProps({ testID: 'natal-planet-label-sun' }).props;
+  const signGlyph = root.findByProps({ testID: 'natal-zodiac-sign-0' }).props;
+  const houseNumber = root.findByProps({ testID: 'natal-house-number-1' }).props;
+  const radiusFromCenter = (x: number, y: number) => Math.hypot(x - 162, y - 162);
+  const houseTick = root.findByProps({ testID: 'natal-house-tick-1' }).props;
+  expect(radiusFromCenter(sunLabel.x + sunLabel.width / 2, sunLabel.y + sunLabel.height / 2)).toBeGreaterThan(
+    radiusFromCenter(signGlyph.x, signGlyph.y - 5),
+  );
+  expect(radiusFromCenter(houseNumber.x, houseNumber.y - 2.5)).toBeGreaterThan(
+    radiusFromCenter(sunLabel.x + sunLabel.width / 2, sunLabel.y + sunLabel.height / 2),
+  );
+  expect(radiusFromCenter(houseTick.x1, houseTick.y1)).toBeGreaterThan(145);
+  expect(radiusFromCenter(houseTick.x2, houseTick.y2)).toBeGreaterThan(145);
 
   for (let first = 0; first < labels.length; first += 1) {
     for (let second = first + 1; second < labels.length; second += 1) {

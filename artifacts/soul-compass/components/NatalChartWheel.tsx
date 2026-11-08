@@ -146,13 +146,14 @@ export function NatalChartWheel({
   const { width } = useWindowDimensions();
   const size = Math.min(354, Math.max(220, width - 78));
   const center = size / 2;
-  const outerRadius = center * 0.93;
-  const zodiacInnerRadius = center * 0.78;
-  const signRadius = center * 0.855;
-  const planetRadius = center * (size < 260 ? 0.61 : 0.64);
-  const labelRadius = center * 0.71;
-  const houseRingRadius = center * (size < 260 ? 0.46 : 0.48);
-  const houseLabelRadius = center * 0.36;
+  const outerRadius = center * 0.96;
+  const zodiacOuterRadius = center * 0.74;
+  const zodiacInnerRadius = center * 0.59;
+  const signRadius = center * 0.665;
+  const planetRadius = center * (size < 260 ? 0.47 : 0.5);
+  const labelRadius = center * (size < 260 ? 0.78 : 0.8);
+  const houseTickInnerRadius = center * 0.93;
+  const houseNumberRadius = center * 0.91;
   const labels = useMemo(
     () => layoutPlanetLabels(planets, labelRadius, center, size, translate),
     [planets, labelRadius, center, size, translate],
@@ -184,10 +185,10 @@ export function NatalChartWheel({
         : house.longitude;
       return {
         house: house.house,
-        ...polarPoint(midpoint, houseLabelRadius, center),
+        ...polarPoint(midpoint, houseNumberRadius, center),
       };
     }),
-    [orderedHouses, houseLabelRadius, center],
+    [orderedHouses, houseNumberRadius, center],
   );
   const aspectLines = useMemo(() => {
     return majorAspects.flatMap((aspect, index) => {
@@ -240,6 +241,15 @@ export function NatalChartWheel({
         <Circle
           cx={center}
           cy={center}
+          r={zodiacOuterRadius}
+          fill="none"
+          stroke={palette.border}
+          strokeWidth={1}
+          opacity={0.55}
+        />
+        <Circle
+          cx={center}
+          cy={center}
           r={zodiacInnerRadius}
           fill="none"
           stroke={palette.border}
@@ -255,18 +265,9 @@ export function NatalChartWheel({
           strokeWidth={0.9}
           opacity={0.7}
         />
-        <Circle
-          cx={center}
-          cy={center}
-          r={houseRingRadius}
-          fill="none"
-          stroke={palette.border}
-          strokeWidth={0.8}
-          opacity={0.55}
-        />
         {SIGN_GLYPHS.map((_, index) => {
           const innerPoint = polarPoint(index * 30, zodiacInnerRadius, center);
-          const outerPoint = polarPoint(index * 30, outerRadius, center);
+          const outerPoint = polarPoint(index * 30, zodiacOuterRadius, center);
           return (
             <Line
               key={`zodiac-divider-${index}`}
@@ -280,18 +281,19 @@ export function NatalChartWheel({
           );
         })}
         {orderedHouses.map((house) => {
-          const point = polarPoint(house.longitude, houseRingRadius, center);
+          const point = polarPoint(house.longitude, outerRadius, center);
+          const tickStart = polarPoint(house.longitude, houseTickInnerRadius, center);
           return (
             <Line
               key={`house-cusp-${house.house}`}
-              testID={`natal-house-cusp-line-${house.house}`}
-              x1={center}
-              y1={center}
+              testID={`natal-house-tick-${house.house}`}
+              x1={tickStart.x}
+              y1={tickStart.y}
               x2={point.x}
               y2={point.y}
               stroke={palette.border}
-              strokeWidth={0.65}
-              opacity={0.65}
+              strokeWidth={0.8}
+              opacity={0.8}
             />
           );
         })}
@@ -353,7 +355,7 @@ export function NatalChartWheel({
           ].map(({ key, label, longitude }) => {
             const point = polarPoint(longitude, outerRadius, center);
             const tickStart = polarPoint(longitude, outerRadius - 7, center);
-            const labelPoint = polarPoint(longitude, outerRadius - 19, center);
+          const labelPoint = polarPoint(longitude, outerRadius - 18, center);
             return (
               <React.Fragment key={key}>
                 <Line
@@ -400,8 +402,8 @@ export function NatalChartWheel({
                 x2={label.x}
                 y2={label.y}
                 stroke={palette.mutedForeground}
-                strokeWidth={0.6}
-                opacity={0.42}
+                strokeWidth={0.65}
+                opacity={0.56}
               />
               <Circle
                 testID={`natal-planet-marker-${name.toLowerCase()}`}

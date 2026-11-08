@@ -1,6 +1,8 @@
 import React from 'react';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { NativeTabs } from 'expo-router/native-tabs';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Platform, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useAppText } from '@/localization';
@@ -131,6 +133,53 @@ function ClassicTabLayout() {
   );
 }
 
+function LiquidGlassTabLayout() {
+  const colors = useColors();
+  const t = useAppText();
+  const labelStyle = {
+    default: {
+      color: colors.navigation.mutedForeground,
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 9,
+    },
+    selected: {
+      color: colors.navigation.foreground,
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 9,
+    },
+  } as const;
+
+  return (
+    <NativeTabs
+      iconColor={{
+        default: colors.navigation.mutedForeground,
+        selected: colors.navigation.foreground,
+      }}
+      labelStyle={labelStyle}
+    >
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: 'sun.max', selected: 'sun.max.fill' }} />
+        <NativeTabs.Trigger.Label>{t('COSMOS')}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="crystals">
+        <NativeTabs.Trigger.Icon sf={{ default: 'diamond', selected: 'diamond.fill' }} />
+        <NativeTabs.Trigger.Label>{t('CRYSTALS')}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="natal">
+        <NativeTabs.Trigger.Icon sf={{ default: 'scope', selected: 'scope' }} />
+        <NativeTabs.Trigger.Label>{t('NATAL CHART')}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="explore">
+        <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} />
+        <NativeTabs.Trigger.Label>{t('EXPLORE')}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
+}
+
 export default function TabLayout() {
+  if (Platform.OS === 'ios' && isLiquidGlassAvailable()) {
+    return <LiquidGlassTabLayout />;
+  }
   return <ClassicTabLayout />;
 }

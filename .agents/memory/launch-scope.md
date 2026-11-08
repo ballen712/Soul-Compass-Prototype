@@ -135,6 +135,12 @@ Every catalog stone should have its own recognizable image in one consistent vis
 
 **How to apply:** trace each explanation to the candidate's own matching inputs; do not borrow the primary stone's reason for alternatives, invent chart aspects, or promise that a crystal itself increases energy or productivity. Present practical support as a personal reminder or ritual.
 
+Crystal artwork has a warm beige background even in dark mode; rounded image corners must reveal a matching beige surface, not the dark navy card behind them.
+
+**Why:** the user noticed dark corners showing behind the beige main crystal image and asked that the image edges appear seamless.
+
+**How to apply:** use the artwork-specific beige backdrop behind rounded crystal illustrations while keeping other dark-mode cards and surfaces unchanged.
+
 Keep small stars visible across the full Cosmos background and scroll area. Use one information symbol for expandable explanations; remove decorative footer icons and keep explanatory dialogs free of redundant headings or repeated questions. The header should show only “SOUL COMPASS” and “Today’s reflection,” without the compass mark, “DAILY PRACTICE,” or “A DAILY PAUSE.” End the page at the Natal Chart card and prevent overscrolling into empty space.
 
 **Why:** the user asked for a consistent, quiet visual language and immediate, more detailed explanations when someone chooses to read further.

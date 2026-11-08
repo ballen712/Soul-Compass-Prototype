@@ -3,8 +3,8 @@ name: Equal-width tab navigation
 description: User-approved navigation tradeoff for consistent tab widths across languages and devices.
 ---
 
-Use the same four-slot Classic Tabs layout across platforms so every localized tab has equal width and a fixed label area.
+Use the native Liquid Glass tab bar on iOS when `isLiquidGlassAvailable()` reports support. Keep the equal-width Classic Tabs fallback on older iOS, Android, and Web.
 
-**Why:** The user chose consistent button dimensions across languages over the iOS 26 Liquid Glass appearance, which does not expose per-tab width controls.
+**Why:** The user later approved automatic Liquid Glass on compatible iPhones while asking that unsupported devices and platforms retain the ordinary navigation bar.
 
-**How to apply:** Keep tab item flex values equal, keep labels centered in the same-height area, and do not restore NativeTabs on iOS without revisiting this tradeoff with the user.
+**How to apply:** Check Liquid Glass availability only on iOS, leave native bar backgrounds to the system, and keep all four localized routes in the native layout. Preserve equal-width slots and centered labels in the Classic Tabs fallback.

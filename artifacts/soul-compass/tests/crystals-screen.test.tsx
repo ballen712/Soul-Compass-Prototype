@@ -220,6 +220,7 @@ vi.mock('@/hooks/useColors', () => ({
       mutedForeground: '#77766D',
       border: '#DDD6C8',
       imageSurface: '#EAE4D8',
+      artworkBackdrop: '#EEE9DF',
       badgeBackground: '#FFFCF6',
       badgeForeground: '#59634F',
     },
@@ -306,6 +307,13 @@ test('crystal artwork zooms during a pinch and resets when the gesture ends', as
   const zoomScale = state.zoomScales[0];
   const panX = state.panOffsets[0];
   const panY = state.panOffsets[1];
+  const featureFrame = root.findByProps({ testID: 'crystal-feature-image-frame' });
+  const featureFrameStyles = Array.isArray(featureFrame.props.style)
+    ? featureFrame.props.style.flat(Infinity)
+    : [featureFrame.props.style];
+  expect(featureFrameStyles).toContainEqual(
+    expect.objectContaining({ backgroundColor: '#EEE9DF' }),
+  );
   const frame = root.findByProps({ testID: 'crystal-artwork-frame-moonstone-feature' });
   act(() => firstGesture.onUpdate({ scale: 1.8 }));
   expect(zoomScale.value).toBe(1.8);

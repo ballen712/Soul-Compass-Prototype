@@ -2,6 +2,12 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { expect, test, vi } from 'vitest';
 
+const tabLayoutState = vi.hoisted(() => ({
+  platform: 'ios',
+  liquidGlassAvailable: false,
+  detectorCalls: 0,
+}));
+
 vi.mock('@expo/vector-icons', () => ({
   Feather: 'Feather',
   MaterialCommunityIcons: 'MaterialCommunityIcons',
@@ -15,8 +21,28 @@ vi.mock('expo-router', () => {
   return { Tabs };
 });
 
+vi.mock('expo-router/native-tabs', () => {
+  const NativeTabs: any = ({ children, ...props }: any) =>
+    React.createElement('NativeTabs', props, children);
+  const Trigger: any = ({ name, children }: any) =>
+    React.createElement('NativeTabTrigger', { name }, children);
+  Trigger.Icon = ({ sf }: any) => React.createElement('NativeTabIcon', { sf });
+  Trigger.Label = ({ children }: any) => React.createElement('NativeTabLabel', {}, children);
+  NativeTabs.Trigger = Trigger;
+  return { NativeTabs };
+});
+
+vi.mock('expo-glass-effect', () => ({
+  isLiquidGlassAvailable: () => {
+    tabLayoutState.detectorCalls += 1;
+    return tabLayoutState.liquidGlassAvailable;
+  },
+}));
+
 vi.mock('react-native', () => ({
-  Platform: { OS: 'ios' },
+  Platform: {
+    get OS() { return tabLayoutState.platform; },
+  },
   Text: 'Text',
   View: 'View',
 }));
@@ -34,7 +60,11 @@ vi.mock('@/localization', () => ({ useAppText: () => (text: string) => text }));
 
 import TabLayout from '../app/(tabs)/_layout';
 
-test('all four translated tabs use equal-width slots and the same two-line label area', async () => {
+test('older iOS keeps all four equal-width classic tabs', async () => {
+  tabLayoutState.platform = 'ios';
+  tabLayoutState.liquidGlassAvailable = false;
+  tabLayoutState.detectorCalls = 0;
+
   let renderer: ReactTestRenderer;
   await act(async () => { renderer = create(<TabLayout />); });
 
@@ -69,6 +99,58 @@ test('all four translated tabs use equal-width slots and the same two-line label
       width: '100%',
     });
   }
+  expect(tabLayoutState.detectorCalls).toBe(1);
+
+  await act(async () => renderer!.unmount());
+});
+
+test('supported iOS uses native Liquid Glass tabs with localized labels', async () => {
+  tabLayoutState.platform = 'ios';
+  tabLayoutState.liquidGlassAvailable = true;
+  tabLayoutState.detectorCalls = 0;
+
+  let renderer: ReactTestRenderer;
+  await act(async () => { renderer = create(<TabLayout />); });
+
+  const root = renderer!.root;
+  const tabs = root.findByType('NativeTabs' as any);
+  expect(tabs.props.iconColor).toEqual({
+    default: '#A8B0BC',
+    selected: '#F1EEE6',
+  });
+  expect(tabs.props.labelStyle.default).toMatchObject({
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 9,
+    color: '#A8B0BC',
+  });
+  expect(root.findAllByType('NativeTabTrigger' as any).map((trigger) => trigger.props.name)).toEqual([
+    'index',
+    'crystals',
+    'natal',
+    'explore',
+  ]);
+  expect(root.findAllByType('NativeTabLabel' as any).map((label) => label.props.children)).toEqual([
+    'COSMOS',
+    'CRYSTALS',
+    'NATAL CHART',
+    'EXPLORE',
+  ]);
+  expect(tabLayoutState.detectorCalls).toBe(1);
+
+  await act(async () => renderer!.unmount());
+});
+
+test.each(['android', 'web'])('%s keeps the classic tab bar without checking Liquid Glass', async (platform) => {
+  tabLayoutState.platform = platform;
+  tabLayoutState.liquidGlassAvailable = true;
+  tabLayoutState.detectorCalls = 0;
+
+  let renderer: ReactTestRenderer;
+  await act(async () => { renderer = create(<TabLayout />); });
+
+  expect(renderer!.root.findByType('Tabs' as any)).toBeDefined();
+  expect(renderer!.root.findAllByType('NativeTabs' as any)).toHaveLength(0);
+  expect(tabLayoutState.detectorCalls).toBe(0);
 
   await act(async () => renderer!.unmount());
 });

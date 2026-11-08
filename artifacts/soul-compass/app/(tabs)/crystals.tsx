@@ -531,9 +531,10 @@ export default function CrystalsScreen() {
             ]}
           >
             <View
+              testID="crystal-feature-image-frame"
               style={[
                 styles.imageFrame,
-                { backgroundColor: colors.crystals.imageSurface },
+                { backgroundColor: colors.crystals.artworkBackdrop },
               ]}
             >
               <CrystalArtwork crystal={recommendation.crystal} size="feature" />

@@ -12,7 +12,7 @@ This is not a public-release approval. The API is hosted at the same HTTPS deplo
 
 ## Production API status — 8 November 2026
 
-Replit reports an active public Autoscale deployment with a successful build. Synthetic smoke checks against its public API returned:
+The approved API cutover is now published to the existing public Autoscale deployment at the existing address. The latest successful build is `5d43ac80-f7db-4b63-a59d-a5cb4ce67976`, updated at `2026-11-08T11:42:27Z` (UTC). Synthetic post-publication smoke checks returned:
 
 - `GET /api/healthz`: 200.
 - `GET /api/astrology/health`: 200 for the published origin; 403 for an unrelated origin. The allowed origin was returned in CORS headers.
@@ -21,8 +21,8 @@ Replit reports an active public Autoscale deployment with a successful build. Sy
 - `GET /api/geocoding/cities?q=Budapest`: 200 with one result matching the generated `CityLocation` shape. One Geoapify Free request was consumed. An invalid one-character query returned a sanitized 400 without a provider lookup.
 - The health response included `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 
-The published API is not yet the current workspace version: unauthenticated `GET /api/me/profile` returns 401 in production, while the workspace version returns 404. The old protected route is still registered in the published service; no profile was read. The current source’s Geoapify EU hostname is not confirmed in production from HTTP responses. Production rate limits were not stress-tested to avoid filling the calculation or provider quota; the current source’s API suite covers rate-limit behavior, including independent processes.
+The published API now matches the verified workspace version: unauthenticated `GET /api/me/profile` returns 404, so the old protected profile route is no longer available. No profile was read. The published source constructs its Geoapify request using `api-eu.geoapify.com`; the live city lookup succeeded. Production rate limits were not stress-tested to avoid filling the calculation or provider quota; the current source’s API suite covers rate-limit behavior, including independent processes.
 
-The cleanup has not been published. The public calculation and city-search endpoints remain compatible in these single-request checks, but the production/workspace difference for `/api/me/*` remains until a separately approved publish. These smoke requests incremented operational calculation counters; the single city query also used one Geoapify Free request. No production settings, database schema, Supabase data, or secrets were changed.
+The public calculation and city-search endpoints remain compatible in the post-publication checks. The pre- and post-publication audits each made one synthetic city lookup, using two Geoapify Free requests total; calculation requests incremented operational counters. No manual database migration, Supabase data change, Replit Secrets change, API access change, or deployment-domain change was made.
 
 Deployment logs also emitted a PostgreSQL connection-string advisory about SSL-mode alias semantics changing in a future major driver release. The tested requests still succeeded, including the database-backed city quota reservation. No connection parameters were changed; before a future PostgreSQL driver major upgrade, confirm explicit TLS verification through the Replit Secrets workflow.

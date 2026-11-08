@@ -27,8 +27,8 @@ The user chose to keep the published API public so the registration-free mobile 
 
 **How to apply:** keep validation and shared rate limits enabled; do not restrict the API without first designing and approving another mobile access method.
 
-On 8 November 2026, production API smoke checks passed for health, planetary positions, a synthetic natal chart and one city search. Unauthenticated production `GET /api/me/profile` returned 401, while workspace source returns 404, confirming the cleanup has not been published.
+On 8 November 2026, the approved API cutover was published to the existing public Autoscale deployment. Post-publish smoke checks passed for health, CORS, planetary positions, a synthetic natal chart, city search and validation; unauthenticated `GET /api/me/profile` now returns 404.
 
-**Why:** this is a live deployment/source divergence that cannot be inferred from workspace code.
+**Why:** this is verified live deployment state that cannot be inferred from workspace code alone.
 
-**How to apply:** treat legacy profile routes and their server credentials as still present in production until a separately approved publish is verified; do not remove Supabase secrets before that cutover.
+**How to apply:** the protected Supabase profile route is no longer published, but do not remove Supabase secrets until the user separately approves their removal. No Supabase database migration or data change was part of the cutover.

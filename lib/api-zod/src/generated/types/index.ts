@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './apiErrorResponse';
+export * from './apiErrorResponseCode';
 export * from './astrologyHealth';
 export * from './cityLocation';
 export * from './citySearchResults';
@@ -18,6 +20,7 @@ export * from './natalCalculation';
 export * from './natalCalculationBirthTimeResolution';
 export * from './natalCalculationOrbs';
 export * from './natalChartRequest';
+export * from './natalChartRequestConsentVersion';
 export * from './natalChartRequestHouseSystem';
 export * from './natalChartRequestOrbs';
 export * from './natalChartRequestZodiac';

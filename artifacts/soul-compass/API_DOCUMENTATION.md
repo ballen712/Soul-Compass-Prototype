@@ -27,13 +27,17 @@ The OpenAPI source is `lib/api-spec/openapi.yaml`.
   "birthDate": "1991-06-20",
   "birthTime": { "status": "known", "localTime": "19:51" },
   "birthPlace": { "latitude": 48.50834, "longitude": 32.26618, "timeZone": "Europe/Kyiv" },
+  "consentAccepted": true,
+  "consentVersion": "2026-11-04-v3",
   "houseSystem": "placidus",
   "zodiac": "tropical",
   "orbs": { "luminary": 8, "other": 6 }
 }
 ```
 
-Use `{"status":"unknown"}` instead of a known birth time when unavailable. A repeated local time returns 422 unless `birthTime.disambiguation` is explicitly `earlier` or `later`; a skipped local time returns 422. No offset is guessed. Invalid shapes, zodiac or unsupported house systems return 400. Invalid dates, zones, coordinates or calculations return 422 with an explanatory `error`.
+`consentAccepted` must be exactly `true`, and `consentVersion` must match the current supported notice version. Missing consent returns HTTP 400 with `CONSENT_REQUIRED`; a false or invalid declaration/version returns HTTP 400 with `CONSENT_INVALID`. These fields are an explicit client declaration required by the API, not cryptographic proof that a person viewed the notice or independently verified consent.
+
+The mobile app includes these fields only after the user accepts the existing notice. It does not store a separate server-side consent record. Use `{"status":"unknown"}` instead of a known birth time when unavailable. A repeated local time returns 422 unless `birthTime.disambiguation` is explicitly `earlier` or `later`; the response does not echo the birth date, time, or candidate instants. A skipped or invalid local time returns a sanitized 422. No offset is guessed. Invalid shapes, zodiac or unsupported house systems return 400.
 
 Returns `planets` (ten positions), nullable `angles`, `houseCusps`, `planetaryHouses`, `aspects`, `moonSignRange`, `warnings`, an `input.birthTimeKnown` summary, and calculation metadata (UTC reference/actual instant, precision convention, provider version, host time-zone database, angle convention and house availability). Raw profile data is not echoed. Placidus failure returns partial planetary/angle results and warnings, never a silent fallback.
 

@@ -5,6 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ApiErrorResponseCode = typeof ApiErrorResponseCode[keyof typeof ApiErrorResponseCode];
+
+
+export const ApiErrorResponseCode = {
+  CONSENT_REQUIRED: 'CONSENT_REQUIRED',
+  CONSENT_INVALID: 'CONSENT_INVALID',
+  BIRTH_TIME_AMBIGUOUS: 'BIRTH_TIME_AMBIGUOUS',
+} as const;
+
+export interface ApiErrorResponse {
+  error: string;
+  code?: ApiErrorResponseCode;
+}
+
 export interface CityLocation {
   city: string;
   country: string;
@@ -95,6 +109,13 @@ export interface NatalBirthPlace {
   timeZone: string;
 }
 
+export type NatalChartRequestConsentVersion = typeof NatalChartRequestConsentVersion[keyof typeof NatalChartRequestConsentVersion];
+
+
+export const NatalChartRequestConsentVersion = {
+  '2026-11-04-v3': '2026-11-04-v3',
+} as const;
+
 export type NatalChartRequestHouseSystem = typeof NatalChartRequestHouseSystem[keyof typeof NatalChartRequestHouseSystem];
 
 
@@ -126,6 +147,8 @@ export interface NatalChartRequest {
   birthDate: string;
   birthTime: NatalBirthTime;
   birthPlace: NatalBirthPlace;
+  consentAccepted: boolean;
+  consentVersion: NatalChartRequestConsentVersion;
   houseSystem?: NatalChartRequestHouseSystem;
   zodiac?: NatalChartRequestZodiac;
   orbs?: NatalChartRequestOrbs;

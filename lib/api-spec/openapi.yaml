@@ -108,15 +108,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/NatalChartResponse"
         "400":
-          description: Invalid request
+          description: Invalid request or missing/invalid consent declaration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "422":
           description: Birth time or chart calculation cannot be resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "403": { description: Browser origin not permitted }
         "413": { description: JSON body exceeds 16 KiB }
         "415": { description: Only uncompressed application/json is accepted }
         "429": { description: Calculation request limit reached; Retry-After header supplied }
 components:
   schemas:
+    ApiErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum: [CONSENT_REQUIRED, CONSENT_INVALID, BIRTH_TIME_AMBIGUOUS]
     CityLocation:
       type: object
       additionalProperties: false
@@ -216,6 +233,8 @@ components:
         birthDate: { type: string, format: date }
         birthTime: { $ref: "#/components/schemas/NatalBirthTime" }
         birthPlace: { $ref: "#/components/schemas/NatalBirthPlace" }
+        consentAccepted: { type: boolean }
+        consentVersion: { type: string, enum: ["2026-11-04-v3"] }
         houseSystem: { type: string, enum: [placidus] }
         zodiac: { type: string, enum: [tropical] }
         orbs:
@@ -224,7 +243,7 @@ components:
             luminary: { type: number, exclusiveMinimum: 0, maximum: 15 }
             other: { type: number, exclusiveMinimum: 0, maximum: 15 }
           required: [luminary, other]
-      required: [birthDate, birthTime, birthPlace]
+      required: [birthDate, birthTime, birthPlace, consentAccepted, consentVersion]
     NatalAngle:
       type: object
       properties:

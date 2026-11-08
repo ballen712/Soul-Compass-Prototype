@@ -1,4 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
+import { CONSENT_VERSION } from '../profile/local';
 import { LocalProfileStore } from '../profile/storage';
 import { natalRequest, requestNatal } from '../services/natal';
 import type { UserProfile } from '../profile/profile';
@@ -18,7 +19,11 @@ test('service checks consent before API; decline and revocation block all future
   expect(calculateNatalChart).not.toHaveBeenCalled();
   await store.setConsent(true); await requestNatal(store, profile, null);
   expect(calculateNatalChart).toHaveBeenCalledTimes(1);
-  expect(calculateNatalChart).toHaveBeenCalledWith(natalRequest(profile, null), { signal: expect.any(AbortSignal) });
+  expect(calculateNatalChart).toHaveBeenCalledWith({
+    ...natalRequest(profile, null),
+    consentAccepted: true,
+    consentVersion: CONSENT_VERSION,
+  }, { signal: expect.any(AbortSignal) });
   await store.setConsent(false); await expect(requestNatal(store, profile, null)).rejects.toThrow();
   expect(calculateNatalChart).toHaveBeenCalledTimes(1);
 });

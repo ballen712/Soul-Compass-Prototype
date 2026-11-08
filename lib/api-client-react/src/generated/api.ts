@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorResponse,
   AstrologyHealth,
   CitySearchResults,
   HealthStatus,
@@ -426,7 +427,7 @@ return customFetch<NatalChartResponse>(getCalculateNatalChartUrl(),
 
 export const getCalculateNatalChartMutationKey = () => ['calculateNatalChart'] as const;
 
-export const getCalculateNatalChartMutationOptions = <TError = ErrorType<void>,
+export const getCalculateNatalChartMutationOptions = <TError = ErrorType<ApiErrorResponse | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateNatalChart>>, TError,CalculateNatalChartMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof calculateNatalChart>>, TError,CalculateNatalChartMutationVariables, TContext> => {
 
@@ -455,13 +456,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CalculateNatalChartMutationResult = NonNullable<Awaited<ReturnType<typeof calculateNatalChart>>>
     export type CalculateNatalChartMutationBody = BodyType<NatalChartRequest>
-    export type CalculateNatalChartMutationError = ErrorType<void>
+    export type CalculateNatalChartMutationError = ErrorType<ApiErrorResponse | void>
     export type CalculateNatalChartMutationVariables = {data: BodyType<NatalChartRequest>}
 
     /**
  * @summary Calculate a natal chart from birth details
  */
-export const useCalculateNatalChart = <TError = ErrorType<void>,
+export const useCalculateNatalChart = <TError = ErrorType<ApiErrorResponse | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateNatalChart>>, TError,CalculateNatalChartMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof calculateNatalChart>>,

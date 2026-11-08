@@ -274,6 +274,45 @@ test('Natal Chart sends no request until Agree, which starts exactly one calcula
   expect(root.findByProps({ testID: 'natal-house-cusp-12' })).toBeDefined();
 });
 
+test('server consent rejection returns to the existing consent step before a retry', async () => {
+  state.calculate.mockRejectedValueOnce({
+    data: { code: 'CONSENT_REQUIRED', error: 'Your permission comes first.' },
+  });
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+  });
+  const root = renderer!.root;
+  const agree = findText(root, 'Agree');
+  await act(async () => {
+    await agree?.parent?.props.onPress();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  });
+
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+  expect(findText(root, 'Your permission comes first')).toBeDefined();
+  const review = root.findByProps({ testID: 'natal-server-consent-review' });
+  await act(async () => { await review.props.onPress(); });
+
+  const localRecord = JSON.parse(state.storage.get(LOCAL_KEY)!);
+  expect(localRecord.privacy.astrologyApiConsent).toBe(false);
+  expect(findText(root, 'Agree')).toBeDefined();
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+
+  const agreeAgain = findText(root, 'Agree');
+  await act(async () => {
+    await agreeAgain?.parent?.props.onPress();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  });
+  expect(state.calculate).toHaveBeenCalledTimes(2);
+});
+
 test('Not now refuses consent without a request, including after app restart and resume', async () => {
   const app = (withPrompt: boolean) => (
     <ProfileProvider>

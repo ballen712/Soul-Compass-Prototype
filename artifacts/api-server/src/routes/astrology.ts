@@ -1,7 +1,11 @@
 import { Router, type IRouter } from "express";
 import { calculatePlanetaryPositions } from "../astrology/ephemeris";
 import { calculateNatalChart } from "../astrology/natal";
+import { validateNatalChartConsent } from "../astrology/consent";
 
+export function createAstrologyRouter(
+  calculateChart: typeof calculateNatalChart = calculateNatalChart,
+): IRouter {
 const router: IRouter = Router();
 
 router.get("/astrology/health", (_req, res) => {
@@ -47,6 +51,11 @@ router.post("/astrology/positions", (req, res) => {
 });
 
 router.post("/astrology/natal-chart", (req, res) => {
+  const consent = validateNatalChartConsent(req.body);
+  if (!consent.accepted) {
+    res.status(400).json({ code: consent.code, error: consent.error });
+    return;
+  }
   const body = req.body;
   if (!body || typeof body !== "object"
     || Array.isArray(body) || typeof body.birthDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.birthDate)
@@ -79,7 +88,7 @@ router.post("/astrology/natal-chart", (req, res) => {
     return;
   }
   try {
-    const chart = calculateNatalChart({
+    const chart = calculateChart({
       birthDate: body.birthDate,
       birthTime: body.birthTime.status === "unknown" ? { status: "unknown" } : {
         status: "known", localTime: body.birthTime.localTime, disambiguation: body.birthTime.disambiguation,
@@ -90,8 +99,19 @@ router.post("/astrology/natal-chart", (req, res) => {
     });
     res.json(chart);
   } catch (error) {
-    res.status(422).json({ error: error instanceof Error ? error.message : "Natal chart calculation failed." });
+    if (error instanceof Error && /occurred twice/i.test(error.message)) {
+      res.status(422).json({
+        code: "BIRTH_TIME_AMBIGUOUS",
+        error: "That local birth time occurred twice. Choose earlier or later occurrence.",
+      });
+      return;
+    }
+    res.status(422).json({ error: "The chart could not be calculated." });
   }
 });
 
+return router;
+}
+
+const router = createAstrologyRouter();
 export default router;

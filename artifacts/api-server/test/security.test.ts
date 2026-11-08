@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { AddressInfo } from "node:net";
+import { SUPPORTED_NATAL_CONSENT_VERSION } from "../src/astrology/consent";
 import { createApp } from "../src/app";
 import type { CalculationRateLimitStore } from "../src/middlewares/shared-calculation-limit";
 
@@ -28,6 +29,8 @@ async function withApp(
 const payload = {
   birthDate: "1991-06-20", birthTime: { status: "known", localTime: "19:51" },
   birthPlace: { latitude: 48.50834, longitude: 32.26618, timeZone: "Europe/Kyiv" },
+  consentAccepted: true,
+  consentVersion: SUPPORTED_NATAL_CONSENT_VERSION,
 };
 const json = (body: unknown, extra: Record<string, string> = {}) => ({
   method: "POST", headers: { "content-type": "application/json", ...extra }, body: JSON.stringify(body),

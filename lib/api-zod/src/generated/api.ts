@@ -125,6 +125,8 @@ export const CalculateNatalChartBody = zod.object({
   "longitude": zod.number().min(calculateNatalChartBodyBirthPlaceLongitudeMin).max(calculateNatalChartBodyBirthPlaceLongitudeMax),
   "timeZone": zod.string()
 }),
+  "consentAccepted": zod.boolean(),
+  "consentVersion": zod.enum(['2026-11-04-v3']),
   "houseSystem": zod.enum(['placidus']).optional(),
   "zodiac": zod.enum(['tropical']).optional(),
   "orbs": zod.object({

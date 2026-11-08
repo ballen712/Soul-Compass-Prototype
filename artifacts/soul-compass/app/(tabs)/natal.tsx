@@ -472,6 +472,13 @@ function errorMessage(err: unknown): string {
   }
   return 'The chart could not be calculated.';
 }
+function apiErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null;
+  const data = (err as { data?: unknown }).data;
+  if (!data || typeof data !== 'object') return null;
+  const code = (data as Record<string, unknown>).code;
+  return typeof code === 'string' ? code : null;
+}
 
 export default function NatalScreen() {
   const t = useAppText();
@@ -508,14 +515,26 @@ export default function NatalScreen() {
     }
     finally { setConsentBusy(false); }
   }
+  async function reviewRejectedConsent() {
+    if (consentBusy) return;
+    setConsentBusy(true); setConsentError(null);
+    try {
+      await setConsent(false);
+      setDeclined(false);
+    } catch (error) {
+      setConsentError(error instanceof Error ? error.message : 'Permission could not be saved.');
+    } finally { setConsentBusy(false); }
+  }
 
   const choose = (choice: Disambiguation) => {
     setDisambiguation(choice);
     submit(choice);
   };
 
+  const code = chart.isError ? apiErrorCode(chart.error) : null;
+  const consentRejected = code === 'CONSENT_REQUIRED' || code === 'CONSENT_INVALID';
   const msg = chart.isError ? errorMessage(chart.error) : '';
-  const twice = /occurred twice/i.test(msg);
+  const twice = code === 'BIRTH_TIME_AMBIGUOUS' || /occurred twice/i.test(msg);
   const data = chart.data;
   const savedChoice = chart.disambiguation ?? disambiguation;
   const timeKnown = profile?.birthTime.status === 'known';
@@ -644,25 +663,47 @@ export default function NatalScreen() {
             </Card>
           ) : chart.isError ? (
             <Card c={c}>
-              <Label c={c} icon="alert-circle" text={twice ? 'CLOCK CHANGE' : 'COULD NOT CALCULATE'} />
-              <Text style={[styles.body, { color: c.foreground }]} testID="natal-error-message">{t(msg)}</Text>
-              {twice ? (
+              {consentRejected ? (
                 <>
-                  <Text style={[styles.body, { color: c.mutedForeground }]}>
-                    {formatAppText('The clocks changed that night, so {time} happened twice. Choose which time to use for this chart. Your saved profile will not change.', locale, {
-                      time: profile.birthTime.status === 'known' ? profile.birthTime.localTime : t('this time'),
-                    })}
+                  <Text accessibilityRole="header" style={[styles.cardTitle, { color: c.foreground }]}>
+                    {t('Your permission comes first')}
                   </Text>
-                  <View style={styles.choiceRow}>
-                    <Btn c={c} label="Earlier occurrence" onPress={() => choose('earlier')} active={disambiguation === 'earlier'} />
-                    <Btn c={c} label="Later occurrence" onPress={() => choose('later')} active={disambiguation === 'later'} />
-                  </View>
+                  {consentBusy ? (
+                    <Text style={[styles.body, { color: c.foreground }]}>{t('Saving permission…')}</Text>
+                  ) : (
+                    <Btn
+                      c={c}
+                      label="Review permission"
+                      testID="natal-server-consent-review"
+                      onPress={() => void reviewRejectedConsent()}
+                    />
+                  )}
                 </>
               ) : (
-                <View style={styles.choiceRow}>
-                  <Btn c={c} label="Try again" icon="refresh-cw" onPress={() => submit(disambiguation)} />
-                  <Btn c={c} label="Edit birth details" icon="settings" onPress={() => router.push('/settings')} />
-                </View>
+                <>
+                  <Label c={c} icon="alert-circle" text={twice ? 'CLOCK CHANGE' : 'COULD NOT CALCULATE'} />
+                  {!twice ? (
+                    <Text style={[styles.body, { color: c.foreground }]} testID="natal-error-message">{t(msg)}</Text>
+                  ) : null}
+                  {twice ? (
+                    <>
+                      <Text style={[styles.body, { color: c.mutedForeground }]}>
+                        {formatAppText('The clocks changed that night, so {time} happened twice. Choose which time to use for this chart. Your saved profile will not change.', locale, {
+                          time: profile.birthTime.status === 'known' ? profile.birthTime.localTime : t('this time'),
+                        })}
+                      </Text>
+                      <View style={styles.choiceRow}>
+                        <Btn c={c} label="Earlier occurrence" onPress={() => choose('earlier')} active={disambiguation === 'earlier'} />
+                        <Btn c={c} label="Later occurrence" onPress={() => choose('later')} active={disambiguation === 'later'} />
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.choiceRow}>
+                      <Btn c={c} label="Try again" icon="refresh-cw" onPress={() => submit(disambiguation)} />
+                      <Btn c={c} label="Edit birth details" icon="settings" onPress={() => router.push('/settings')} />
+                    </View>
+                  )}
+                </>
               )}
             </Card>
           ) : (
@@ -1155,10 +1196,10 @@ function AngleTile({ c, label, hint, value, onPress, testID }: { c: Palette; lab
     </Pressable>
   );
 }
-function Btn({ c, label, icon, onPress, active }: { c: Palette; label: string; icon?: React.ComponentProps<typeof Feather>['name']; onPress: () => void; active?: boolean }) {
+function Btn({ c, label, icon, onPress, active, testID }: { c: Palette; label: string; icon?: React.ComponentProps<typeof Feather>['name']; onPress: () => void; active?: boolean; testID?: string }) {
   const t = useAppText();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.btn, { borderColor: c.secondary, backgroundColor: active ? c.secondary : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
+    <Pressable testID={testID} onPress={onPress} style={({ pressed }) => [styles.btn, { borderColor: c.secondary, backgroundColor: active ? c.secondary : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
       {icon ? <Feather name={icon} size={13} color={active ? c.background : c.secondary} /> : null}
       <Text style={[styles.btnText, { color: active ? c.background : c.secondary }]}>{t(label)}</Text>
     </Pressable>

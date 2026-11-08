@@ -1,10 +1,12 @@
 import { calculateNatalChart, type NatalChartRequest } from '@workspace/api-client-react';
+import { CONSENT_VERSION } from '@/profile/local';
 import type { UserProfile } from '@/profile/profile';
 import type { LocalProfileStore } from '@/profile/storage';
 
 export type Disambiguation = 'earlier' | 'later';
+type NatalChartCalculationInputs = Omit<NatalChartRequest, 'consentAccepted' | 'consentVersion'>;
 /** No residence, names, preferences, account IDs or collection leave the device. */
-export function natalRequest(profile: UserProfile, choice: Disambiguation | null): NatalChartRequest {
+export function natalRequest(profile: UserProfile, choice: Disambiguation | null): NatalChartCalculationInputs {
   return {
     birthDate: profile.birthDate,
     birthTime: profile.birthTime.status === 'known'
@@ -26,5 +28,9 @@ export function requestNatal(
   profile: UserProfile, choice: Disambiguation | null,
 ) {
   return permission.withCalculationConsent(signal =>
-    calculateNatalChart(natalRequest(profile, choice), { signal }));
+    calculateNatalChart({
+      ...natalRequest(profile, choice),
+      consentAccepted: true,
+      consentVersion: CONSENT_VERSION,
+    }, { signal }));
 }

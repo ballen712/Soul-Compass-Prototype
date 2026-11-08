@@ -133,7 +133,11 @@ test("application request logs omit query values, headers, and request bodies", 
       callback();
     },
   }));
-  const app = createApp({ allowedOrigins: [], requestLogger });
+  const app = createApp({
+    allowedOrigins: [],
+    requestLogger,
+    calculationRateLimitStore: { reserve: async () => ({ allowed: true, retryAfterSeconds: 0 }) },
+  });
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/geocoding/cities`;
@@ -157,10 +161,39 @@ test("application request logs omit query values, headers, and request bodies", 
     );
     assert.equal(response.status, 404);
     await response.text();
+    const natalResponse = await fetch(
+      base.replace("/api/geocoding/cities", "/api/astrology/natal-chart"),
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          birthDate: "PRIVATE-BIRTH-DATE-MARKER",
+          birthTime: { status: "known", localTime: "PRIVATE-BIRTH-TIME-MARKER" },
+          birthPlace: {
+            latitude: 1234.567,
+            longitude: -999.123,
+            timeZone: "PRIVATE-TIMEZONE-MARKER",
+          },
+        }),
+      },
+    );
+    assert.equal(natalResponse.status, 400);
+    const natalError = await natalResponse.json() as { code?: string; error?: string };
+    assert.equal(natalError.code, "CONSENT_REQUIRED");
+    assert.equal(natalError.error, "Your permission comes first.");
     await new Promise<void>(resolve => setImmediate(resolve));
     const serializedLogs = logs.join("");
     assert.match(serializedLogs, /\/api\/geocoding\/cities/);
+    assert.match(serializedLogs, /\/api\/astrology\/natal-chart/);
     for (const value of sensitiveValues) assert.ok(!serializedLogs.includes(value));
+    for (const value of Object.values({
+      birthDate: "PRIVATE-BIRTH-DATE-MARKER",
+      birthTime: "PRIVATE-BIRTH-TIME-MARKER",
+      timeZone: "PRIVATE-TIMEZONE-MARKER",
+    })) {
+      assert.ok(!serializedLogs.includes(value));
+      assert.ok(!JSON.stringify(natalError).includes(value));
+    }
     assert.ok(!serializedLogs.includes("apiKey="));
   } finally {
     server.closeAllConnections();

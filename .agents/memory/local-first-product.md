@@ -15,6 +15,12 @@ Preserve server-side astronomy calculations, but send personal birth inputs only
 
 **How to apply:** require the current consent version before dispatch, minimize payloads, request at most once per app launch, block future requests immediately on revocation and never queue offline birth-data sends. Renew consent when its meaning or frequency changes. Preserve the Supabase project, records, migrations, policies and Replit secrets; the user has since explicitly approved removing Supabase auth/cloud-profile code and its protected `/api/me/*` routes from workspace source. Never delete live data or weaken API validation, shared rate limiting, CORS or safe logging.
 
+The natal-chart endpoint also requires `consentAccepted: true` and the current consent version on each request. Because the API is intentionally public and unauthenticated, these fields are a client declaration, not independent proof that the user saw or accepted the notice; no server-side consent record is created.
+
+**Why:** On 8 November 2026, the user approved stateless server enforcement while recognizing that a public API cannot independently verify human consent or identity.
+
+**How to apply:** check the declaration before birth-data validation and calculation, keep its version aligned across OpenAPI, mobile and server, and do not describe it as verified consent or add consent logging/storage.
+
 On 8 November 2026, the user manually checked the Supabase dashboard: `public.profiles` exists but is empty; Auth Users and Storage are empty; the project is on Free and has no project backups.
 
 **Why:** this is owner-reported live account state that cannot be established from repository code.

@@ -153,6 +153,8 @@ test('language selection and the first profile form are translated in every supp
     'Place of Birth',
     'Current Residence',
     'Search cities',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.',
   ];
 
   for (const locale of APP_LOCALES.filter((item) => item !== 'en')) {

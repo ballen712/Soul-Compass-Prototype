@@ -131,7 +131,25 @@ test('choosing a language saves it locally and then opens onboarding', async () 
   const profileForms = renderer!.root.findAll((node) => String(node.type) === 'ProfileForm');
   expect(profileForms).toHaveLength(1);
   expect(profileForms[0].props.includeResidence).toBe(false);
+  expect(profileForms[0].props.includeNatalConsent).toBe(true);
   expect(renderer!.root.findAllByProps({ testID: 'language-option-es' })).toHaveLength(0);
+});
+
+test('onboarding combines a short app introduction with profile entry without repeating the privacy explanation', async () => {
+  await act(async () => {
+    renderer = create(<OnboardingScreen />);
+  });
+  await act(async () => {
+    await renderer!.root.findByProps({ testID: 'language-option-en' }).props.onPress();
+  });
+
+  const visibleCopy = renderer!.root.findAllByType('Text' as any)
+    .map((node) => typeof node.props.children === 'string' ? node.props.children : '')
+    .join(' ');
+  expect(visibleCopy).toContain('A quick guide to Soul Compass');
+  expect(visibleCopy).toContain('Daily reflections, a crystal guide, an optional birth chart, and more ways to explore.');
+  expect(visibleCopy).not.toContain('No account is needed.');
+  expect(visibleCopy).not.toContain('birth details are sent to calculate it');
 });
 
 test('a local save error keeps the user on the language screen', async () => {

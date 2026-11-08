@@ -1,5 +1,3 @@
-export const APP_GUIDE_SEEN_KEY = 'soul-compass.app-guide.seen.v1';
-
 export const APP_GUIDE_INTRO =
   'The idea for Soul Compass grew from my own exploration of astrology, crystals, meditation, Tarot, and psychology. I wanted to bring these interests together in a simple place for self-reflection, with daily reflections, a crystal guide, and a birth chart. Take what feels useful and leave the rest.';
 

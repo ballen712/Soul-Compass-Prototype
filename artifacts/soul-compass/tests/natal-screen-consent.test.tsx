@@ -83,7 +83,6 @@ vi.mock('@/hooks/useColors', () => ({
 }));
 
 import NatalScreen, { explainAngle, explainAspect, explainPlanet } from '../app/(tabs)/natal';
-import { FirstChartConsentPrompt } from '../components/FirstChartConsentPrompt';
 import { dailyReadingTranslations } from '../localization/daily-copy';
 import { natalTranslations } from '../localization/natal-copy';
 import { screenTranslations } from '../localization/screen-copy';
@@ -313,30 +312,28 @@ test('server consent rejection returns to the existing consent step before a ret
   expect(state.calculate).toHaveBeenCalledTimes(2);
 });
 
-test('Not now refuses consent without a request, including after app restart and resume', async () => {
-  const app = (withPrompt: boolean) => (
+test('users can enter Natal Chart without consent; no request is made until they agree', async () => {
+  const app = () => (
     <ProfileProvider>
       <NatalCalculationProvider>
         <NatalAutoRefresh />
-        {withPrompt ? <FirstChartConsentPrompt /> : null}
         <NatalScreen />
       </NatalCalculationProvider>
     </ProfileProvider>
   );
-  await act(async () => { renderer = create(app(true)); });
+  await act(async () => { renderer = create(app()); });
   const root = renderer!.root;
-  expect(root.findAllByType(Modal).filter(modal => modal.props.visible)).toHaveLength(1);
   expect(state.calculate).not.toHaveBeenCalled();
 
-  const notNow = findText(root, 'Not now');
+  const agree = findText(root, 'Agree');
+  expect(agree?.parent?.props.onPress).toBeTypeOf('function');
+  const notNow = findText(root, 'Not Now');
   expect(notNow?.parent?.props.onPress).toBeTypeOf('function');
-  await act(async () => { await notNow?.parent?.props.onPress(); });
-  expect(root.findAllByType(Modal).filter(modal => modal.props.visible)).toHaveLength(0);
   expect(state.calculate).not.toHaveBeenCalled();
 
   await act(async () => renderer?.unmount());
   renderer = undefined;
-  await act(async () => { renderer = create(app(false)); });
+  await act(async () => { renderer = create(app()); });
   expect(state.calculate).not.toHaveBeenCalled();
   await act(async () => {
     resumeApp();

@@ -21,6 +21,12 @@ The natal-chart endpoint also requires `consentAccepted: true` and the current c
 
 **How to apply:** check the declaration before birth-data validation and calculation, keep its version aligned across OpenAPI, mobile and server, and do not describe it as verified consent or add consent logging/storage.
 
+First-run setup presents a short app introduction alongside birth details. Natal-chart permission is a separate, unchecked optional checkbox on that form; submitting without it must still let the user enter the app, and must not send birth data. Remove redundant first-run consent and guide popups; users who skip permission can grant it later from the Natal Chart screen.
+
+**Why:** On 8 November 2026, the user chose one concise onboarding flow instead of repeating the data-processing explanation in a post-profile dialog.
+
+**How to apply:** keep the checkbox explicit and unchecked by default, save it with the local profile before any chart request, disclose that changed birth details may be sent for recalculation, and keep withdrawal available in Settings.
+
 On 8 November 2026, the user manually checked the Supabase dashboard: `public.profiles` exists but is empty; Auth Users and Storage are empty; the project is on Free and has no project backups.
 
 **Why:** this is owner-reported live account state that cannot be established from repository code.

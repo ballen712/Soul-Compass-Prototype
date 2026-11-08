@@ -117,9 +117,43 @@ export class LocalProfileStore {
     if (preferences === this.snapshot.record.preferences) return;
     this.publish({ ...this.snapshot, record: { ...this.snapshot.record, preferences } });
   };
-  saveProfile = (profile: UserProfile) => this.update(record => ({
-    ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
-  }));
+  saveProfile = (profile: UserProfile, natalConsent?: boolean) => {
+    if (natalConsent === undefined) {
+      return this.update(record => ({
+        ...record, profile: ProfileSchema.parse(profile), onboardingDraft: null,
+      }));
+    }
+
+    // Save the profile and its first-run chart permission as one local update.
+    // Requests remain blocked until the permission and profile are both durable.
+    const revision = ++this.consentRevision;
+    this.denyRequests = true;
+    this.stopRequests();
+    const timestamp = natalConsent ? new Date().toISOString() : null;
+    return this.enqueue(async () => {
+      if (this.clearingData) throw new Error('Local data is being deleted. Please wait and try again.');
+      if (!this.snapshot.loaded || this.snapshot.error) throw new Error('Reload local data before saving.');
+      const next = LocalRecordSchema.parse({
+        ...this.snapshot.record,
+        profile: ProfileSchema.parse(profile),
+        onboardingDraft: null,
+        privacy: {
+          astrologyApiConsent: natalConsent,
+          consentTimestamp: timestamp,
+          consentVersion: natalConsent ? CONSENT_VERSION : null,
+          revokedAt: null,
+        },
+      });
+      try {
+        await this.storage.setItem(LOCAL_KEY, JSON.stringify(next));
+      } catch {
+        throw new Error('Could not save local data. Your previous saved data is preserved. Please retry.');
+      }
+      if (revision !== this.consentRevision) return;
+      this.denyRequests = !natalConsent;
+      this.publish({ record: next, loaded: true, error: null });
+    });
+  };
   loadNatalChartCache = async (profileKey: string): Promise<CachedNatalChart | null> => {
     if (this.clearingData) return null;
     const revision = this.consentRevision;

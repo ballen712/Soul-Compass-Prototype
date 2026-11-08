@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileForm, type ProfileFormHandle } from '@/components/ProfileForm';
 import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
@@ -91,12 +91,13 @@ export default function SettingsScreen() {
   const colors = useColors();
   const styles = useMemo(() => createSettingsStyles(colors), [colors.mode]);
   const router = useRouter();
+  const { section, focus } = useLocalSearchParams<{ section?: string; focus?: string }>();
   const insets = useSafeAreaInsets();
   const {
     profile, saveProfile, preferences, savePreferences, toggleCrystal, privacy,
     setConsent, clearLocalData,
   } = useProfile();
-  const [tab, setTab] = useState<Tab | null>(null);
+  const [tab, setTab] = useState<Tab | null>(() => section === 'profile' ? 'profile' : null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const profileFormRef = useRef<ProfileFormHandle | null>(null);
@@ -105,6 +106,9 @@ export default function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState('');
   const [hiddenSearch, setHiddenSearch] = useState('');
+  useEffect(() => {
+    if (section === 'profile') setTab('profile');
+  }, [section]);
   const stoneName = (name: string) => getLocalizedCrystalCopy(name, locale)?.name ?? name;
   const collectionMatches = CATALOG.filter((c) =>
     `${c.name} ${stoneName(c.name)}`.toLocaleLowerCase(locale).includes(collectionSearch.trim().toLocaleLowerCase(locale)),
@@ -305,7 +309,13 @@ export default function SettingsScreen() {
         </ScrollView>
       ) : tab === 'profile' ? (
         <>
-          <ProfileForm ref={profileFormRef} initialProfile={profile} submitLabel="Save Changes" onSubmit={submit} />
+          <ProfileForm
+            ref={profileFormRef}
+            initialProfile={profile}
+            focusCurrentResidence={focus === 'current-residence'}
+            submitLabel="Save Changes"
+            onSubmit={submit}
+          />
         </>
       ) : (
         <KeyboardAwareScrollViewCompat

@@ -34,7 +34,7 @@ export default function OnboardingScreen() {
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [languageError, setLanguageError] = useState('');
   const selectedLocale = draftLocale ?? normalizeAppLocale(preferences.language);
-  const submit = (profile: UserProfile) => saveProfile(profile);
+  const submit = (profile: UserProfile, natalConsent = false) => saveProfile(profile, natalConsent);
 
   async function chooseLanguage(locale: AppLocale) {
     if (savingLanguage) return;
@@ -145,17 +145,20 @@ export default function OnboardingScreen() {
     >
       <View style={[styles.welcome, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.welcomeEyebrow, { color: colors.tint }]}>{t('WELCOME')}</Text>
-        <Text style={[styles.welcomeText, { color: colors.foreground }]}>
-          {t('Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.')}
+        <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
+          {t('A quick guide to Soul Compass')}
         </Text>
-        <Text style={[styles.welcomeText, { color: colors.foreground }]}>
-          {t('Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.')}
-        </Text>
-        <Text style={[styles.welcomeNote, { color: colors.mutedForeground }]}>
-          {t('No account is needed. Your profile, preferences, and stone collection stay on this device. Daily readings are worked out here. City search uses the internet. The Natal Chart is optional: if you agree, your birth details are sent to calculate it. The chart is saved here and updated only if you change those details.')}
+        <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>
+          {t('Daily reflections, a crystal guide, an optional birth chart, and more ways to explore.')}
         </Text>
       </View>
-      <ProfileForm initialDraft={onboardingDraft} includeResidence={false} submitLabel="Enter Soul Compass" onSubmit={submit} />
+      <ProfileForm
+        initialDraft={onboardingDraft}
+        includeResidence={false}
+        includeNatalConsent
+        submitLabel="Enter Soul Compass"
+        onSubmit={submit}
+      />
     </SafeAreaView>
   );
 }
@@ -259,6 +262,6 @@ const styles = StyleSheet.create({
   spanishFlagFrame: { width: 48, height: 32 },
   welcome: { marginHorizontal: 24, marginTop: 12, padding: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
   welcomeEyebrow: { fontSize: 10, letterSpacing: 1.8 },
+  welcomeTitle: { fontSize: 16, lineHeight: 21, fontWeight: '600' },
   welcomeText: { fontSize: 13, lineHeight: 19 },
-  welcomeNote: { fontSize: 12, lineHeight: 17 },
 });

@@ -3,7 +3,6 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { FirstRunAppGuide } from '@/components/FirstRunAppGuide';
 import { useAppText } from '@/localization';
 
 const tabLabelTextStyle: TextStyle = {
@@ -133,10 +132,5 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  return (
-    <>
-      <ClassicTabLayout />
-      <FirstRunAppGuide />
-    </>
-  );
+  return <ClassicTabLayout />;
 }

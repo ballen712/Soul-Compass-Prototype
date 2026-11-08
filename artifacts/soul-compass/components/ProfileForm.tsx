@@ -1,5 +1,6 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeCityPicker } from '@/components/HomeCityPicker';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -17,8 +18,10 @@ type Props = {
   initialProfile?: UserProfile | null;
   initialDraft?: ProfileFormDraft | null;
   includeResidence?: boolean;
+  includeNatalConsent?: boolean;
+  focusCurrentResidence?: boolean;
   submitLabel: string;
-  onSubmit: (profile: UserProfile) => Promise<void>;
+  onSubmit: (profile: UserProfile, natalConsent?: boolean) => Promise<void>;
 };
 
 export type ProfileFormHandle = {
@@ -83,7 +86,15 @@ function useFormattedBirthInput(initialValue: string, kind: BirthInputKind) {
 }
 
 export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function ProfileForm(
-  { initialProfile, initialDraft, includeResidence = true, submitLabel, onSubmit },
+  {
+    initialProfile,
+    initialDraft,
+    includeResidence = true,
+    includeNatalConsent = false,
+    focusCurrentResidence = false,
+    submitLabel,
+    onSubmit,
+  },
   ref,
 ) {
   const t = useAppText();
@@ -109,10 +120,13 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
     initialProfile?.currentResidence ?? initialDraft?.currentResidence ?? null,
   );
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<KeyboardAwareScrollViewRef | null>(null);
+  const didFocusResidenceRef = useRef(false);
   const [residenceEnabled, setResidenceEnabled] = useState(
     initialProfile ? initialProfile.currentResidence != null : true,
   );
   const [saving, setSaving] = useState(false);
+  const [natalConsent, setNatalConsent] = useState(false);
   const [error, setError] = useState('');
   const savingRef = useRef(false);
 
@@ -164,7 +178,11 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
     setSaving(true);
     setError('');
     try {
-      await onSubmit(parsed.data as UserProfile);
+      if (includeNatalConsent) {
+        await onSubmit(parsed.data as UserProfile, natalConsent);
+      } else {
+        await onSubmit(parsed.data as UserProfile);
+      }
       return true;
     } catch {
       setError(t('Your profile could not be saved. Please try again.'));
@@ -182,12 +200,16 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
     birthTimeKnown,
     currentResidence,
     includeResidence,
+    includeNatalConsent,
+    focusCurrentResidence,
+    natalConsent,
     onSubmit,
     residenceEnabled,
   ]);
 
   return (
     <KeyboardAwareScrollViewCompat
+      scrollRef={scrollRef}
       style={[styles.scroll, { backgroundColor: colors.background }]}
       bottomOffset={72}
       keyboardShouldPersistTaps="handled"
@@ -253,7 +275,16 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
       <HomeCityPicker label="Place of birth" value={birthPlace} onSelect={setBirthPlace} />
 
       {includeResidence ? (
-        <>
+        <View
+          testID="current-residence-section"
+          style={styles.residenceSection}
+          onLayout={(event) => {
+            if (!focusCurrentResidence || didFocusResidenceRef.current) return;
+            didFocusResidenceRef.current = true;
+            const y = Math.max(0, event.nativeEvent.layout.y - 12);
+            scrollRef.current?.scrollTo({ y, animated: true });
+          }}
+        >
           <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
             {t('Current residence')}
@@ -288,7 +319,36 @@ export const ProfileForm = React.forwardRef<ProfileFormHandle, Props>(function P
               <Text style={[styles.addResidenceText, { color: colors.tint }]}>{t('Add current residence')}</Text>
             </Pressable>
           )}
-        </>
+        </View>
+      ) : null}
+
+      {includeNatalConsent ? (
+        <View style={[styles.consentSection, { borderTopColor: colors.border }]}>
+          <Pressable
+            testID="natal-consent-checkbox"
+            accessibilityRole="checkbox"
+            accessibilityLabel={t('I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.')}
+            accessibilityState={{ checked: natalConsent }}
+            onPress={() => setNatalConsent((checked) => !checked)}
+            style={styles.consentOption}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                { borderColor: natalConsent ? colors.primary : colors.border },
+                natalConsent && [styles.checkboxChecked, { backgroundColor: colors.primary }],
+              ]}
+            >
+              {natalConsent ? <View style={[styles.checkmark, { backgroundColor: colors.primaryForeground }]} /> : null}
+            </View>
+            <Text style={[styles.consentLabel, { color: colors.foreground }]}>
+              {t('I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.')}
+            </Text>
+          </Pressable>
+          <Text style={[styles.consentNote, { color: colors.mutedForeground }]}>
+            {t('You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.')}
+          </Text>
+        </View>
       ) : null}
 
       {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{error}</Text> : null}
@@ -327,6 +387,11 @@ const styles = StyleSheet.create({
   checkmark: { width: 8, height: 8, borderRadius: 2 },
   unknownText: { fontSize: 14 },
   precisionNote: { fontSize: 13, lineHeight: 19, marginTop: -4 },
+  residenceSection: { gap: 12 },
+  consentSection: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 12, paddingTop: 14, gap: 8 },
+  consentOption: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 3 },
+  consentLabel: { flex: 1, fontSize: 13, lineHeight: 19 },
+  consentNote: { fontSize: 12, lineHeight: 18, marginLeft: 30 },
   skipResidence: { alignSelf: 'flex-start', paddingVertical: 6 },
   skipResidenceText: { fontSize: 13, textDecorationLine: 'underline' },
   addResidence: { minHeight: 46, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

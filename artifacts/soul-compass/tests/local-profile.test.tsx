@@ -288,6 +288,32 @@ test('consent grants, persists, revokes and can voluntarily be granted again', a
   const afterRevoke = new LocalProfileStore(storage); await afterRevoke.load(); expect(afterRevoke.canCalculate()).toBe(false);
   await afterRevoke.setConsent(true); expect(await afterRevoke.withCalculationConsent(request)).toBe('chart');
 });
+
+test('onboarding saves profile and its explicit natal-consent choice together', async () => {
+  const { store, storage } = adapter();
+  await store.load();
+
+  await store.saveProfile(profile, false);
+  expect(store.getSnapshot().record.profile).toEqual(profile);
+  expect(store.getSnapshot().record.privacy).toMatchObject({
+    astrologyApiConsent: false,
+    consentTimestamp: null,
+    consentVersion: null,
+    revokedAt: null,
+  });
+  expect(store.canCalculate()).toBe(false);
+
+  await store.clearLocalData();
+  await store.load();
+  await store.saveProfile(profile, true);
+  const saved = JSON.parse((await storage.getItem(LOCAL_KEY))!);
+  expect(saved.profile).toEqual(profile);
+  expect(saved.privacy.astrologyApiConsent).toBe(true);
+  expect(saved.privacy.consentVersion).toBe(CONSENT_VERSION);
+  expect(saved.privacy.consentTimestamp).toMatch(/Z$/);
+  expect(saved.privacy.revokedAt).toBeNull();
+  expect(store.canCalculate()).toBe(true);
+});
 test('deleting local data removes profile, legacy data and cached chart and restarts with empty preferences', async () => {
   const { data, store, storage } = adapter();
   await store.load();

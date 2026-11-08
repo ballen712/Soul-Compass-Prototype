@@ -235,7 +235,15 @@ export default function CosmosScreen() {
               </Text>
             ) : null}
             {profile && !profile.currentResidence ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push('/settings')}>
+              <Pressable
+                testID="cosmos-add-current-residence"
+                accessibilityRole="button"
+                accessibilityLabel={t('Add current residence for your daily reflection →')}
+                onPress={() => router.push({
+                  pathname: '/settings',
+                  params: { section: 'profile', focus: 'current-residence' },
+                })}
+              >
                 <Text style={[styles.factorSummary, { color: colors.cosmos.secondary, paddingVertical: 12 }]}>
                   {t('Add current residence for your daily reflection →')}
                 </Text>

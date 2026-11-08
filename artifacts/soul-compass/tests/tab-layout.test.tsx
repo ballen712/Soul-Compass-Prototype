@@ -30,7 +30,6 @@ vi.mock('@/hooks/useColors', () => ({
     },
   }),
 }));
-vi.mock('@/components/FirstRunAppGuide', () => ({ FirstRunAppGuide: 'FirstRunAppGuide' }));
 vi.mock('@/localization', () => ({ useAppText: () => (text: string) => text }));
 
 import TabLayout from '../app/(tabs)/_layout';

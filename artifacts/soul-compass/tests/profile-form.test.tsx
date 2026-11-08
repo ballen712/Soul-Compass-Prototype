@@ -11,7 +11,10 @@ const state = vi.hoisted(() => ({
   search: vi.fn(),
   platformOS: 'web',
 }));
-const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
+const navigation = vi.hoisted(() => ({
+  replace: vi.fn(),
+  params: {} as Record<string, string>,
+}));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
@@ -51,6 +54,7 @@ vi.mock('@/services/geocoding', () => ({
 vi.mock('expo-router', () => ({
   Stack: { Screen: 'StackScreen' },
   useRouter: () => ({ canGoBack: () => false, back: vi.fn(), replace: navigation.replace }),
+  useLocalSearchParams: () => navigation.params,
 }));
 vi.mock('@/constants/content', () => ({
   crystalCatalog: [
@@ -181,6 +185,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.storage.clear();
   state.platformOS = 'web';
+  navigation.params = {};
   state.search.mockReset();
   state.search.mockImplementation(async (query: string) => [
     query.toLowerCase() === 'prague'
@@ -216,6 +221,38 @@ test('the first-run profile form keeps current residence for Settings', async ()
   const root = renderer!.root;
   expect(root.findAllByProps({ accessibilityLabel: 'Current residence' })).toHaveLength(0);
   expect(root.findAllByProps({ accessibilityLabel: 'Place of birth' })).toHaveLength(1);
+});
+
+test('first-run natal consent is optional, unchecked by default, and included with profile submission', async () => {
+  const saved = vi.fn(async () => {});
+  await render(
+    <ProfileForm
+      includeResidence={false}
+      includeNatalConsent
+      submitLabel="Continue"
+      onSubmit={saved}
+    />,
+  );
+  const root = renderer!.root;
+  expect(root.findByProps({ testID: 'natal-consent-checkbox' }).props.accessibilityState.checked).toBe(false);
+  expect(findTextNode(
+    root,
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.',
+  )).toBeDefined();
+
+  input(root, 'Date of birth', '2000-02-29');
+  setBirthTimeKnown(root);
+  await chooseCity(root, 'Place of birth', selectedBirthPlace);
+  await act(async () => { await pressText(root, 'Continue'); });
+  expect(saved).toHaveBeenCalledWith(
+    expect.objectContaining({ birthDate: '2000-02-29', birthPlace: selectedBirthPlace }),
+    false,
+  );
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-consent-checkbox' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-consent-checkbox' }).props.accessibilityState.checked).toBe(true);
 });
 
 test('birth date and time add separators while typing digits and keep the caret after them', async () => {
@@ -397,6 +434,32 @@ test('Settings remains usable before the user creates a local profile', async ()
   expect(findTextNode(root, 'App language')).toBeDefined();
   expect(findTextNode(root, 'About Soul Compass')).toBeDefined();
   expect(findTextNode(root, 'Delete local profile')).toBeUndefined();
+});
+
+test('Settings opens Profile and focuses Current residence from its direct route', async () => {
+  state.storage.set(LOCAL_KEY, JSON.stringify({
+    ...emptyRecord(),
+    profile: { ...existingProfile, currentResidence: null },
+  }));
+  navigation.params = { section: 'profile', focus: 'current-residence' };
+  await render(<ProfileProvider><SettingsScreen /><ProfileProbe /></ProfileProvider>);
+
+  const root = renderer!.root;
+  const form = root.findByType(ProfileForm);
+  expect(form.props.focusCurrentResidence).toBe(true);
+  expect(root.findAllByProps({ testID: 'settings-tab-profile' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'current-residence-section' })).toBeDefined();
+  expect(findTextNode(root, 'Add current residence')).toBeDefined();
+
+  const scrollContainer = root.findAllByType(View).find((node) => node.props.scrollRef);
+  const scrollTo = vi.fn();
+  scrollContainer!.props.scrollRef.current = { scrollTo };
+  await act(async () => {
+    root.findByProps({ testID: 'current-residence-section' }).props.onLayout({
+      nativeEvent: { layout: { y: 300 } },
+    });
+  });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 288, animated: true });
 });
 
 test('editing a city without selecting a search result cannot save the old location', async () => {

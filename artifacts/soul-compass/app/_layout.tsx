@@ -19,7 +19,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ProfileProvider, useProfile } from '@/profile/ProfileContext';
 import { NatalAutoRefresh, NatalCalculationProvider } from '@/hooks/useNatalCalculation';
 import { setBaseUrl } from '@workspace/api-client-react';
-import { FirstChartConsentPrompt } from '@/components/FirstChartConsentPrompt';
 import { AppLocaleProvider, useAppText } from '@/localization';
 import { useColors } from '@/hooks/useColors';
 
@@ -61,7 +60,6 @@ function RootLayoutNav() {
       <Stack.Screen name="terms" options={{ headerShown: false }} />
       <Stack.Screen name="support" options={{ headerShown: false }} />
     </Stack>
-    <FirstChartConsentPrompt />
     {overlay}
     </>
   );

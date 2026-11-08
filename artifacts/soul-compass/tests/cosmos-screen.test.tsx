@@ -157,6 +157,21 @@ test('daily reflection opens directly to its plain-language explanation', async 
   expect(modalCopy.join(' ')).toContain('choose what matters');
 });
 
+test('the residence prompt opens Settings directly at Profile and the current-residence section', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.profile = { birthDate: '2000-01-01', currentResidence: null };
+  await act(async () => {
+    renderer = create(<CosmosScreen />);
+  });
+
+  const prompt = renderer!.root.findByProps({ testID: 'cosmos-add-current-residence' });
+  await act(async () => { prompt.props.onPress(); });
+  expect(state.push).toHaveBeenCalledWith({
+    pathname: '/settings',
+    params: { section: 'profile', focus: 'current-residence' },
+  });
+});
+
 test('calculated focus and caution are both visible and readable in the Cosmos card', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.profile = {};

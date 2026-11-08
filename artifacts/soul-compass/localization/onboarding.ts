@@ -9,6 +9,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Nyelv mentése…',
     'Language could not be saved. Please try again.': 'A nyelvet nem sikerült elmenteni. Próbáld újra.',
     WELCOME: 'ÜDVÖZLÜNK',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'Hozzájárulok, hogy a születési dátumomat, az ismert születési időmet és a születési helyemet elküldjétek a szerverre a születési képletem kiszámításához.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'E nélkül is folytathatod. Ha módosítod a születési adataidat, az új adatokat újabb számításhoz is elküldhetjük. A hozzájárulásodat bármikor visszavonhatod a Beállításokban.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'A Soul Compass rövid napi gondolatot és egy egyszerű ötletet ad, amit magaddal vihetsz. A születési képletedet és egy elgondolkodtató követ is felfedezhetsz. Nem tudod a születési idődet? Hagyd üresen; néhány képletrészlet így kimarad.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':
@@ -66,6 +70,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Salvataggio della lingua…',
     'Language could not be saved. Please try again.': 'Non è stato possibile salvare la lingua. Riprova.',
     WELCOME: 'BENVENUTO',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'Acconsento a inviare al server la mia data e il mio luogo di nascita, e l’ora se la conosco, per calcolare il mio tema natale.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'Puoi continuare anche senza acconsentire. Se modifichi i dati di nascita, quelli aggiornati potrebbero essere inviati per un nuovo calcolo. Puoi revocare il consenso in qualsiasi momento nelle Impostazioni.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'Soul Compass ti propone una breve riflessione quotidiana e un’idea semplice da portare con te. Puoi anche esplorare il tema natale e scegliere una pietra su cui riflettere. Non conosci l’ora di nascita? Lasciala vuota: alcuni dettagli del tema non saranno mostrati.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':
@@ -123,6 +131,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Sprache wird gespeichert …',
     'Language could not be saved. Please try again.': 'Die Sprache konnte nicht gespeichert werden. Bitte versuche es erneut.',
     WELCOME: 'WILLKOMMEN',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'Ich bin einverstanden, dass mein Geburtsdatum, meine Geburtszeit (falls bekannt) und mein Geburtsort zur Berechnung meines Geburtshoroskops an unseren Server gesendet werden.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'Du kannst auch ohne Zustimmung fortfahren. Wenn du deine Geburtsdaten änderst, können die aktualisierten Angaben für eine neue Berechnung gesendet werden. Deine Zustimmung kannst du jederzeit in den Einstellungen widerrufen.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'Soul Compass bietet dir einen kurzen Tagesimpuls und eine einfache Idee für deinen Tag. Du kannst auch dein Geburtshoroskop erkunden und einen passenden Stein entdecken. Du kennst deine Geburtszeit nicht? Lass das Feld frei; einige Horoskopdetails werden dann ausgelassen.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':
@@ -180,6 +192,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Enregistrement de la langue…',
     'Language could not be saved. Please try again.': 'La langue n’a pas pu être enregistrée. Réessaie.',
     WELCOME: 'BIENVENUE',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'J’accepte l’envoi de ma date et de mon lieu de naissance, ainsi que de mon heure de naissance si je la connais, à notre serveur pour calculer mon thème natal.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'Tu peux continuer sans donner ton accord. Si tu modifies tes données de naissance, les nouvelles informations pourront être envoyées pour un autre calcul. Tu peux retirer ton accord à tout moment dans les Réglages.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'Soul Compass t’offre une courte réflexion quotidienne et une idée simple à garder avec toi. Tu peux aussi découvrir ton thème natal et une pierre à contempler. Tu ne connais pas ton heure de naissance ? Laisse le champ vide ; certains détails du thème ne seront pas affichés.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':
@@ -237,6 +253,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Guardando el idioma…',
     'Language could not be saved. Please try again.': 'No se pudo guardar el idioma. Inténtalo de nuevo.',
     WELCOME: 'BIENVENIDO',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'Acepto enviar al servidor mi fecha y lugar de nacimiento, y la hora si la conozco, para calcular mi carta natal.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'Puedes continuar sin dar tu consentimiento. Si cambias tus datos de nacimiento, podremos enviar los nuevos para volver a calcular la carta. Puedes retirar el permiso cuando quieras desde Ajustes.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'Soul Compass te ofrece una breve reflexión diaria y una idea sencilla para acompañarte. También puedes explorar tu carta natal y encontrar una piedra sobre la que reflexionar. ¿No sabes tu hora de nacimiento? Déjala en blanco; omitiremos algunos detalles de la carta.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':
@@ -294,6 +314,10 @@ export const onboardingTranslations: Record<Locale, Record<string, string>> = {
     'Saving language…': 'Сохраняем язык…',
     'Language could not be saved. Please try again.': 'Не удалось сохранить язык. Попробуй ещё раз.',
     WELCOME: 'ДОБРО ПОЖАЛОВАТЬ',
+    'I agree to send my birth date, time if known, and birthplace to our server to calculate my Natal Chart.':
+      'Я согласен отправить на сервер дату и место рождения, а также время, если оно известно, чтобы рассчитать натальную карту.',
+    'You can continue without this. If you change your birth details, updated details may be sent for a new calculation. You can withdraw permission in Settings at any time.':
+      'Можно продолжить без согласия. Если ты изменишь данные рождения, новые данные могут быть отправлены для повторного расчёта. Разрешение можно отозвать в любое время в настройках.',
     'Soul Compass gives you a short daily reflection and a simple idea to carry with you. You can also explore a birth chart and find a stone to reflect on. Don’t know your birth time? Leave it blank; some chart details will be left out.':
       'Soul Compass предлагает короткое размышление на день и простую идею, которую можно взять с собой. Здесь также можно изучить натальную карту и выбрать камень для размышления. Не знаешь время рождения? Оставь поле пустым — часть данных карты не будет показана.',
     'Where you live now is optional and separate from your birthplace. We use it only to match daily readings to your local date.':

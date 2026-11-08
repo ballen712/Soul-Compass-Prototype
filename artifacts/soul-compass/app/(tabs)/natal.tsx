@@ -10,6 +10,7 @@ import { EdgeSwipeBack } from '@/components/EdgeSwipeBack';
 import { TabEdgeSwipe } from '@/components/TabEdgeSwipe';
 import { TabScreenHeader } from '@/components/TabScreenHeader';
 import { CelestialHeader } from '@/components/CelestialHeader';
+import { NatalChartWheel } from '@/components/NatalChartWheel';
 import { useColors } from '@/hooks/useColors';
 import { screenTypography } from '@/constants/typography';
 import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
@@ -832,6 +833,19 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   return (
     <View style={{ gap: 18 }}>
       <Label c={c} icon="user" text="PERSONAL NATAL CHART" />
+      <Card c={c}>
+        <Text style={[styles.chartWheelLabel, { color: c.secondary }]}>
+          {t('PLANETS')}
+        </Text>
+        <NatalChartWheel
+          planets={data.planets}
+          palette={c}
+          translate={t}
+          locale={locale}
+          moonSignRange={data.moonSignRange}
+          timeKnown={hasKnownBirthMoment}
+        />
+      </Card>
       <Guide
         c={c}
         timeKnown={timeKnown}
@@ -1106,17 +1120,17 @@ function Guide({
     ['Retrograde', 'From Earth, a planet can sometimes look as if it is moving backward. It is only how it appears in the sky; in astrology it adds a symbolic detail, not a problem you need to fix.'],
   ];
   return (
-    <Card c={c}>
+    <Card c={c} compact>
       <Pressable
         testID="natal-guide-toggle"
         accessibilityRole="button"
         accessibilityLabel={t('How to read this')}
         accessibilityState={{ expanded: open }}
         onPress={onToggle}
-        style={styles.guideHead}
+        style={[styles.guideHead, open && styles.guideHeadOpen]}
       >
         <View testID="natal-guide-title" style={styles.guideTitleCenter}>
-          <Feather name="book-open" size={14} color={c.secondary} />
+          <Feather name="book-open" size={12} color={c.secondary} />
           <Text style={[styles.label, { color: c.secondary }]}>{t('HOW TO READ THIS')}</Text>
         </View>
         <View pointerEvents="none" style={styles.guideChevronWrap}>
@@ -1138,8 +1152,18 @@ function Guide({
     </Card>
   );
 }
-function Card({ c, children }: { c: Palette; children: React.ReactNode }) {
-  return <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>{children}</View>;
+function Card({ c, children, compact = false }: { c: Palette; children: React.ReactNode; compact?: boolean }) {
+  return (
+    <View
+      style={[
+        styles.card,
+        compact && styles.compactCard,
+        { backgroundColor: c.card, borderColor: c.border },
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 function Label({
   c,
@@ -1239,9 +1263,11 @@ const styles = StyleSheet.create({
   },
   page: { width: '100%', maxWidth: 480 },
   card: { borderRadius: 28, borderWidth: 1, paddingHorizontal: 22, paddingVertical: 20 },
+  compactCard: { borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8 },
   cardTitle: { fontFamily: 'Georgia', fontSize: 22, marginBottom: 8 },
   labelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 12 },
   label: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.5 },
+  chartWheelLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.5, marginBottom: 8, textAlign: 'center' },
   labelInfoButton: { alignItems: 'center', height: 32, justifyContent: 'center', width: 32 },
   body: { ...screenTypography.body, marginBottom: 8 },
   loadingRow: { alignItems: 'center', flexDirection: 'row', gap: 14, minHeight: 42 },
@@ -1264,10 +1290,10 @@ const styles = StyleSheet.create({
   guideHead: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    minHeight: 32,
+    minHeight: 44,
     position: 'relative',
   },
+  guideHeadOpen: { marginBottom: 10 },
   guideTitleCenter: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'center' },
   guideChevronWrap: {
     alignItems: 'flex-end',

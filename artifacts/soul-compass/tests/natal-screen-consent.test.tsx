@@ -28,6 +28,13 @@ vi.mock('@workspace/api-client-react', () => ({
 }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
+vi.mock('react-native-svg', () => ({
+  __esModule: true,
+  default: 'Svg',
+  Circle: 'SvgCircle',
+  Line: 'SvgLine',
+  Text: 'SvgText',
+}));
 vi.mock('expo-router', () => ({
   useRouter: () => ({ push: vi.fn(), navigate: vi.fn() }),
   useFocusEffect: (callback: () => void) => { state.focusCallback = callback; },
@@ -438,6 +445,15 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   const root = renderer!.root;
   await act(async () => { await findText(root, 'Agree')?.parent?.props.onPress(); });
 
+  const wheel = root.findByProps({ testID: 'natal-planet-wheel' });
+  expect(wheel.props.accessibilityRole).toBe('image');
+  expect(wheel.props.accessibilityLabel).toContain('Sun');
+  expect(wheel.props.accessibilityLabel).toContain('Moon');
+  expect(root.findByProps({ testID: 'natal-planet-glyph-sun' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
+
   await act(async () => { root.findByProps({ testID: 'natal-planet-sun' }).props.onPress(); });
   expect(findText(root, 'Sun in Aquarius · House 5')).toBeDefined();
   expect(findText(root, 'A hypothetical example')).toBeDefined();
@@ -517,11 +533,12 @@ test('Natal Chart guide starts closed, centers its title, and closes again on re
   expect(findText(root, 'Your birth chart is a map of where the planets were when you were born. Astrologers use it to talk about life themes. You do not need to know astrology: start with the parts that sound familiar and leave the rest.')).toBeUndefined();
   const guideToggle = root.findByProps({ testID: 'natal-guide-toggle' });
   expect(guideToggle.props.accessibilityState).toEqual({ expanded: false });
-  expect(guideToggle.props.style).toEqual(expect.objectContaining({
+  expect(guideToggle.props.style).toContainEqual(expect.objectContaining({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   }));
+  expect(guideToggle.props.style).toContainEqual(expect.objectContaining({ minHeight: 44 }));
   const guideTitle = root.findByProps({ testID: 'natal-guide-title' });
   expect(guideTitle.props.style).toEqual(expect.objectContaining({
     alignItems: 'center',
@@ -651,6 +668,8 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   expect(findText(root, 'ASCENDANT')).toBeUndefined();
   expect(findText(root, 'MIDHEAVEN')).toBeUndefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-planet-marker-moon' }).props.strokeDasharray).toBe('2 2');
+  expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   await openGuide(root);
   expect(root.findAllByType(Text).some((node) =>

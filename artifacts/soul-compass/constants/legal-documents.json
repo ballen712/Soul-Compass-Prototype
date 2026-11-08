@@ -1,0 +1,240 @@
+{
+  "updated": "8 November 2026",
+  "operator": {
+    "name": "Vadim Shelokhanov",
+    "role": "Individual developer and service operator, operating as Soul Compass",
+    "address": "1118 Budapest, Gombocz Zoltán utca 5A, Hungary",
+    "country": "Hungary",
+    "supportName": "Soul Compass Support",
+    "supportEmail": "soulcompass.support@gmail.com"
+  },
+  "pages": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "subtitle": "How Soul Compass handles information when you use the app.",
+      "sections": [
+        {
+          "title": "Who operates Soul Compass",
+          "paragraphs": [
+            "Soul Compass is a local-first self-discovery app for daily reflections, natal-chart exploration and crystal guidance. It is operated by Vadim Shelokhanov, an individual developer in Hungary. There is no registered company.",
+            "Postal address: 1118 Budapest, Gombocz Zoltán utca 5A, Hungary. Privacy and support contact: Soul Compass Support at soulcompass.support@gmail.com."
+          ]
+        },
+        {
+          "title": "Information stored on your device",
+          "paragraphs": [
+            "The mobile app does not require an account. It stores your profile and preferences in local app storage on your device. Soul Compass does not add application-layer encryption to this storage. Your operating-system backup may include app data, depending on the platform and your backup settings."
+          ],
+          "bullets": [
+            "Birth date, birth-time status and birthplace.",
+            "Current residence, if you add one.",
+            "App language, appearance, daily feeling and crystal preferences.",
+            "Your crystal collection and hidden stones.",
+            "Your chart permission choice and a locally saved natal chart."
+          ]
+        },
+        {
+          "title": "Daily readings and current planetary information",
+          "paragraphs": [
+            "Daily readings and crystal suggestions are calculated in the app using your saved birth information, current residence when provided, the local date and the feeling you selected. The app does not send your profile, collection, language or feeling to calculate these suggestions.",
+            "The app also requests a current-sky snapshot from the Soul Compass API. That request contains the current UTC date and time, not your birth details or saved profile."
+          ]
+        },
+        {
+          "title": "City search",
+          "paragraphs": [
+            "A city search happens only after you tap Search. The city words you enter go through the Soul Compass API to Geoapify, which returns matching places, coordinates and time zones. The app does not send your saved birth profile or device GPS for this search. Geoapify receives the server's normal connection information."
+          ]
+        },
+        {
+          "title": "Natal-chart calculation",
+          "paragraphs": [
+            "If you grant chart permission, a request to calculate a chart can send your birth date, whether your birth time is known (and the time you entered, if known), and the coordinates and time zone of your birthplace to the Soul Compass API. The request does not include your name, current residence, language, daily feeling or crystal collection.",
+            "The app checks for a matching chart saved on your device first. If no matching chart is available and permission is still enabled, it may request a calculation, including after birth details change. The app checks permission before sending, but the public API does not independently verify the app's saved consent. A request already sent cannot be undone by withdrawing permission. The returned chart is saved on your device; requests are not queued while you are offline."
+          ]
+        },
+        {
+          "title": "Server logs and service protection",
+          "paragraphs": [
+            "The Soul Compass API application log records the request method, path without query text and response status; it does not log request bodies. Replit may separately process connection and deployment information as part of hosting. Replit's published documentation states that published-app logs are retained for 30 days; the exact project log settings and applicable infrastructure records still need operator verification.",
+            "For city-search abuse and quota controls, the server temporarily uses the connection address in memory for a per-minute limit. It derives a daily keyed hash for persistent quota checks instead of storing the raw address in the quota table. Old daily hashes are pruned when a later city search is admitted; there is not yet a guaranteed maximum retention period if no later search occurs. A separate shared astrology counter stores only a total count for a time window, not a user or device identifier."
+          ]
+        },
+        {
+          "title": "Service providers and legacy account routes",
+          "paragraphs": [
+            "Replit hosts the app API and its operational PostgreSQL quota data. Geoapify provides city-search results. The app currently has no advertising, payment, analytics or crash-reporting SDK that was identified in the source and dependency review.",
+            "Replit's published documentation says its hosted deployments are primarily processed in the United States. This project's exact hosting region and transfer safeguards still need confirmation. Geoapify's exact processing locations and retention terms have not been verified.",
+            "The API also contains protected legacy Supabase account/profile routes, and Supabase configuration is present in the production environment. The current mobile interface has no sign-in or cloud-sync feature and does not call these routes. We have not inspected Supabase records, so we cannot confirm whether any existing cloud profiles exist or claim that no cloud-profile processing has ever occurred."
+          ]
+        },
+        {
+          "title": "Your choices, deletion and privacy requests",
+          "paragraphs": [
+            "You can withdraw chart permission and delete your local profile in Settings. Local deletion removes the app's saved profile and chart, then returns you to setup. It does not delete operating-system backups, Replit platform logs, Geoapify records or any legacy Supabase record.",
+            "Where data-protection law applies, you may be able to request access, correction, deletion or restriction, object to certain processing, request portability, withdraw consent, and complain to a supervisory authority. Contact soulcompass.support@gmail.com. The identity-check, response-time and request-handling procedure has not yet been finalized. Do not email birth details, chart data or unredacted screenshots.",
+            "If you are in Hungary, NAIH is identified as the relevant national data-protection authority in the supplied draft. Its current details and the correct authority for each user must be confirmed before publication."
+          ],
+          "bullets": [
+            "Withdraw chart permission in Settings; this stops future client requests but cannot recall one already sent.",
+            "Delete your local profile in Settings; this does not delete device backups or technical/provider records."
+          ]
+        },
+        {
+          "title": "Legal basis, age and international processing",
+          "paragraphs": [
+            "The legal basis for each processing activity, the roles of the service providers, international-transfer safeguards and the formal process for data-rights requests are still being assessed. No retention period is promised for provider or infrastructure records beyond what is confirmed above.",
+            "Soul Compass is intended for people aged 13 and older. The app does not currently verify a user's age. Users must meet any higher minimum age or parental-permission requirements that apply where they live. Whether a Data Protection Officer is required has not been determined."
+          ]
+        },
+        {
+          "title": "Items to confirm before publication",
+          "bullets": [
+            "Replit and Geoapify processing roles, agreements, exact regions, backups and retention settings.",
+            "Whether any legacy Supabase profile records exist and whether the protected routes should remain available.",
+            "A documented GDPR legal basis for each data flow, a rights-request procedure and any required processor agreements.",
+            "Age wording, the applicable supervisory-authority details and whether a Data Protection Officer is required.",
+            "Review by a qualified Hungarian/EU privacy professional and translations of the legal pages."
+          ]
+        }
+      ],
+      "actions": [
+        { "label": "Soul Compass Support", "icon": "mail", "href": "mailto:soulcompass.support@gmail.com?subject=Privacy%20question" },
+        { "label": "Terms of Service", "icon": "file-text", "route": "./terms" },
+        { "label": "Support", "icon": "help-circle", "route": "./support" }
+      ]
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "subtitle": "Draft terms for the initial, free Soul Compass release.",
+      "sections": [
+        {
+          "title": "About the service",
+          "paragraphs": [
+            "Soul Compass is a self-discovery app operated by Vadim Shelokhanov, an individual developer in Hungary. There is no registered company. Postal address: 1118 Budapest, Gombocz Zoltán utca 5A, Hungary. Contact: Soul Compass Support at soulcompass.support@gmail.com.",
+            "The current mobile experience includes daily reflections, natal-chart exploration and crystal information. It is designed to work without user registration or cloud profile synchronization."
+          ]
+        },
+        {
+          "title": "Using Soul Compass",
+          "paragraphs": [
+            "By using Soul Compass, you agree to these terms to the extent permitted by applicable law. If you do not agree, stop using the app. Nothing here limits mandatory consumer rights that apply to you.",
+            "Soul Compass is intended for people aged 13 and older. The app does not currently verify age. You must also meet any higher minimum age or parental-permission requirement that applies where you live."
+          ]
+        },
+        {
+          "title": "Informational content, not professional advice",
+          "paragraphs": [
+            "Astrology and crystal content is offered for information, personal reflection and exploration. Astrological interpretations are not established predictions of future events. Crystal descriptions do not establish scientifically proven effects.",
+            "Soul Compass does not provide medical, psychological, financial, legal or other professional advice. Do not use app content to diagnose, treat, cure or prevent a condition, or as the sole basis for important health, financial, legal or safety decisions."
+          ]
+        },
+        {
+          "title": "Free initial release",
+          "paragraphs": [
+            "The initial release is free. It includes no advertisements, paid subscriptions or in-app purchases. Future paid features or other business models would require appropriate notice and updates to applicable terms and store disclosures before they are offered."
+          ]
+        },
+        {
+          "title": "Responsible use",
+          "bullets": [
+            "Use the app lawfully and do not interfere with its operation or other users' access.",
+            "Do not attempt unauthorized access to servers, databases or protected endpoints, or bypass security and technical restrictions.",
+            "Do not abuse the API or use the app for unlawful purposes.",
+            "Do not copy or commercially exploit protected app materials without permission, except where applicable law allows it."
+          ]
+        },
+        {
+          "title": "Intellectual property",
+          "paragraphs": [
+            "The Soul Compass name, software, design and original content are owned by the operator or used under license, unless a material is identified as belonging to someone else. Third-party names, code, fonts, images and data remain subject to their own licenses. The complete rights review for all launch materials is still pending."
+          ]
+        },
+        {
+          "title": "Third-party services and privacy",
+          "paragraphs": [
+            "Some features rely on hosting, database or geocoding providers and may be affected by their availability or terms. Your use of the app is also described in the Privacy Policy. The current mobile interface has no account sign-in or cloud-sync feature; protected legacy API routes remain under review."
+          ]
+        },
+        {
+          "title": "Availability, changes and ending use",
+          "paragraphs": [
+            "We aim to keep Soul Compass available but cannot promise uninterrupted service. Features and content may change or be temporarily unavailable for maintenance, security or legal reasons.",
+            "You can stop using the app at any time. Deleting your local profile in Settings removes the app's local profile and saved chart; device backups and technical records held by service providers are not removed by that action."
+          ]
+        },
+        {
+          "title": "Liability and consumer rights",
+          "paragraphs": [
+            "To the extent permitted by applicable law, Soul Compass is provided for informational and reflective use without a guarantee of particular results. Nothing in these terms excludes or limits liability, remedies or consumer protections that cannot legally be excluded or limited."
+          ]
+        },
+        {
+          "title": "Applicable law and updates",
+          "paragraphs": [
+            "These terms are intended to operate under the laws of Hungary and the European Union where applicable, while preserving mandatory protections under the law that applies to you. The governing-law wording and any required consumer disclosures must be reviewed before publication.",
+            "When these terms or the Privacy Policy change, we plan to show a short What's New notice in the app before you continue. The current documents and their last-updated dates will be available in Settings > About. The in-app What's New notice is not implemented yet and must be tested before this commitment is treated as final."
+          ]
+        },
+        {
+          "title": "Contact",
+          "paragraphs": [
+            "For questions about these terms, contact Soul Compass Support at soulcompass.support@gmail.com."
+          ]
+        },
+        {
+          "title": "Items to confirm before publication",
+          "bullets": [
+            "Review by a qualified Hungarian/EU consumer-law professional, including age and governing-law wording.",
+            "Complete the rights review for app copy, crystal images, fonts, code and third-party data.",
+            "Publish a working Privacy Policy URL and implement the promised in-app What's New notice for material changes.",
+            "Confirm any mandatory operator, consumer, supervisory-authority or dispute-resolution disclosures."
+          ]
+        }
+      ],
+      "actions": [
+        { "label": "Privacy Policy", "icon": "file-text", "route": "./privacy" },
+        { "label": "Soul Compass Support", "icon": "mail", "href": "mailto:soulcompass.support@gmail.com?subject=Terms%20question" },
+        { "label": "Support", "icon": "help-circle", "route": "./support" }
+      ]
+    },
+    "support": {
+      "title": "Soul Compass Support",
+      "subtitle": "For app help, email Soul Compass Support without including private birth or chart details.",
+      "sections": [
+        {
+          "title": "How we can help",
+          "paragraphs": [
+            "Contact us about setup, language settings, city search, natal-chart calculations, crystal guidance, translation issues or ideas for improving the app."
+          ]
+        },
+        {
+          "title": "Report a technical problem safely",
+          "bullets": [
+            "Include your app version, phone model, iOS or Android version, the screen you were using and the steps that led to the problem.",
+            "Include the exact error text if there is one.",
+            "Before attaching a screenshot, hide your birth date, birth time, birthplace, current residence, chart and other private details.",
+            "Do not email passwords, payment information, birth details, chart data or an unredacted profile screenshot. They are not needed for ordinary technical support."
+          ]
+        },
+        {
+          "title": "Privacy and personal-data requests",
+          "paragraphs": [
+            "For questions about information handled by Soul Compass, email Soul Compass Support at soulcompass.support@gmail.com. Do not include sensitive birth or chart information in an ordinary email. The formal privacy-request verification and response process is still being prepared."
+          ]
+        },
+        {
+          "title": "About this page",
+          "paragraphs": [
+            "This support page and the current legal-page drafts are in English. Reviewed translations and a formal support response-time commitment are not yet available."
+          ]
+        }
+      ],
+      "actions": [
+        { "label": "Soul Compass Support", "icon": "mail", "href": "mailto:soulcompass.support@gmail.com?subject=Soul%20Compass%20support" },
+        { "label": "Privacy Policy", "icon": "file-text", "route": "./privacy" },
+        { "label": "Terms of Service", "icon": "file-text", "route": "./terms" }
+      ]
+    }
+  }
+}

@@ -38,7 +38,7 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (!loaded || error) return;
-    const isPublicInfoPage = pathname === '/privacy' || pathname === '/support';
+    const isPublicInfoPage = pathname === '/privacy' || pathname === '/terms' || pathname === '/support';
     if (!profile && pathname !== '/onboarding' && !isPublicInfoPage) router.replace('/onboarding');
     else if (profile && pathname === '/onboarding') router.replace('/(tabs)');
   }, [loaded, error, pathname, profile, router]);
@@ -58,6 +58,7 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="privacy" options={{ headerShown: false }} />
+      <Stack.Screen name="terms" options={{ headerShown: false }} />
       <Stack.Screen name="support" options={{ headerShown: false }} />
     </Stack>
     <FirstChartConsentPrompt />

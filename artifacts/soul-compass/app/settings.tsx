@@ -16,6 +16,7 @@ import { AppGuideCards } from '@/components/AppGuideContent';
 import { APP_LANGUAGE_LABELS, APP_LOCALES, formatAppText, useAppLocale, useAppText } from '@/localization';
 import { useColors } from '@/hooks/useColors';
 import { getLocalizedCrystalCopy } from '@/localization/crystal-copy';
+import legalContent from '@/constants/legal-documents.json';
 
 const APP_VERSION = '1.0.0';
 const slugOf = (name: string) =>
@@ -455,6 +456,26 @@ export default function SettingsScreen() {
               <Section title="About Soul Compass" description={APP_GUIDE_INTRO} />
               <Section title="Four ways to explore">
                 <AppGuideCards variant="settings" />
+              </Section>
+              <Section
+                title="Legal documents"
+                description={formatAppText('Updated: {date}', locale, { date: legalContent.updated })}
+              >
+                {([
+                  { label: 'Privacy Policy', route: './privacy' as const, testID: 'settings-privacy-policy' },
+                  { label: 'Terms of Service', route: './terms' as const, testID: 'settings-terms-of-service' },
+                  { label: 'Contact support', route: './support' as const, testID: 'settings-support-page' },
+                ]).map((link) => (
+                  <Pressable
+                    key={link.route}
+                    testID={link.testID}
+                    accessibilityRole="link"
+                    onPress={() => router.push(link.route)}
+                    style={styles.secondaryButton}
+                  >
+                    <Text style={styles.secondaryText}>{t(link.label)}</Text>
+                  </Pressable>
+                ))}
               </Section>
               <Section title={PRODUCT.supportName} description={PRODUCT.supportEmail}>
                 <Text style={styles.body}>{t('Please do not email us your birth details or private profile information. The app never attaches them.')}</Text>

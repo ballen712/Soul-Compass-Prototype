@@ -8,10 +8,10 @@ import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { PRODUCT } from '@/constants/product';
 
-type InfoAction = {
+export type InfoAction = {
   label: string;
   icon: 'mail' | 'file-text' | 'help-circle';
-  route?: '/privacy' | '/support';
+  route?: './privacy' | './terms' | './support';
   href?: string;
 };
 
@@ -24,11 +24,12 @@ export type InfoSection = {
 type Props = {
   title: string;
   subtitle: string;
+  updated: string;
   sections: InfoSection[];
   actions: InfoAction[];
 };
 
-export function PublicInfoPage({ title, subtitle, sections, actions }: Props) {
+export function PublicInfoPage({ title, subtitle, updated, sections, actions }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -76,13 +77,14 @@ export function PublicInfoPage({ title, subtitle, sections, actions }: Props) {
             <View style={styles.draftCopy}>
               <Text style={styles.draftTitle}>WORKING DRAFT — NOT FOR PUBLICATION</Text>
               <Text style={styles.draftText}>
-                This English preview is not a final legal document. Do not rely on it or submit it to an app store until the open facts and legal review are complete.
+                This English draft is not legal advice or a final document. Do not rely on it or submit it to an app store until the listed facts and legal review are complete.
               </Text>
             </View>
           </View>
 
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={styles.updated}>Last updated: {updated}</Text>
 
           {sections.map((section) => (
             <View key={section.title} style={styles.section}>
@@ -118,9 +120,17 @@ export function PublicInfoPage({ title, subtitle, sections, actions }: Props) {
             ))}
           </View>
 
-          <Text style={styles.footer}>
-            {PRODUCT.supportName} · {PRODUCT.supportEmail}
-          </Text>
+          <View style={styles.footer}>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Email ${PRODUCT.supportName}`}
+              onPress={() => void Linking.openURL(`mailto:${PRODUCT.supportEmail}?subject=Soul%20Compass%20support`)}
+            >
+              <Text style={styles.supportLink}>{PRODUCT.supportName}</Text>
+            </Pressable>
+            <Text style={styles.footerSeparator}>·</Text>
+            <Text style={styles.footerEmail}>{PRODUCT.supportEmail}</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -184,6 +194,13 @@ function makeStyles(palette: ReturnType<typeof useColors>['cosmos']) {
       lineHeight: 24,
       marginBottom: 22,
     },
+    updated: {
+      color: palette.mutedForeground,
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      marginTop: -14,
+      marginBottom: 22,
+    },
     section: {
       backgroundColor: palette.card,
       borderColor: palette.border,
@@ -234,12 +251,28 @@ function makeStyles(palette: ReturnType<typeof useColors>['cosmos']) {
       fontSize: 14,
     },
     footer: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      justifyContent: 'center',
+      marginTop: 22,
+    },
+    supportLink: {
+      color: palette.secondary,
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 12,
+      textDecorationLine: 'underline',
+    },
+    footerSeparator: {
       color: palette.mutedForeground,
       fontFamily: 'Inter_400Regular',
       fontSize: 12,
-      lineHeight: 18,
-      marginTop: 22,
-      textAlign: 'center',
+    },
+    footerEmail: {
+      color: palette.mutedForeground,
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
     },
   });
 }

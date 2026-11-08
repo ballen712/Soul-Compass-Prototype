@@ -246,27 +246,6 @@ function stableScore(value: string): number {
   return (hash >>> 0) / 0xffffffff;
 }
 
-const aspectWording: Record<string, string> = {
-  conjunction: 'come together around a shared area',
-  sextile: 'open a small possibility',
-  square: 'create a point that calls for care',
-  trine: 'flow well together',
-  opposition: 'put two priorities in conversation',
-};
-
-const planetPlain: Record<string, string> = {
-  Sun: 'self-expression and vitality',
-  Moon: 'feelings and everyday needs',
-  Mercury: 'thoughts and conversation',
-  Venus: 'relationships and personal values',
-  Mars: 'drive and taking action',
-  Jupiter: 'growth and new possibilities',
-  Saturn: 'responsibility and boundaries',
-  Uranus: 'change and independence',
-  Neptune: 'imagination and sensitivity',
-  Pluto: 'deep change and renewal',
-};
-
 const plainTheme: Record<string, string> = {
   energy: 'energy', initiative: 'taking a first step', confidence: 'trust in your choices',
   courage: 'bravery', direction: 'clear priorities', rest: 'rest', reflection: 'reflection',
@@ -493,21 +472,12 @@ function rank(
             themes: labelThemes(feelingThemes, translate),
           })
         : null;
-      const chartCopy = natalLink
-        ? astrology?.preciseBirthMoment
-          ? fillCopy(translate('Today’s sky connects {transitBody} ({transitMeaning}) with {natalBody} ({natalMeaning}) in your birth chart, bringing {themes} into focus.'), {
-            transitBody: translate(natalLink.aspect.transitBody),
-            transitMeaning: translate(planetPlain[natalLink.aspect.transitBody] ?? ''),
-            natalBody: translate(natalLink.aspect.natalBody),
-            natalMeaning: translate(planetPlain[natalLink.aspect.natalBody] ?? ''),
-            themes: labelThemes(chartThemes, translate),
-          })
-          : fillCopy(translate('Today’s sky connects {transitBody} with {natalBody} in your chart, bringing {themes} into focus.'), {
-            transitBody: translate(natalLink.aspect.transitBody),
-            natalBody: translate(natalLink.aspect.natalBody),
-            themes: labelThemes(chartThemes, translate),
-          })
-        : null;
+       const chartCopy = natalLink
+         ? fillCopy(
+           translate('A planetary connection today brings {themes} from your birth chart into focus.'),
+           { themes: labelThemes(chartThemes, translate) },
+         )
+         : null;
       const intentionReason = intentionCopy
         ? `${fillCopy(translate('{stone} shares themes of {meaning}.'), {
           stone: stoneName,

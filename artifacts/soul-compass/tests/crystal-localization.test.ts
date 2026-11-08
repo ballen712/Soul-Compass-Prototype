@@ -35,6 +35,8 @@ test('all 93 catalog stones have complete translated names and descriptions in e
 });
 
 test('every Crystal screen label and dynamic copy template has a translation in all six languages', () => {
+  const planetConnectionCopy =
+    'A planetary connection today brings {themes} from your birth chart into focus.';
   for (const locale of translatedLocales) {
     const strings = crystalUiTranslations[locale];
     expect(Object.keys(strings).length).toBeGreaterThanOrEqual(222);
@@ -45,6 +47,7 @@ test('every Crystal screen label and dynamic copy template has a translation in 
       expect(translatedTokens.sort(), `${locale}/${source} placeholders`).toEqual(sourceTokens.sort());
       expect(translateText(source, locale), `${locale}/${source} lookup`).toBe(translation);
     }
+    expect(translateText(planetConnectionCopy, locale)).not.toBe(planetConnectionCopy);
     expect(translateText('Search stones or themes', locale)).not.toBe('Search stones or themes');
     expect(translateText('No clear match today', locale)).not.toBe('No clear match today');
   }

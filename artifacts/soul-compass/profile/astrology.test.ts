@@ -170,7 +170,7 @@ test('intentions change crystal ranking without requiring a collection', () => {
   assert.notEqual(focus?.crystal.name, change?.crystal.name);
   assert.match(focus!.reason, /today|theme/i);
   assert.doesNotMatch(focus!.reason, /calculated|natal|aspect|ephemeris/i);
-  assert.match(focus!.reason, /birth chart|Today’s sky connects/i);
+   assert.match(focus!.reason, /A planetary connection today brings .+ from your birth chart into focus\./i);
   assert.match(focus!.reason, /can be a reminder to/i);
   assert.doesNotMatch(focus!.reason, /symbolic prompt|not a guaranteed effect/i);
   assert.notEqual(focus!.reason, change!.reason);

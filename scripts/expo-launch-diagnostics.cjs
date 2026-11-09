@@ -143,6 +143,14 @@ function main() {
 
   const cwd = process.cwd();
   output('working directory', cwd);
+  output(
+    'original install invocation directory (INIT_CWD)',
+    process.env.INIT_CWD || 'unavailable',
+  );
+  output(
+    'package-manager user agent (npm_config_user_agent)',
+    process.env.npm_config_user_agent || 'unavailable',
+  );
   output('pnpm version', run('pnpm', ['--version'], cwd) || 'unavailable');
   output('Node version', run('node', ['--version'], cwd) || 'unavailable');
   output('Git HEAD', run('git', ['rev-parse', 'HEAD'], cwd) || 'unavailable');

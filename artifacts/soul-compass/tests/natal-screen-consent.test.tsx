@@ -87,6 +87,9 @@ vi.mock('@/hooks/useColors', () => ({
       mutedForeground: '#A8B0BC',
       border: '#354258',
       divider: '#536074',
+      aspectTension: '#E48E83',
+      aspectFlow: '#91B3CC',
+      aspectConjunction: '#D9C49B',
     },
   }),
 }));
@@ -450,8 +453,10 @@ test('planet, angle and aspect taps use chart placements and the centered explan
 
   const wheel = root.findByProps({ testID: 'natal-planet-wheel' });
   expect(wheel.props.accessibilityRole).toBe('image');
-  expect(wheel.props.accessibilityLabel).toContain('Sun');
-  expect(wheel.props.accessibilityLabel).toContain('Moon');
+  expect(wheel.props.accessible).toBe(false);
+  const wheelSummary = root.findByProps({ testID: 'natal-planet-wheel-summary' });
+  expect(wheelSummary.props.accessibilityLabel).toContain('Sun');
+  expect(wheelSummary.props.accessibilityLabel).toContain('Moon');
   expect(root.findByProps({ testID: 'natal-planet-glyph-sun' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-name-sun' }).props.children.trim()).toBe('Sun');
@@ -732,6 +737,9 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
           foreground: '#F4F0E7',
           secondary: '#D9C49B',
           mutedForeground: '#AAB5C5',
+          aspectTension: '#E48E83',
+          aspectFlow: '#91B3CC',
+          aspectConjunction: '#D9C49B',
         }}
         translate={(copy) => copy}
         locale="en"
@@ -850,6 +858,9 @@ test.each([0, 90, 180, 270])(
             foreground: '#F4F0E7',
             secondary: '#D9C49B',
             mutedForeground: '#AAB5C5',
+          aspectTension: '#E48E83',
+          aspectFlow: '#91B3CC',
+          aspectConjunction: '#D9C49B',
           }}
           translate={(copy) => copy}
           locale="en"
@@ -901,6 +912,116 @@ test.each([0, 90, 180, 270])(
     }
   },
 );
+
+test('wheel aspect controls, selection details, and highlighted aspects use chart data', async () => {
+  const planets = [
+    { planet: 'Sun', sign: 'Aquarius', degreeInSign: 12.5, longitude: 312.5, latitude: 0, speedDegreesPerDay: 1, retrograde: false },
+    { planet: 'Moon', sign: 'Pisces', degreeInSign: 12, longitude: 342, latitude: 1, speedDegreesPerDay: 13, retrograde: false },
+    { planet: 'Mercury', sign: 'Taurus', degreeInSign: 20, longitude: 50, latitude: 0, speedDegreesPerDay: 1, retrograde: false },
+    { planet: 'Mars', sign: 'Gemini', degreeInSign: 20, longitude: 80, latitude: 0, speedDegreesPerDay: 0.5, retrograde: false },
+  ] as unknown as NatalChartResponse['planets'];
+  const aspects = [
+    { first: 'Sun', second: 'Mercury', type: 'conjunction', orb: 0.5, exact: true, applying: null, strength: 0.95 },
+    { first: 'Sun', second: 'Moon', type: 'trine', orb: 1.4, exact: false, applying: true, strength: 0.85 },
+    { first: 'Mercury', second: 'Mars', type: 'square', orb: 3.2, exact: false, applying: false, strength: 0.35 },
+  ] as unknown as NatalChartResponse['aspects'];
+
+  await act(async () => {
+    renderer = create(
+      <NatalChartWheel
+        planets={planets}
+        palette={{
+          card: '#192A42',
+          border: '#304158',
+          foreground: '#F4F0E7',
+          secondary: '#D9C49B',
+          mutedForeground: '#AAB5C5',
+          aspectTension: '#E48E83',
+          aspectFlow: '#91B3CC',
+          aspectConjunction: '#D9C49B',
+        }}
+        translate={(copy) => copy}
+        locale="en"
+        moonSignRange={[]}
+        timeKnown
+        majorAspects={aspects}
+        houseByPlanet={new Map([['sun', 5]])}
+        formatText={(source, values) => Object.entries(values).reduce(
+          (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
+          source,
+        )}
+      />,
+    );
+  });
+
+  const root = renderer!.root;
+  expect(root.findByProps({ testID: 'natal-aspect-line-conjunction-sun-mercury' }).props.stroke).toBe('#D9C49B');
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' }).props.stroke).toBe('#91B3CC');
+  expect(root.findByProps({ testID: 'natal-aspect-line-square-mercury-mars' }).props.stroke).toBe('#E48E83');
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-planet-hit-area-sun' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-planet-detail-sun' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-planet-detail-position' }).props.children).toBe('12° 30′ Aquarius');
+  expect(findText(root, 'House 5')).toBeDefined();
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('Moon · trine · orb 1.4°'),
+  )).toBe(true);
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' }).props.opacity).toBe(0.94);
+  expect(root.findByProps({ testID: 'natal-aspect-line-square-mercury-mars' }).props.opacity).toBe(0.07);
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-aspect-toggle' }).props.onPress();
+  });
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-aspect-line-'),
+  )).toHaveLength(0);
+  await act(async () => {
+    root.findByProps({ testID: 'natal-planet-detail-close' }).props.onPress();
+  });
+  expect(root.findAllByProps({ testID: 'natal-planet-detail-sun' })).toHaveLength(0);
+});
+
+test('unknown-time planet details disclose the noon reference and omit house placement', async () => {
+  const planets = [
+    { planet: 'Moon', sign: 'Aquarius', degreeInSign: 28, longitude: 328, latitude: 1, speedDegreesPerDay: 13, retrograde: false },
+  ] as unknown as NatalChartResponse['planets'];
+
+  await act(async () => {
+    renderer = create(
+      <NatalChartWheel
+        planets={planets}
+        palette={{
+          card: '#192A42',
+          border: '#304158',
+          foreground: '#F4F0E7',
+          secondary: '#D9C49B',
+          mutedForeground: '#AAB5C5',
+          aspectTension: '#E48E83',
+          aspectFlow: '#91B3CC',
+          aspectConjunction: '#D9C49B',
+        }}
+        translate={(copy) => copy}
+        locale="en"
+        moonSignRange={['Aquarius', 'Pisces']}
+        timeKnown={false}
+        majorAspects={[]}
+      />,
+    );
+  });
+
+  const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'natal-planet-hit-area-moon' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-planet-detail-position' }).props.children).toBe('Aquarius or Pisces');
+  expect(root.findAllByProps({ testID: 'natal-planet-detail-aspect-0' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-planet-detail-sun' })).toHaveLength(0);
+  expect(root.findAllByType(Text).some((node) =>
+    String(node.props.children).includes('All placements and aspects represent the reference instant'),
+  )).toBe(true);
+});
 
 const supportedTranslationLocales: Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];
 

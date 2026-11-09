@@ -34,6 +34,9 @@ const colors = {
       star: 'rgba(111, 103, 86, 0.58)',
       constellation: 'rgba(138, 120, 89, 0.27)',
       constellationSecondary: 'rgba(112, 118, 122, 0.18)',
+      aspectTension: '#A1443C',
+      aspectFlow: '#55758A',
+      aspectConjunction: '#8B7143',
       scrim: 'rgba(41, 42, 38, 0.32)',
     },
     crystals: {
@@ -92,6 +95,9 @@ const colors = {
       star: 'rgba(244, 240, 231, 0.72)',
       constellation: 'rgba(217, 196, 155, 0.32)',
       constellationSecondary: 'rgba(147, 172, 205, 0.22)',
+      aspectTension: '#E48E83',
+      aspectFlow: '#91B3CC',
+      aspectConjunction: '#D9C49B',
       scrim: 'rgba(0, 0, 0, 0.62)',
     },
     crystals: {

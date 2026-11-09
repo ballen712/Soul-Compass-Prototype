@@ -1,6 +1,7 @@
+import { Feather } from '@expo/vector-icons';
 import type { NatalChartResponse } from '@workspace/api-client-react';
-import React, { useMemo } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, TSpan } from 'react-native-svg';
 
 type PlanetPosition = NatalChartResponse['planets'][number];
@@ -18,11 +19,18 @@ type Palette = {
   foreground: string;
   secondary: string;
   mutedForeground: string;
+  aspectTension: string;
+  aspectFlow: string;
+  aspectConjunction: string;
 };
 
 const SIGN_GLYPHS = [
   '♈', '♉', '♊', '♋', '♌', '♍',
   '♎', '♏', '♐', '♑', '♒', '♓',
+] as const;
+const SIGN_NAMES = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
 ] as const;
 
 const PLANET_GLYPHS: Record<string, string> = {
@@ -45,6 +53,14 @@ const ASPECT_DASHES: Record<string, string | undefined> = {
   trine: undefined,
   opposition: '5 3',
 };
+const SUPPORTED_ASPECTS = new Set(Object.keys(ASPECT_DASHES));
+
+function aspectColor(type: string, palette: Palette) {
+  const normalized = type.toLowerCase();
+  if (normalized === 'conjunction') return palette.aspectConjunction;
+  if (normalized === 'trine' || normalized === 'sextile') return palette.aspectFlow;
+  return palette.aspectTension;
+}
 
 function normalizedPlanetName(value: string) {
   return value ? `${value[0].toUpperCase()}${value.slice(1).toLowerCase()}` : value;
@@ -60,6 +76,15 @@ function polarPoint(longitude: number, radius: number, center: number) {
 
 function normalizeDegrees(value: number) {
   return ((value % 360) + 360) % 360;
+}
+
+function formatPlanetPosition(longitude: number, locale: string, translate: (source: string) => string) {
+  const totalArcMinutes = Math.round(normalizeDegrees(longitude) * 60) % (360 * 60);
+  const signIndex = Math.floor(totalArcMinutes / (30 * 60));
+  const withinSignMinutes = totalArcMinutes % (30 * 60);
+  const degrees = Math.floor(withinSignMinutes / 60);
+  const minutes = withinSignMinutes % 60;
+  return `${degrees.toLocaleString(locale, { minimumIntegerDigits: 2, useGrouping: false })}° ${String(minutes).padStart(2, '0')}′ ${translate(SIGN_NAMES[signIndex])}`;
 }
 
 function layoutPlanetLabels(
@@ -182,6 +207,8 @@ export function NatalChartWheel({
   moonSignRange,
   timeKnown,
   majorAspects,
+  houseByPlanet,
+  formatText,
 }: {
   planets: PlanetPosition[];
   palette: Palette;
@@ -190,7 +217,11 @@ export function NatalChartWheel({
   moonSignRange: string[];
   timeKnown: boolean;
   majorAspects: Aspect[];
+  houseByPlanet?: Map<string, number>;
+  formatText?: (source: string, values: Record<string, string | number>) => string;
 }) {
+  const [aspectsVisible, setAspectsVisible] = useState(true);
+  const [selectedPlanetName, setSelectedPlanetName] = useState<string | null>(null);
   const { width } = useWindowDimensions();
   const baseSize = Math.min(380, Math.max(220, width - 64));
   const size = Math.min(450, width - 12, Math.round(baseSize * 1.18));
@@ -221,6 +252,7 @@ export function NatalChartWheel({
   );
   const aspectLines = useMemo(() => {
     return majorAspects.flatMap((aspect, index) => {
+      if (!SUPPORTED_ASPECTS.has(aspect.type.toLowerCase())) return [];
       const first = markersByPlanet.get(aspect.first.toLowerCase());
       const second = markersByPlanet.get(aspect.second.toLowerCase());
       if (!first || !second) return [];
@@ -237,27 +269,66 @@ export function NatalChartWheel({
 
   const accessiblePositions = planets.map((planet) => {
     const name = normalizedPlanetName(planet.planet);
-    const sign = normalizedPlanetName(planet.sign);
-    const degree = planet.degreeInSign.toLocaleString(locale, {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
     const isUncertainMoon = !timeKnown && name === 'Moon';
-    const position = `${translate(name)} ${translate('in')} ${translate(sign)} ${degree}°`;
+    const position = `${translate(name)} ${formatPlanetPosition(planet.longitude, locale, translate)}`;
     const possibleSigns = isUncertainMoon && moonSignRange.length > 1
       ? ` (${moonSignRange.map((possibleSign) => translate(normalizedPlanetName(possibleSign))).join(', ')})`
       : '';
     return isUncertainMoon ? `${position}?${possibleSigns}` : position;
   }).join(', ');
+  const selectedPlanet = selectedPlanetName
+    ? planets.find((planet) => planet.planet.toLowerCase() === selectedPlanetName)
+    : undefined;
+  const selectedPlanetIsUncertainMoon = Boolean(
+    selectedPlanet && !timeKnown && selectedPlanet.planet.toLowerCase() === 'moon',
+  );
+  const selectedPlanetAspects = selectedPlanet
+    ? majorAspects
+      .filter((aspect) => SUPPORTED_ASPECTS.has(aspect.type.toLowerCase())
+        && (aspect.first.toLowerCase() === selectedPlanetName
+          || aspect.second.toLowerCase() === selectedPlanetName))
+      .slice()
+      .sort((first, second) => first.orb - second.orb)
+    : [];
+  const format = formatText ?? ((source: string, values: Record<string, string | number>) =>
+    Object.entries(values).reduce(
+      (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
+      translate(source),
+    ));
+  const selectPlanet = (planet: PlanetPosition) => {
+    const key = planet.planet.toLowerCase();
+    setSelectedPlanetName((current) => current === key ? null : key);
+  };
 
   return (
     <View
       testID="natal-planet-wheel"
-      accessible
+      accessible={false}
       accessibilityRole="image"
-      accessibilityLabel={`${translate('PLANETS')}: ${accessiblePositions}`}
       style={styles.container}
     >
+      <Text
+        testID="natal-planet-wheel-summary"
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`${translate('PLANETS')}: ${accessiblePositions}`}
+        style={styles.accessibilitySummary}
+      >
+        {`${translate('PLANETS')}: ${accessiblePositions}`}
+      </Text>
+      <Pressable
+        testID="natal-aspect-toggle"
+        accessibilityRole="switch"
+        accessibilityLabel={translate(aspectsVisible ? 'Hide aspect lines' : 'Show aspect lines')}
+        accessibilityState={{ checked: aspectsVisible }}
+        onPress={() => setAspectsVisible((visible) => !visible)}
+        style={({ pressed }) => [styles.aspectToggle, { opacity: pressed ? 0.68 : 1 }]}
+      >
+        <Feather name={aspectsVisible ? 'eye' : 'eye-off'} size={14} color={palette.secondary} />
+        <Text style={[styles.aspectToggleLabel, { color: palette.secondary }]}>
+          {translate('Aspects')}
+        </Text>
+      </Pressable>
       <Svg
         testID="natal-chart-wheel-svg"
         width={size}
@@ -316,17 +387,21 @@ export function NatalChartWheel({
               y={point.y + 5}
               textAnchor="middle"
               fontFamily="Georgia"
-              fontSize={(baseSize < 260 ? 12 : 14) * scale}
+              fontSize={(baseSize < 260 ? 13 : 16) * scale}
               fill={palette.secondary}
             >
               {`${glyph}\uFE0E`}
             </SvgText>
           );
         })}
-        {aspectLines.map(({ aspect, index, first, second, uncertainMoon }) => {
+        {aspectsVisible ? aspectLines.map(({ aspect, index, first, second, uncertainMoon }) => {
           const strength = Number.isFinite(aspect.strength)
             ? Math.max(0, Math.min(1, aspect.strength))
             : 0.5;
+          const selected = selectedPlanetName !== null
+            && (aspect.first.toLowerCase() === selectedPlanetName
+              || aspect.second.toLowerCase() === selectedPlanetName);
+          const dimmed = selectedPlanetName !== null && !selected;
           return (
             <Line
               key={`${aspect.type}-${aspect.first}-${aspect.second}-${index}`}
@@ -335,21 +410,47 @@ export function NatalChartWheel({
               y1={first.y}
               x2={second.x}
               y2={second.y}
-              stroke={palette.secondary}
-              strokeWidth={(0.8 + strength * 0.25) * scale}
+              stroke={aspectColor(aspect.type, palette)}
+              strokeWidth={(selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale}
               strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
               strokeLinecap="round"
-              opacity={uncertainMoon ? 0.2 : 0.32 + strength * 0.2}
+              opacity={uncertainMoon
+                ? selected ? 0.5 : 0.18
+                : dimmed ? 0.07 : selected ? 0.94 : 0.28 + strength * 0.38}
             />
           );
-        })}
+        }) : null}
         {markers.map(({ planet, x, y }) => {
           const name = normalizedPlanetName(planet.planet);
           const isUncertainMoon = !timeKnown && name === 'Moon';
           const label = labelsByPlanet.get(name.toLowerCase());
-          if (!label) return null;
+          const selected = selectedPlanetName === name.toLowerCase();
+          const position = formatPlanetPosition(planet.longitude, locale, translate);
+          const summary = `${translate(name)} · ${position}`;
           return (
             <React.Fragment key={planet.planet}>
+              {selected ? (
+                <Circle
+                  testID={`natal-planet-selection-${name.toLowerCase()}`}
+                  cx={x}
+                  cy={y}
+                  r={9 * scale}
+                  fill="none"
+                  stroke={palette.secondary}
+                  strokeWidth={1.2 * scale}
+                  opacity={0.9}
+                />
+              ) : null}
+              <Circle
+                testID={`natal-planet-hit-area-${name.toLowerCase()}`}
+                cx={x}
+                cy={y}
+                r={12 * scale}
+                fill="transparent"
+                accessible
+                accessibilityLabel={summary}
+                onPress={() => selectPlanet(planet)}
+              />
               <Circle
                 testID={`natal-planet-marker-${name.toLowerCase()}`}
                 cx={x}
@@ -359,38 +460,128 @@ export function NatalChartWheel({
                 stroke={isUncertainMoon ? palette.mutedForeground : palette.secondary}
                 strokeWidth={1.2 * scale}
                 strokeDasharray={isUncertainMoon ? '2 2' : undefined}
+                accessible
+                accessibilityLabel={summary}
+                onPress={() => selectPlanet(planet)}
               />
-              <SvgText
-                testID={`natal-planet-label-${name.toLowerCase()}`}
-                x={label.x}
-                y={label.y + 2.5 * scale}
-                textAnchor="middle"
-                fontFamily="Inter"
-                fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
-              >
-                <TSpan
-                  testID={`natal-planet-glyph-${name.toLowerCase()}`}
-                  fontFamily="Georgia"
-                  fill={palette.secondary}
-                >
-                  {`${PLANET_GLYPHS[name] ?? name.slice(0, 1)}\uFE0E`}
-                </TSpan>
-                <TSpan
-                  testID={`natal-planet-name-${name.toLowerCase()}`}
+              {label ? (
+                <SvgText
+                  testID={`natal-planet-label-${name.toLowerCase()}`}
+                  x={label.x}
+                  y={label.y + 2.5 * scale}
+                  textAnchor="middle"
                   fontFamily="Inter"
-                  fontWeight="600"
-                  fill={palette.foreground}
+                  fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
+                  accessible
+                  accessibilityLabel={summary}
+                  onPress={() => selectPlanet(planet)}
                 >
-                  {` ${label.label}`}
-                </TSpan>
-                {isUncertainMoon ? (
-                  <TSpan fill={palette.mutedForeground}>?</TSpan>
-                ) : null}
-              </SvgText>
+                  <TSpan
+                    testID={`natal-planet-glyph-${name.toLowerCase()}`}
+                    fontFamily="Georgia"
+                    fill={palette.secondary}
+                  >
+                    {`${PLANET_GLYPHS[name] ?? name.slice(0, 1)}\uFE0E`}
+                  </TSpan>
+                  <TSpan
+                    testID={`natal-planet-name-${name.toLowerCase()}`}
+                    fontFamily="Inter"
+                    fontWeight="600"
+                    fill={selected ? palette.secondary : palette.foreground}
+                  >
+                    {` ${label.label}`}
+                  </TSpan>
+                  {isUncertainMoon ? (
+                    <TSpan fill={palette.mutedForeground}>?</TSpan>
+                  ) : null}
+                </SvgText>
+              ) : null}
             </React.Fragment>
           );
         })}
       </Svg>
+      {selectedPlanet ? (
+        <View
+          testID={`natal-planet-detail-${selectedPlanet.planet.toLowerCase()}`}
+          accessibilityLiveRegion="polite"
+          style={[styles.detailPanel, { borderColor: palette.border }]}
+        >
+          <View style={styles.detailHeader}>
+            <View style={styles.detailTitleRow}>
+              <Text style={[styles.detailGlyph, { color: palette.secondary }]}>
+                {`${PLANET_GLYPHS[normalizedPlanetName(selectedPlanet.planet)] ?? ''}\uFE0E`}
+              </Text>
+              <Text style={[styles.detailTitle, { color: palette.foreground }]}>
+                {translate(normalizedPlanetName(selectedPlanet.planet))}
+              </Text>
+            </View>
+            <Pressable
+              testID="natal-planet-detail-close"
+              accessibilityRole="button"
+              accessibilityLabel={translate('Close planet details')}
+              hitSlop={8}
+              onPress={() => setSelectedPlanetName(null)}
+              style={({ pressed }) => [styles.detailClose, { opacity: pressed ? 0.65 : 1 }]}
+            >
+              <Feather name="x" size={17} color={palette.secondary} />
+            </Pressable>
+          </View>
+          <View style={styles.detailPositionRow}>
+            <Text style={[styles.detailMeta, { color: palette.mutedForeground }]}>
+              {translate('Position')}
+            </Text>
+            <Text
+              testID="natal-planet-detail-position"
+              style={[styles.detailPosition, { color: palette.foreground }]}
+            >
+              {selectedPlanetIsUncertainMoon && moonSignRange.length > 1
+                ? moonSignRange.map((sign) => translate(normalizedPlanetName(sign))).join(` ${translate('or')} `)
+                : formatPlanetPosition(selectedPlanet.longitude, locale, translate)}
+            </Text>
+          </View>
+          {!timeKnown ? (
+            <Text style={[styles.referenceNote, { color: palette.mutedForeground }]}>
+              {translate('All placements and aspects represent the reference instant; their exact degrees and motion are time-dependent.')}
+            </Text>
+          ) : null}
+          {houseByPlanet?.has(selectedPlanet.planet.toLowerCase()) ? (
+            <Text style={[styles.detailHouse, { color: palette.mutedForeground }]}>
+              {format('House {number}', {
+                number: houseByPlanet.get(selectedPlanet.planet.toLowerCase())!,
+              })}
+            </Text>
+          ) : null}
+          <Text style={[styles.detailSection, { color: palette.secondary }]}>
+            {translate('Aspects')}
+          </Text>
+          {selectedPlanetAspects.length ? selectedPlanetAspects.map((aspect, index) => {
+            const otherPlanet = aspect.first.toLowerCase() === selectedPlanetName
+              ? aspect.second
+              : aspect.first;
+            const otherName = normalizedPlanetName(otherPlanet);
+            const orb = aspect.orb.toLocaleString(locale, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            });
+            return (
+              <View
+                key={`${aspect.first}-${aspect.type}-${aspect.second}-${index}`}
+                testID={`natal-planet-detail-aspect-${index}`}
+                style={styles.detailAspectRow}
+              >
+                <View style={[styles.detailAspectDot, { backgroundColor: aspectColor(aspect.type, palette) }]} />
+                <Text style={[styles.detailAspectText, { color: palette.foreground }]}>
+                  {`${translate(otherName)} · ${translate(aspect.type.toLowerCase())} · ${translate('orb')} ${orb}°`}
+                </Text>
+              </View>
+            );
+          }) : (
+            <Text style={[styles.detailEmpty, { color: palette.mutedForeground }]}>
+              {translate('No major aspects for this planet.')}
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -400,5 +591,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+  },
+  accessibilitySummary: {
+    height: 1,
+    width: 1,
+    opacity: 0.01,
+    position: 'absolute',
+  },
+  aspectToggle: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 30,
+    paddingHorizontal: 6,
+    marginBottom: 2,
+  },
+  aspectToggleLabel: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailPanel: {
+    alignSelf: 'stretch',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 8,
+    paddingTop: 12,
+    gap: 8,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  detailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailGlyph: {
+    fontFamily: 'Georgia',
+    fontSize: 20,
+  },
+  detailTitle: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  detailClose: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+  },
+  detailPositionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  detailMeta: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+  },
+  detailPosition: {
+    flexShrink: 1,
+    textAlign: 'right',
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  referenceNote: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  detailHouse: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+  },
+  detailSection: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  detailAspectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailAspectDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  detailAspectText: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontSize: 12,
+  },
+  detailEmpty: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

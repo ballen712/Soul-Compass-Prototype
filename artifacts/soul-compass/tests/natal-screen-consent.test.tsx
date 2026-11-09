@@ -121,6 +121,57 @@ const chartResult = {
   warnings: [],
 } as unknown as NatalChartResponse;
 
+const interactionPlanets = [
+  { planet: 'sun', sign: 'Leo', degreeInSign: 15, retrograde: false, longitude: 135, latitude: 0, speedDegreesPerDay: 1 },
+  { planet: 'moon', sign: 'Sagittarius', degreeInSign: 14.4, retrograde: false, longitude: 254.4, latitude: 0, speedDegreesPerDay: 13 },
+] as unknown as NatalChartResponse['planets'];
+const interactionHouseCusps = Array.from({ length: 12 }, (_, index) => ({
+  house: index + 1,
+  longitude: index * 30,
+})) as NatalChartResponse['houseCusps'];
+const interactionAspects = [{
+  first: 'sun',
+  second: 'moon',
+  type: 'trine',
+  orb: 0.6,
+  exact: false,
+  applying: true,
+  strength: 0.8,
+}] as unknown as NatalChartResponse['aspects'];
+const wheelPalette = {
+  card: '#192A42',
+  border: '#304158',
+  foreground: '#F4F0E7',
+  secondary: '#D9C49B',
+  mutedForeground: '#AAB5C5',
+  aspectTension: '#E48E83',
+  aspectFlow: '#91B3CC',
+  aspectConjunction: '#D9C49B',
+};
+
+async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true) {
+  const translateCopy = (source: string) => (
+    locale === 'en' ? source : natalTranslations[locale][source] ?? source
+  );
+  await act(async () => {
+    renderer = create(
+      <NatalChartWheel
+        planets={interactionPlanets}
+        palette={wheelPalette}
+        translate={translateCopy}
+        locale={locale}
+        moonSignRange={[]}
+        timeKnown={timeKnown}
+        majorAspects={interactionAspects}
+        houseByPlanet={new Map([['sun', 5], ['moon', 9]])}
+        houseCusps={interactionHouseCusps}
+        angles={{ ascendant: 0, descendant: 180, midheaven: 270, imumCoeli: 90 }}
+      />,
+    );
+  });
+  return renderer!.root;
+}
+
 function findText(root: ReactTestInstance, text: string) {
   return root.findAllByType(Text).find((node) => node.props.children === text);
 }
@@ -775,8 +826,9 @@ test('house ring uses unequal cusp longitudes and the calculated angle axes', as
   expect(Math.hypot(cuspOne.x1 - center, cuspOne.y1 - center)).toBeCloseTo(center * 0.52, 2);
   expect(Math.hypot(cuspOne.x2 - center, cuspOne.y2 - center)).toBeCloseTo(center * 0.73, 2);
   for (let house = 1; house <= 12; house += 1) {
-    expect(root.findByProps({ testID: `natal-wheel-house-number-${house}` }).props.accessibilityLabel)
-      .toBe(`House ${house}`);
+    const houseHitArea = root.findByProps({ testID: `natal-wheel-house-hit-area-${house}` });
+    expect(houseHitArea.props.accessible).toBe(true);
+    expect(houseHitArea.props.accessibilityLabel).toContain(`House ${house}`);
   }
 
   const houseOne = root.findByProps({ testID: 'natal-wheel-house-number-1' }).props;
@@ -930,6 +982,74 @@ test.each([320, 375, 393, 402])(
     expect(line.props.strokeDasharray).toBe(expectedAspectDashes[index]);
   }
   expect(root.findAllByProps({ cx: center, cy: center, r: 2.5 })).toHaveLength(0);
+});
+
+test('house taps show the cusp, planets inside it, and its plain-language theme', async () => {
+  const root = await renderInteractionWheel();
+  const houseFive = root.findByProps({ testID: 'natal-wheel-house-hit-area-5' });
+  expect(houseFive.props.accessible).toBe(true);
+  expect(houseFive.props.accessibilityLabel).toContain('House 5');
+
+  await act(async () => {
+    houseFive.props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-house-detail-5' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-detail-position' }).props.children)
+    .toBe('00° 00′ Leo');
+  expect(root.findByProps({ testID: 'natal-house-detail-theme' }).props.children)
+    .toBe('creativity, romance, fun, and the things you enjoy making or sharing');
+  expect(root.findByProps({ testID: 'natal-house-detail-planets' }).props.children).toBe('Sun');
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-wheel-house-hit-area-2' }).props.onPress();
+  });
+  expect(root.findAllByProps({ testID: 'natal-house-detail-5' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-house-detail-planets' }).props.children)
+    .toBe('No planets are placed in this house.');
+  await act(async () => {
+    root.findByProps({ testID: 'natal-house-detail-close' }).props.onPress();
+  });
+  expect(root.findAllByProps({ testID: 'natal-house-detail-2' })).toHaveLength(0);
+});
+
+test('unknown birth time never exposes house or angle controls', async () => {
+  const root = await renderInteractionWheel('en', false);
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string'
+      && node.props.testID.startsWith('natal-wheel-house-hit-area-'),
+  )).toHaveLength(0);
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string'
+      && node.props.testID.startsWith('natal-angle-axis-'),
+  )).toHaveLength(0);
+});
+
+test('aspect lines and planet aspect rows open the same accessible detail panel', async () => {
+  const root = await renderInteractionWheel();
+  const aspectHit = root.findByProps({ testID: 'natal-aspect-hit-trine-sun-moon' });
+  expect(aspectHit.props.accessible).toBe(true);
+  expect(aspectHit.props.accessibilityLabel).toBe('Sun trine Moon, orb 0.6°');
+
+  await act(async () => {
+    aspectHit.props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-aspect-detail-trine-sun-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-aspect-detail-title' }).props.children)
+    .toBe('Sun trine Moon');
+  expect(root.findByProps({ testID: 'natal-aspect-detail-orb' }).props.children)
+    .toBe('orb 0.6°');
+  expect(root.findByProps({ testID: 'natal-aspect-detail-interpretation' }).props.children)
+    .toBe('These themes tend to support each other with less effort.');
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-aspect-detail-close' }).props.onPress();
+    root.findByProps({ testID: 'natal-planet-hit-area-sun' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-planet-detail-sun' })).toBeDefined();
+  await act(async () => {
+    root.findByProps({ testID: 'natal-planet-detail-aspect-0' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-aspect-detail-trine-sun-moon' })).toBeDefined();
 });
 
 test.each([0, 90, 180, 270])(
@@ -1124,6 +1244,62 @@ test('unknown-time planet details disclose the noon reference and omit house pla
 });
 
 const supportedTranslationLocales: Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];
+
+test.each(supportedTranslationLocales)('wheel interaction copy exists in %s', (locale) => {
+  const sources = [
+    'House {number}',
+    'House cusp',
+    'Planets in this house',
+    'No planets are placed in this house.',
+    'Close house details',
+    'Close aspect details',
+    'orb',
+    'These themes blend, so one can bring the other to the surface.',
+    'You may feel pulled between these needs; finding a workable balance can help.',
+    'These themes tend to support each other with less effort.',
+    'These themes can compete for attention and ask you to adjust or choose what matters first.',
+    'These themes can support each other when you choose to use them together.',
+    'first impressions, new situations, and how you choose to present yourself as you begin',
+    'money and belongings, your personal values, and the choices that help you build security',
+    'everyday conversations, learning new skills, and exchanging ideas with people around you',
+    'home, family, your roots, and the routines that help you feel you belong',
+    'creativity, romance, fun, and the things you enjoy making or sharing',
+    'daily routines, work, practical responsibilities, and the ways you look after yourself',
+    'close one-to-one relationships, cooperation, and the decisions you make with another person',
+    'trust, shared money or responsibilities, and the deeper changes that ask you to adapt',
+    'learning, travel, new experiences, and the beliefs that guide how you see the world',
+    'work, long-term goals, the responsibilities you take on, and how others see your contribution',
+    'friendships, communities, shared causes, and the future plans you build with other people',
+    'rest, private feelings, time alone, and the quiet moments you need to process life',
+  ];
+  for (const source of sources) {
+    expect(natalTranslations[locale][source]?.trim(), `${locale}: ${source}`).toBeTruthy();
+  }
+});
+
+test('house and aspect details render with Russian labels and localized degrees', async () => {
+  const root = await renderInteractionWheel('ru');
+  await act(async () => {
+    root.findByProps({ testID: 'natal-wheel-house-hit-area-5' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-house-detail-5' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-house-detail-position' }).props.children)
+    .toBe('00° 00′ Лев');
+  expect(root.findByProps({ testID: 'natal-house-detail-planets' }).props.children)
+    .toBe('Солнце');
+  expect(root.findByProps({ testID: 'natal-house-detail-close' }).props.accessibilityLabel)
+    .toBe('Закрыть сведения о доме');
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-aspect-hit-trine-sun-moon' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-aspect-detail-title' }).props.children)
+    .toBe('Солнце тригон Луна');
+  expect(root.findByProps({ testID: 'natal-aspect-detail-orb' }).props.children)
+    .toBe('орбис 0,6°');
+  expect(root.findByProps({ testID: 'natal-aspect-detail-interpretation' }).props.children)
+    .toBe(natalTranslations.ru['These themes tend to support each other with less effort.']);
+});
 
 test('screen, natal, and daily-reading dictionaries have matching keys in all six translated locales', () => {
   for (const dictionary of [screenTranslations, natalTranslations, dailyReadingTranslations]) {

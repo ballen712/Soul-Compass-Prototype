@@ -383,6 +383,11 @@ const rows = [
   ['Hide aspect lines', 'Fényszögvonalak elrejtése', 'Nascondi le linee degli aspetti', 'Aspektlinien ausblenden', 'Masquer les lignes d’aspect', 'Ocultar las líneas de aspectos', 'Скрыть линии аспектов'],
   ['Show aspect lines', 'Fényszögvonalak megjelenítése', 'Mostra le linee degli aspetti', 'Aspektlinien anzeigen', 'Afficher les lignes d’aspect', 'Mostrar las líneas de aspectos', 'Показать линии аспектов'],
   ['No major aspects for this planet.', 'Ehhez a bolygóhoz nem tartozik jelentős fényszög.', 'Nessun aspetto principale per questo pianeta.', 'Keine Hauptaspekte zu diesem Planeten.', 'Aucun aspect majeur pour cette planète.', 'No hay aspectos principales para este planeta.', 'У этой планеты нет основных аспектов.'],
+  ['House cusp', 'Házcsúcs', 'Cuspide della casa', 'Häuserspitze', 'Cuspide de la maison', 'Cúspide de la casa', 'Куспид дома'],
+  ['Planets in this house', 'Bolygók ebben a házban', 'Pianeti in questa casa', 'Planeten in diesem Haus', 'Planètes dans cette maison', 'Planetas en esta casa', 'Планеты в этом доме'],
+  ['No planets are placed in this house.', 'Ebben a házban nincs bolygó.', 'In questa casa non ci sono pianeti.', 'In diesem Haus steht kein Planet.', 'Aucune planète n’occupe cette maison.', 'No hay planetas en esta casa.', 'В этом доме нет планет.'],
+  ['Close house details', 'Házadatok bezárása', 'Chiudi i dettagli della casa', 'Hausdetails schließen', 'Fermer les détails de la maison', 'Cerrar los detalles de la casa', 'Закрыть сведения о доме'],
+  ['Close aspect details', 'Fényszögadatok bezárása', 'Chiudi i dettagli dell’aspetto', 'Aspektdetails schließen', 'Fermer les détails de l’aspect', 'Cerrar los detalles del aspecto', 'Закрыть сведения об аспекте'],
 ] as const satisfies readonly Row[];
 
 const locales: readonly Exclude<AppLocale, 'en'>[] = ['hu', 'it', 'de', 'fr', 'es', 'ru'];

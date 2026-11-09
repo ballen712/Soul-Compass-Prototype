@@ -57,6 +57,27 @@ const ASPECT_DASHES: Record<string, string | undefined> = {
   opposition: '5 3',
 };
 const SUPPORTED_ASPECTS = new Set(Object.keys(ASPECT_DASHES));
+const ASPECT_MEANINGS: Record<string, string> = {
+  conjunction: 'These themes blend, so one can bring the other to the surface.',
+  opposition: 'You may feel pulled between these needs; finding a workable balance can help.',
+  trine: 'These themes tend to support each other with less effort.',
+  square: 'These themes can compete for attention and ask you to adjust or choose what matters first.',
+  sextile: 'These themes can support each other when you choose to use them together.',
+};
+const HOUSE_THEMES = [
+  'first impressions, new situations, and how you choose to present yourself as you begin',
+  'money and belongings, your personal values, and the choices that help you build security',
+  'everyday conversations, learning new skills, and exchanging ideas with people around you',
+  'home, family, your roots, and the routines that help you feel you belong',
+  'creativity, romance, fun, and the things you enjoy making or sharing',
+  'daily routines, work, practical responsibilities, and the ways you look after yourself',
+  'close one-to-one relationships, cooperation, and the decisions you make with another person',
+  'trust, shared money or responsibilities, and the deeper changes that ask you to adapt',
+  'learning, travel, new experiences, and the beliefs that guide how you see the world',
+  'work, long-term goals, the responsibilities you take on, and how others see your contribution',
+  'friendships, communities, shared causes, and the future plans you build with other people',
+  'rest, private feelings, time alone, and the quiet moments you need to process life',
+] as const;
 
 function aspectColor(type: string, palette: Palette) {
   const normalized = type.toLowerCase();
@@ -262,6 +283,8 @@ export function NatalChartWheel({
 }) {
   const [aspectsVisible, setAspectsVisible] = useState(true);
   const [selectedPlanetName, setSelectedPlanetName] = useState<string | null>(null);
+  const [selectedHouseNumber, setSelectedHouseNumber] = useState<number | null>(null);
+  const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
   const { width } = useWindowDimensions();
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   const fallbackWidth = Math.max(180, width - 2 * (SCREEN_HORIZONTAL_GUTTER + 14));
@@ -271,11 +294,11 @@ export function NatalChartWheel({
   const size = Math.min(450, Math.max(180, availableWidth));
   const scale = size / 360;
   const center = size / 2;
-  const validAngles = angles
+  const validAngles = timeKnown && angles
     && [angles.ascendant, angles.descendant, angles.midheaven, angles.imumCoeli].every(Number.isFinite)
     ? angles
     : null;
-  const actualHouseCusps = orderedHouseCusps(houseCusps);
+  const actualHouseCusps = timeKnown ? orderedHouseCusps(houseCusps) : [];
   const houseMidpoints = actualHouseCusps.map((cusp, index) =>
     midpointLongitude(cusp.longitude, actualHouseCusps[(index + 1) % actualHouseCusps.length].longitude),
   );
@@ -341,6 +364,7 @@ export function NatalChartWheel({
       return [{
         aspect,
         index,
+        key: `${aspect.first.toLowerCase()}-${aspect.type.toLowerCase()}-${aspect.second.toLowerCase()}-${index}`,
         first: { x: first.x, y: first.y },
         second: { x: second.x, y: second.y },
         uncertainMoon: !timeKnown
@@ -361,6 +385,17 @@ export function NatalChartWheel({
   const selectedPlanet = selectedPlanetName
     ? planets.find((planet) => planet.planet.toLowerCase() === selectedPlanetName)
     : undefined;
+  const selectedHouseCusp = selectedHouseNumber === null
+    ? undefined
+    : actualHouseCusps.find((cusp) => cusp.house === selectedHouseNumber);
+  const selectedHousePlanets = selectedHouseNumber === null
+    ? []
+    : planets.filter((planet) =>
+      houseByPlanet?.get(planet.planet.toLowerCase()) === selectedHouseNumber,
+    );
+  const selectedAspectLine = selectedAspectKey === null
+    ? undefined
+    : aspectLines.find((line) => line.key === selectedAspectKey);
   const selectedPlanetIsUncertainMoon = Boolean(
     selectedPlanet && !timeKnown && selectedPlanet.planet.toLowerCase() === 'moon',
   );
@@ -377,9 +412,35 @@ export function NatalChartWheel({
       (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
       translate(source),
     ));
+  const formatAspectTitle = (aspect: Aspect) => format('{first} {aspect} {second}', {
+    first: translate(normalizedPlanetName(aspect.first)),
+    aspect: translate(aspect.type.toLowerCase()),
+    second: translate(normalizedPlanetName(aspect.second)),
+  });
+  const formatAspectOrb = (aspect: Aspect) => {
+    const orb = aspect.orb.toLocaleString(locale, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    return `${translate('orb')} ${orb}°`;
+  };
+  const formatAspectAccessibilityLabel = (aspect: Aspect) =>
+    `${formatAspectTitle(aspect)}, ${formatAspectOrb(aspect)}`;
   const selectPlanet = (planet: PlanetPosition) => {
     const key = planet.planet.toLowerCase();
+    setSelectedHouseNumber(null);
+    setSelectedAspectKey(null);
     setSelectedPlanetName((current) => current === key ? null : key);
+  };
+  const selectHouse = (house: number) => {
+    setSelectedPlanetName(null);
+    setSelectedAspectKey(null);
+    setSelectedHouseNumber((current) => current === house ? null : house);
+  };
+  const selectAspect = (line: typeof aspectLines[number]) => {
+    setSelectedPlanetName(null);
+    setSelectedHouseNumber(null);
+    setSelectedAspectKey((current) => current === line.key ? null : line.key);
   };
 
   return (
@@ -482,22 +543,40 @@ export function NatalChartWheel({
             />
           );
         })}
-        {houseLabels.map(({ house, x, y }) => (
-          <SvgText
-            key={`house-number-${house}`}
-            testID={`natal-wheel-house-number-${house}`}
-            x={x}
-            y={y + 2.7 * scale}
-            textAnchor="middle"
-            fontFamily="Inter"
-            fontSize={Math.max(8, 9 * scale)}
-            fill={palette.mutedForeground}
-            accessible
-            accessibilityLabel={format('House {number}', { number: house })}
-          >
-            {house.toLocaleString(locale)}
-          </SvgText>
-        ))}
+        {houseLabels.map(({ house, x, y }) => {
+          const cusp = actualHouseCusps.find((candidate) => candidate.house === house);
+          if (!cusp) return null;
+          const selected = selectedHouseNumber === house;
+          const houseTitle = format('House {number}', { number: house });
+          const cuspPosition = formatPlanetPosition(cusp.longitude, locale, translate);
+          return (
+            <React.Fragment key={`house-number-${house}`}>
+              <Circle
+                testID={`natal-wheel-house-hit-area-${house}`}
+                cx={x}
+                cy={y}
+                r={Math.max(14, 17 * scale)}
+                fill="transparent"
+                accessible
+                accessibilityLabel={`${houseTitle}, ${translate('House cusp')}: ${cuspPosition}`}
+                onPress={() => selectHouse(house)}
+              />
+              <SvgText
+                testID={`natal-wheel-house-number-${house}`}
+                x={x}
+                y={y + 2.7 * scale}
+                textAnchor="middle"
+                fontFamily="Inter"
+                fontSize={Math.max(8, 9 * scale)}
+                fontWeight={selected ? '700' : '500'}
+                fill={selected ? palette.secondary : palette.mutedForeground}
+                accessible={false}
+              >
+                {house.toLocaleString(locale)}
+              </SvgText>
+            </React.Fragment>
+          );
+        })}
         {axes.map(({ key, first, second, color, dash }) => {
           const firstPoint = polarPoint(first, axisLineRadius, center, rotation);
           const secondPoint = polarPoint(second, axisLineRadius, center, rotation);
@@ -554,33 +633,54 @@ export function NatalChartWheel({
             </SvgText>
           );
         })}
-        {aspectsVisible ? aspectLines.map(({ aspect, index, first, second, uncertainMoon }) => {
+        {aspectsVisible ? aspectLines.map((line) => {
+          const { aspect, first, second, uncertainMoon } = line;
           const strength = Number.isFinite(aspect.strength)
             ? Math.max(0, Math.min(1, aspect.strength))
             : 0.5;
-          const selected = selectedPlanetName !== null
+          const selectedByPlanet = selectedPlanetName !== null
             && (aspect.first.toLowerCase() === selectedPlanetName
               || aspect.second.toLowerCase() === selectedPlanetName);
-          const dimmed = selectedPlanetName !== null && !selected;
+          const selectedByAspect = selectedAspectLine?.key === line.key;
+          const selected = selectedByPlanet || selectedByAspect;
+          const hasSelection = selectedPlanetName !== null || selectedAspectLine !== undefined;
+          const dimmed = hasSelection && !selected;
+          const hitLabel = formatAspectAccessibilityLabel(aspect);
           return (
-            <Line
-              key={`${aspect.type}-${aspect.first}-${aspect.second}-${index}`}
-              testID={`natal-aspect-line-${aspect.type}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
-              x1={first.x}
-              y1={first.y}
-              x2={second.x}
-              y2={second.y}
-              stroke={aspectColor(aspect.type, palette)}
-              strokeWidth={Math.max(
-                0.7,
-                (selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale,
-              )}
-              strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
-              strokeLinecap="round"
-              opacity={uncertainMoon
-                ? selected ? 0.5 : 0.18
-                : dimmed ? 0.07 : selected ? 0.94 : 0.28 + strength * 0.38}
-            />
+            <React.Fragment key={line.key}>
+              <Line
+                testID={`natal-aspect-line-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
+                x1={first.x}
+                y1={first.y}
+                x2={second.x}
+                y2={second.y}
+                stroke={aspectColor(aspect.type, palette)}
+                strokeWidth={Math.max(
+                  0.7,
+                  (selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale,
+                )}
+                strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
+                strokeLinecap="round"
+                opacity={uncertainMoon
+                  ? selected ? 0.5 : 0.18
+                  : dimmed ? 0.07 : selected ? 0.94 : 0.28 + strength * 0.38}
+                accessible={false}
+              />
+              <Line
+                testID={`natal-aspect-hit-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
+                x1={first.x}
+                y1={first.y}
+                x2={second.x}
+                y2={second.y}
+                stroke={aspectColor(aspect.type, palette)}
+                strokeWidth={Math.max(18, 22 * scale)}
+                strokeLinecap="round"
+                opacity={0.01}
+                accessible
+                accessibilityLabel={hitLabel}
+                onPress={() => selectAspect(line)}
+              />
+            </React.Fragment>
           );
         }) : null}
         {markers.map(({ planet, x, y }) => {
@@ -711,27 +811,130 @@ export function NatalChartWheel({
               ? aspect.second
               : aspect.first;
             const otherName = normalizedPlanetName(otherPlanet);
+            const aspectLine = aspectLines.find((line) => line.aspect === aspect);
             const orb = aspect.orb.toLocaleString(locale, {
               minimumFractionDigits: 1,
               maximumFractionDigits: 1,
             });
             return (
-              <View
+              <Pressable
                 key={`${aspect.first}-${aspect.type}-${aspect.second}-${index}`}
                 testID={`natal-planet-detail-aspect-${index}`}
+                accessibilityRole="button"
+                accessibilityLabel={formatAspectAccessibilityLabel(aspect)}
+                disabled={!aspectLine}
+                onPress={() => {
+                  if (aspectLine) selectAspect(aspectLine);
+                }}
                 style={styles.detailAspectRow}
               >
                 <View style={[styles.detailAspectDot, { backgroundColor: aspectColor(aspect.type, palette) }]} />
                 <Text style={[styles.detailAspectText, { color: palette.foreground }]}>
                   {`${translate(otherName)} · ${translate(aspect.type.toLowerCase())} · ${translate('orb')} ${orb}°`}
                 </Text>
-              </View>
+              </Pressable>
             );
           }) : (
             <Text style={[styles.detailEmpty, { color: palette.mutedForeground }]}>
               {translate('No major aspects for this planet.')}
             </Text>
           )}
+        </View>
+      ) : null}
+      {selectedHouseCusp && selectedHouseNumber !== null ? (
+        <View
+          testID={`natal-house-detail-${selectedHouseNumber}`}
+          accessibilityLiveRegion="polite"
+          style={[styles.detailPanel, { borderColor: palette.border }]}
+        >
+          <View style={styles.detailHeader}>
+            <Text style={[styles.detailTitle, { color: palette.foreground }]}>
+              {format('House {number}', { number: selectedHouseNumber })}
+            </Text>
+            <Pressable
+              testID="natal-house-detail-close"
+              accessibilityRole="button"
+              accessibilityLabel={translate('Close house details')}
+              hitSlop={8}
+              onPress={() => setSelectedHouseNumber(null)}
+              style={({ pressed }) => [styles.detailClose, { opacity: pressed ? 0.65 : 1 }]}
+            >
+              <Feather name="x" size={17} color={palette.secondary} />
+            </Pressable>
+          </View>
+          <View style={styles.detailPositionRow}>
+            <Text style={[styles.detailMeta, { color: palette.mutedForeground }]}>
+              {translate('House cusp')}
+            </Text>
+            <Text
+              testID="natal-house-detail-position"
+              style={[styles.detailPosition, { color: palette.foreground }]}
+            >
+              {formatPlanetPosition(selectedHouseCusp.longitude, locale, translate)}
+            </Text>
+          </View>
+          <Text
+            testID="natal-house-detail-theme"
+            style={[styles.detailEmpty, { color: palette.foreground }]}
+          >
+            {translate(HOUSE_THEMES[selectedHouseNumber - 1])}
+          </Text>
+          <Text style={[styles.detailSection, { color: palette.secondary }]}>
+            {translate('Planets in this house')}
+          </Text>
+          <Text
+            testID="natal-house-detail-planets"
+            style={[styles.detailEmpty, { color: palette.mutedForeground }]}
+          >
+            {selectedHousePlanets.length
+              ? selectedHousePlanets
+                .map((planet) => translate(normalizedPlanetName(planet.planet)))
+                .join(', ')
+              : translate('No planets are placed in this house.')}
+          </Text>
+        </View>
+      ) : null}
+      {selectedAspectLine ? (
+        <View
+          testID={`natal-aspect-detail-${selectedAspectLine.aspect.type.toLowerCase()}-${selectedAspectLine.aspect.first.toLowerCase()}-${selectedAspectLine.aspect.second.toLowerCase()}`}
+          accessibilityLiveRegion="polite"
+          style={[styles.detailPanel, { borderColor: palette.border }]}
+        >
+          <View style={styles.detailHeader}>
+            <Text
+              testID="natal-aspect-detail-title"
+              style={[styles.detailTitle, { color: palette.foreground, flex: 1 }]}
+            >
+              {formatAspectTitle(selectedAspectLine.aspect)}
+            </Text>
+            <Pressable
+              testID="natal-aspect-detail-close"
+              accessibilityRole="button"
+              accessibilityLabel={translate('Close aspect details')}
+              hitSlop={8}
+              onPress={() => setSelectedAspectKey(null)}
+              style={({ pressed }) => [styles.detailClose, { opacity: pressed ? 0.65 : 1 }]}
+            >
+              <Feather name="x" size={17} color={palette.secondary} />
+            </Pressable>
+          </View>
+          <Text
+            testID="natal-aspect-detail-orb"
+            style={[styles.detailMeta, { color: palette.mutedForeground }]}
+          >
+            {formatAspectOrb(selectedAspectLine.aspect)}
+          </Text>
+          <Text
+            testID="natal-aspect-detail-interpretation"
+            style={[styles.detailEmpty, { color: palette.foreground }]}
+          >
+            {translate(ASPECT_MEANINGS[selectedAspectLine.aspect.type.toLowerCase()])}
+          </Text>
+          {!timeKnown ? (
+            <Text style={[styles.referenceNote, { color: palette.mutedForeground }]}>
+              {translate('All placements and aspects represent the reference instant; their exact degrees and motion are time-dependent.')}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>

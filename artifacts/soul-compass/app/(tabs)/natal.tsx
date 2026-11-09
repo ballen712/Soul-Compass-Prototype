@@ -841,7 +841,7 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   return (
     <View style={{ gap: 18 }}>
       <Label c={c} icon="user" text="PERSONAL NATAL CHART" />
-      <Card c={c}>
+      <Card c={c} compact>
         <Text style={[styles.chartWheelLabel, { color: c.secondary }]}>
           {t('PLANETS')}
         </Text>

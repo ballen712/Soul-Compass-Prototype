@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   storage: new Map<string, string>(),
   calculate: vi.fn(),
   platformOS: 'web',
+  windowWidth: 402,
   appStateListeners: new Set<(nextState: string) => void>(),
   focusCallback: null as null | (() => void),
   scrollToTopRef: null as null | { current: unknown },
@@ -72,7 +73,7 @@ vi.mock('react-native', () => ({
   },
   Text: 'Text',
   View: 'View',
-  useWindowDimensions: () => ({ height: 874, width: 402 }),
+  useWindowDimensions: () => ({ height: 874, width: state.windowWidth }),
 }));
 vi.mock('@/components/SettingsButton', () => ({ SettingsButton: () => null }));
 vi.mock('@/hooks/useColors', () => ({
@@ -239,6 +240,7 @@ beforeEach(() => {
   state.focusCallback = null;
   state.scrollToTopRef = null;
   state.platformOS = 'web';
+  state.windowWidth = 402;
   state.calculate.mockReset().mockResolvedValue(chartResult);
   const profile = {
     birthDate: '2000-01-01',
@@ -459,7 +461,10 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(wheelSummary.props.accessibilityLabel).toContain('Moon');
   expect(root.findByProps({ testID: 'natal-planet-glyph-sun' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
-  expect(root.findByProps({ testID: 'natal-planet-name-sun' }).props.children.trim()).toBe('Sun');
+  expect(root.findAll((node) =>
+    typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-planet-name-'),
+  )).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-planet-label-sun' }).props.accessibilityLabel).toContain('Sun');
   expect(root.findByProps({ testID: 'natal-planet-label-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
@@ -756,8 +761,7 @@ test('house ring uses unequal cusp longitudes and the calculated angle axes', as
   const root = renderer!.root;
   const size = Number(root.findByProps({ testID: 'natal-chart-wheel-svg' }).props.width);
   const center = size / 2;
-  const baseSize = Math.min(380, Math.max(220, 402 - 64));
-  const scale = size / baseSize;
+  const scale = size / 360;
   const ascendantAxis = root.findByProps({ testID: 'natal-angle-axis-asc-dsc' }).props;
   expect(ascendantAxis.x1).toBeLessThan(center);
   expect(ascendantAxis.x2).toBeGreaterThan(center);
@@ -768,8 +772,8 @@ test('house ring uses unequal cusp longitudes and the calculated angle axes', as
   expect(root.findByProps({ testID: 'natal-angle-label-dsc' }).props.accessibilityLabel).toBe('Descendant');
 
   const cuspOne = root.findByProps({ testID: 'natal-wheel-house-cusp-1' }).props;
-  expect(Math.hypot(cuspOne.x1 - center, cuspOne.y1 - center)).toBeCloseTo(center * 0.5, 2);
-  expect(Math.hypot(cuspOne.x2 - center, cuspOne.y2 - center)).toBeCloseTo(center * 0.59, 2);
+  expect(Math.hypot(cuspOne.x1 - center, cuspOne.y1 - center)).toBeCloseTo(center * 0.52, 2);
+  expect(Math.hypot(cuspOne.x2 - center, cuspOne.y2 - center)).toBeCloseTo(center * 0.73, 2);
   for (let house = 1; house <= 12; house += 1) {
     expect(root.findByProps({ testID: `natal-wheel-house-number-${house}` }).props.accessibilityLabel)
       .toBe(`House ${house}`);
@@ -788,7 +792,10 @@ test('house ring uses unequal cusp longitudes and the calculated angle axes', as
   expect(houseAngleDifference).toBeCloseTo(32.5, 1);
 });
 
-test('the wheel labels a tight planet cluster without overlap and dots every major aspect', async () => {
+test.each([320, 375, 393, 402])(
+  'the wheel fits a tight planet cluster without overlap at %i-point width',
+  async (screenWidth) => {
+  state.windowWidth = screenWidth;
   const planetNames = [
     'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
     'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
@@ -832,14 +839,24 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
         moonSignRange={[]}
         timeKnown
         majorAspects={aspects}
+        houseCusps={Array.from({ length: 12 }, (_, index) => ({
+          house: index + 1,
+          longitude: index * 30,
+        }))}
+        angles={{ ascendant: 0, descendant: 180, midheaven: 270, imumCoeli: 90 }}
       />,
     );
   });
 
   const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'natal-planet-wheel' }).props.onLayout({
+      nativeEvent: { layout: { width: screenWidth - 76 } },
+    });
+  });
   const wheelSvg = root.findByProps({ testID: 'natal-chart-wheel-svg' });
-  expect(Number(wheelSvg.props.width) / (402 - 64)).toBeGreaterThanOrEqual(1.15);
-  expect(Number(wheelSvg.props.width)).toBeLessThanOrEqual(402 - 12);
+  expect(Number(wheelSvg.props.width)).toBeLessThanOrEqual(screenWidth - 76);
+  expect(Number(wheelSvg.props.width)).toBeGreaterThan(screenWidth * 0.65);
   const center = Number(wheelSvg.props.width) / 2;
   const labels = root.findAll((node) =>
     typeof node.props.testID === 'string' && node.props.testID.startsWith('natal-planet-label-'),
@@ -852,28 +869,27 @@ test('the wheel labels a tight planet cluster without overlap and dots every maj
   expect(Math.max(...markerRadii) - Math.min(...markerRadii)).toBeLessThan(0.001);
   const signGlyph = root.findByProps({ testID: 'natal-zodiac-sign-0' }).props;
   const radiusFromCenter = (x: number, y: number) => Math.hypot(x - center, y - center);
-  const signRingRadius = radiusFromCenter(signGlyph.x, signGlyph.y - 5);
+  const signRingRadius = radiusFromCenter(
+    signGlyph.x,
+    signGlyph.y - Number(signGlyph.fontSize) * 0.32,
+  );
   const labelBoxes = labels.map((label) => {
-    const spans = Array.isArray(label.props.children) ? label.props.children : [label.props.children];
-    const nameSpan = spans.find((span: any) =>
-      span?.props?.testID?.startsWith('natal-planet-name-'),
-    );
-    const name = String(nameSpan?.props?.children ?? '');
-    const width = Math.max(32, Math.min(68, 16 + name.length * 4.2));
-    const radius = radiusFromCenter(label.props.x, label.props.y - 2.5);
+    const width = label.props.fontSize * 1.15;
+    const labelCenterY = label.props.y - label.props.fontSize * 0.3;
+    const radius = radiusFromCenter(label.props.x, labelCenterY);
     expect(radius).toBeLessThan(signRingRadius);
     const planet = String(label.props.testID).replace('natal-planet-label-', '');
     const marker = root.findByProps({ testID: `natal-planet-marker-${planet}` }).props;
     const markerDistance = Math.hypot(
       label.props.x - marker.cx,
-      label.props.y - 2.5 - marker.cy,
+      labelCenterY - marker.cy,
     );
-    expect(markerDistance).toBeLessThanOrEqual(center * 0.5 + 0.01);
+    expect(markerDistance).toBeLessThanOrEqual(center * 0.52 + 0.01);
     return {
       x: label.props.x - width / 2,
-      y: label.props.y - label.props.fontSize,
+      y: labelCenterY - label.props.fontSize * 0.7,
       width,
-      height: label.props.fontSize + 1,
+      height: label.props.fontSize * 1.05,
       testID: label.props.testID,
     };
   });
@@ -966,21 +982,19 @@ test.each([0, 90, 180, 270])(
     const boxes = labels.map((label) => {
       const planet = String(label.props.testID).replace('natal-planet-label-', '');
       const marker = root.findByProps({ testID: `natal-planet-marker-${planet}` }).props;
+      const fontSize = Number(label.props.fontSize);
+      const labelCenterY = label.props.y - fontSize * 0.3;
       const markerDistance = Math.hypot(
         label.props.x - marker.cx,
-        label.props.y - 2.5 - marker.cy,
+        labelCenterY - marker.cy,
       );
-      expect(markerDistance).toBeLessThanOrEqual(center * 0.5 + 0.01);
-      const spans = Array.isArray(label.props.children) ? label.props.children : [label.props.children];
-      const nameSpan = spans.find((span: any) =>
-        span?.props?.testID?.startsWith('natal-planet-name-'),
-      );
-      const width = Math.max(32, Math.min(68, 16 + String(nameSpan?.props?.children ?? '').length * 4.2));
+      expect(markerDistance).toBeLessThanOrEqual(center * 0.52 + 0.01);
+      const width = fontSize * 1.15;
       return {
         left: label.props.x - width / 2,
         right: label.props.x + width / 2,
-        top: label.props.y - label.props.fontSize,
-        bottom: label.props.y + 1,
+        top: labelCenterY - fontSize * 0.7,
+        bottom: labelCenterY + fontSize * 0.35,
         testID: label.props.testID,
       };
     });

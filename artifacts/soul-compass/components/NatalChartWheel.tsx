@@ -3,6 +3,7 @@ import type { NatalChartResponse } from '@workspace/api-client-react';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, TSpan } from 'react-native-svg';
+import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
 
 type PlanetPosition = NatalChartResponse['planets'][number];
 type Aspect = NatalChartResponse['aspects'][number];
@@ -10,9 +11,9 @@ type HouseCusp = NatalChartResponse['houseCusps'][number];
 type ChartAngles = NonNullable<NatalChartResponse['angles']>;
 type PlanetLabel = {
   planet: PlanetPosition;
-  name: string;
   label: string;
   width: number;
+  fontSize: number;
   targetAngle: number;
 };
 type Palette = {
@@ -118,17 +119,15 @@ function formatPlanetPosition(longitude: number, locale: string, translate: (sou
 function layoutPlanetLabels(
   planets: PlanetPosition[],
   center: number,
-  baseSize: number,
   scale: number,
-  translate: (source: string) => string,
   rotation: number,
   houseMidpoints: number[],
 ) {
-  const fontSize = (baseSize < 260 ? 6.8 : 7.6) * scale;
-  const houseNumberFontSize = (baseSize < 260 ? 8 : 9) * scale;
+  const fontSize = Math.max(12, 16 * scale);
+  const houseNumberFontSize = Math.max(8, 9 * scale);
   const houseLabelBoxes = houseMidpoints.map((longitude) => {
-    const point = polarPoint(longitude, center * 0.545, center, rotation);
-    const width = 7 * scale;
+    const point = polarPoint(longitude, center * 0.625, center, rotation);
+    const width = houseNumberFontSize * 0.8;
     return {
       left: point.x - width / 2,
       right: point.x + width / 2,
@@ -139,12 +138,12 @@ function layoutPlanetLabels(
   const labels: PlanetLabel[] = planets
     .map((planet) => {
       const name = normalizedPlanetName(planet.planet);
-      const label = translate(name);
+      const label = PLANET_GLYPHS[name] ?? name.slice(0, 1);
       return {
         planet,
-        name,
         label,
-        width: Math.max(32, Math.min(68, 20 + label.length * 4.2)) * scale,
+        width: fontSize * 1.15,
+        fontSize,
         targetAngle: normalizeDegrees(planet.longitude + rotation),
       };
     })
@@ -152,7 +151,7 @@ function layoutPlanetLabels(
       second.width - first.width || first.targetAngle - second.targetAngle,
     );
 
-  const markerRadius = center * 0.5;
+  const markerRadius = center * 0.52;
   const radii = [0.42, 0.35, 0.28].map((ratio) => center * ratio);
   const angleOffsets = [0, 6, -6, 12, -12, 18, -18, 24, -24, 30, -30, 36, -36];
   const placed: Array<{
@@ -169,8 +168,8 @@ function layoutPlanetLabels(
       const box = {
         left: point.x - label.width / 2 - scale,
         right: point.x + label.width / 2 + scale,
-        top: point.y - fontSize + 1.5 * scale,
-        bottom: point.y + 3.5 * scale,
+          top: point.y - fontSize * 0.7,
+          bottom: point.y + fontSize * 0.35,
       };
       const farthestCorner = Math.hypot(
         Math.abs(point.x - center) + label.width / 2,
@@ -199,8 +198,8 @@ function layoutPlanetLabels(
         const box = {
           left: point.x - label.width / 2 - scale,
           right: point.x + label.width / 2 + scale,
-          top: point.y - fontSize + 1.5 * scale,
-          bottom: point.y + 3.5 * scale,
+          top: point.y - fontSize * 0.7,
+          bottom: point.y + fontSize * 0.35,
         };
         const farthestCorner = Math.hypot(
           Math.abs(point.x - center) + label.width / 2,
@@ -210,7 +209,7 @@ function layoutPlanetLabels(
       }
     }
     const candidates = [...ringCandidates, ...nearbyCandidates].filter((candidate) =>
-      candidate.distance <= center * 0.5
+      candidate.distance <= center * 0.52
       && candidate.farthestCorner <= center * 0.57,
     ).filter(({ box }) =>
       marker.x < box.left - 2
@@ -264,9 +263,13 @@ export function NatalChartWheel({
   const [aspectsVisible, setAspectsVisible] = useState(true);
   const [selectedPlanetName, setSelectedPlanetName] = useState<string | null>(null);
   const { width } = useWindowDimensions();
-  const baseSize = Math.min(380, Math.max(220, width - 64));
-  const size = Math.min(450, width - 12, Math.round(baseSize * 1.18));
-  const scale = size / baseSize;
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+  const fallbackWidth = Math.max(180, width - 2 * (SCREEN_HORIZONTAL_GUTTER + 14));
+  const availableWidth = measuredWidth && measuredWidth > 0
+    ? Math.min(measuredWidth, width)
+    : fallbackWidth;
+  const size = Math.min(450, Math.max(180, availableWidth));
+  const scale = size / 360;
   const center = size / 2;
   const validAngles = angles
     && [angles.ascendant, angles.descendant, angles.midheaven, angles.imumCoeli].every(Number.isFinite)
@@ -277,16 +280,16 @@ export function NatalChartWheel({
     midpointLongitude(cusp.longitude, actualHouseCusps[(index + 1) % actualHouseCusps.length].longitude),
   );
   const rotation = validAngles ? normalizeDegrees(270 - validAngles.ascendant) : 0;
-  const zodiacOuterRadius = center * 0.74;
-  const zodiacInnerRadius = center * 0.59;
-  const signRadius = center * 0.665;
-  const planetRadius = center * 0.5;
-  const houseLabelRadius = center * 0.545;
-  const axisLineRadius = center * 0.79;
-  const axisLabelRadius = center * 0.84;
+  const zodiacOuterRadius = center * 0.88;
+  const zodiacInnerRadius = center * 0.73;
+  const signRadius = center * 0.805;
+  const planetRadius = center * 0.52;
+  const houseLabelRadius = center * 0.625;
+  const axisLineRadius = center * 0.9;
+  const axisLabelRadius = center * 0.93;
   const labels = useMemo(
-    () => layoutPlanetLabels(planets, center, baseSize, scale, translate, rotation, houseMidpoints),
-    [planets, center, baseSize, scale, translate, rotation, houseMidpoints],
+    () => layoutPlanetLabels(planets, center, scale, rotation, houseMidpoints),
+    [planets, center, scale, rotation, houseMidpoints],
   );
   const markers = useMemo(
     () => planets.map((planet) => ({
@@ -384,6 +387,12 @@ export function NatalChartWheel({
       testID="natal-planet-wheel"
       accessible={false}
       accessibilityRole="image"
+      onLayout={(event) => {
+        const nextWidth = event.nativeEvent.layout.width;
+        setMeasuredWidth((current) =>
+          current !== null && Math.abs(current - nextWidth) < 1 ? current : nextWidth,
+        );
+      }}
       style={styles.container}
     >
       <Text
@@ -420,7 +429,7 @@ export function NatalChartWheel({
           r={zodiacOuterRadius}
           fill="none"
           stroke={palette.border}
-          strokeWidth={scale}
+          strokeWidth={Math.max(0.7, scale)}
           opacity={0.55}
         />
         <Circle
@@ -429,7 +438,7 @@ export function NatalChartWheel({
           r={zodiacInnerRadius}
           fill="none"
           stroke={palette.border}
-          strokeWidth={scale}
+          strokeWidth={Math.max(0.7, scale)}
           opacity={0.55}
         />
         <Circle
@@ -452,7 +461,7 @@ export function NatalChartWheel({
               x2={outerPoint.x}
               y2={outerPoint.y}
               stroke={palette.border}
-              strokeWidth={0.8 * scale}
+              strokeWidth={Math.max(0.6, 0.8 * scale)}
             />
           );
         })}
@@ -468,7 +477,7 @@ export function NatalChartWheel({
               x2={outerPoint.x}
               y2={outerPoint.y}
               stroke={palette.border}
-              strokeWidth={0.75 * scale}
+              strokeWidth={Math.max(0.65, 0.75 * scale)}
               opacity={0.8}
             />
           );
@@ -481,7 +490,7 @@ export function NatalChartWheel({
             y={y + 2.7 * scale}
             textAnchor="middle"
             fontFamily="Inter"
-            fontSize={(baseSize < 260 ? 8 : 9) * scale}
+            fontSize={Math.max(8, 9 * scale)}
             fill={palette.mutedForeground}
             accessible
             accessibilityLabel={format('House {number}', { number: house })}
@@ -501,7 +510,7 @@ export function NatalChartWheel({
               x2={secondPoint.x}
               y2={secondPoint.y}
               stroke={color}
-              strokeWidth={(key === 'asc-dsc' ? 1.35 : 1.05) * scale}
+              strokeWidth={Math.max(0.8, (key === 'asc-dsc' ? 1.35 : 1.05) * scale)}
               strokeDasharray={dash}
               opacity={0.78}
             />
@@ -509,15 +518,16 @@ export function NatalChartWheel({
         })}
         {SIGN_GLYPHS.map((glyph, index) => {
           const point = polarPoint(index * 30 + 15, signRadius, center, rotation);
+          const fontSize = Math.max(14, 17 * scale);
           return (
             <SvgText
               key={`zodiac-sign-${index}`}
               testID={`natal-zodiac-sign-${index}`}
               x={point.x}
-              y={point.y + 5}
+              y={point.y + fontSize * 0.32}
               textAnchor="middle"
               fontFamily="Georgia"
-              fontSize={(baseSize < 260 ? 13 : 16) * scale}
+              fontSize={fontSize}
               fill={palette.secondary}
             >
               {`${glyph}\uFE0E`}
@@ -534,7 +544,7 @@ export function NatalChartWheel({
               y={point.y + 2.5 * scale}
               textAnchor="middle"
               fontFamily="Inter"
-              fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
+              fontSize={Math.max(7.5, 8.5 * scale)}
               fontWeight="600"
               fill={color}
               accessible
@@ -561,7 +571,10 @@ export function NatalChartWheel({
               x2={second.x}
               y2={second.y}
               stroke={aspectColor(aspect.type, palette)}
-              strokeWidth={(selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale}
+              strokeWidth={Math.max(
+                0.7,
+                (selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale,
+              )}
               strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
               strokeLinecap="round"
               opacity={uncertainMoon
@@ -584,7 +597,7 @@ export function NatalChartWheel({
                   testID={`natal-planet-selection-${name.toLowerCase()}`}
                   cx={x}
                   cy={y}
-                  r={9 * scale}
+                  r={Math.max(8, 9 * scale)}
                   fill="none"
                   stroke={palette.secondary}
                   strokeWidth={1.2 * scale}
@@ -595,7 +608,7 @@ export function NatalChartWheel({
                 testID={`natal-planet-hit-area-${name.toLowerCase()}`}
                 cx={x}
                 cy={y}
-                r={12 * scale}
+                r={Math.max(12, 12 * scale)}
                 fill="transparent"
                 accessible
                 accessibilityLabel={summary}
@@ -605,7 +618,7 @@ export function NatalChartWheel({
                 testID={`natal-planet-marker-${name.toLowerCase()}`}
                 cx={x}
                 cy={y}
-                r={(baseSize < 260 ? 2.8 : 3.2) * scale}
+                r={Math.max(2.5, 3.2 * scale)}
                 fill={isUncertainMoon ? palette.card : palette.secondary}
                 stroke={isUncertainMoon ? palette.mutedForeground : palette.secondary}
                 strokeWidth={1.2 * scale}
@@ -618,10 +631,10 @@ export function NatalChartWheel({
                 <SvgText
                   testID={`natal-planet-label-${name.toLowerCase()}`}
                   x={label.x}
-                  y={label.y + 2.5 * scale}
+                  y={label.y + label.fontSize * 0.3}
                   textAnchor="middle"
                   fontFamily="Inter"
-                  fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
+                  fontSize={label.fontSize}
                   accessible
                   accessibilityLabel={summary}
                   onPress={() => selectPlanet(planet)}
@@ -631,19 +644,8 @@ export function NatalChartWheel({
                     fontFamily="Georgia"
                     fill={palette.secondary}
                   >
-                    {`${PLANET_GLYPHS[name] ?? name.slice(0, 1)}\uFE0E`}
+                    {`${label.label}\uFE0E`}
                   </TSpan>
-                  <TSpan
-                    testID={`natal-planet-name-${name.toLowerCase()}`}
-                    fontFamily="Inter"
-                    fontWeight="600"
-                    fill={selected ? palette.secondary : palette.foreground}
-                  >
-                    {` ${label.label}`}
-                  </TSpan>
-                  {isUncertainMoon ? (
-                    <TSpan fill={palette.mutedForeground}>?</TSpan>
-                  ) : null}
                 </SvgText>
               ) : null}
             </React.Fragment>

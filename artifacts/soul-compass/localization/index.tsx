@@ -8,6 +8,7 @@ import { screenTranslations } from './screen-copy';
 import { natalTranslations } from './natal-copy';
 import { dailyReadingTranslations } from './daily-copy';
 import { dailyComposerTranslations } from './daily-composer-copy';
+import { dailyCrystalTranslations } from './daily-crystal-copy';
 
 export const APP_LOCALES = ['en', 'hu', 'it', 'de', 'fr', 'es', 'ru'] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
@@ -410,6 +411,7 @@ export function translateText(source: string, locale: AppLocale): string {
     ?? natalTranslations[locale][source]
     ?? dailyReadingTranslations[locale][source]
     ?? dailyComposerTranslations[locale][source]
+    ?? dailyCrystalTranslations[locale][source]
     ?? source;
 }
 

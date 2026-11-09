@@ -1,5 +1,12 @@
 import { crystalCatalog, type Crystal } from '../constants/content';
-import type { DailyAstrology, NatalElementBalance, TransitAspect, ZodiacElement } from './astrology';
+import { calculateNatalElementBalanceFromPlacements } from './astrology';
+import type {
+  DailyAstrology,
+  DailyTransitAnalysis,
+  NatalElementBalance,
+  TransitAspect,
+  ZodiacElement,
+} from './astrology';
 import { getTransitAspectThemes } from './transit-themes';
 
 type Calculated = Extract<DailyAstrology, { status: 'calculated' }>;
@@ -9,10 +16,28 @@ type Options = {
   crystalCollection?: string[];
   feeling?: string | null;
   dateKey?: string;
+  natalCrystalRecommendations?: readonly NatalCrystalRecommendation[];
 };
 type CopyTranslator = (source: string) => string;
 
 const identityCopy: CopyTranslator = (source) => source;
+
+export const DAILY_CRYSTAL_SCORE_WEIGHTS = {
+  mainTransit: 35,
+  natalProfile: 25,
+  mood: 20,
+  supportingAspects: 10,
+  intentions: 10,
+} as const;
+
+export type DailyCrystalScoreBreakdown = {
+  mainTransit: number;
+  natalProfile: number;
+  mood: number;
+  supportingAspects: number;
+  intentions: number;
+  total: number;
+};
 
 function fillCopy(template: string, values: Record<string, string | number>) {
   return Object.entries(values).reduce(
@@ -50,6 +75,8 @@ export type CrystalRecommendation = {
   basis: 'chart' | 'feeling' | 'intention';
   matchedIntentions: string[];
   feelingLabel?: string;
+  score: number;
+  scoreBreakdown: DailyCrystalScoreBreakdown;
 };
 
 export type NatalCrystalRecommendation = {
@@ -208,9 +235,6 @@ const intentionThemes: Record<string, readonly string[]> = {
 const allThemes = new Set(
   crystalCatalog.flatMap((crystal) => crystal.themes),
 );
-// One shared chart theme is enough for a relevant fallback when a stronger
-// match is not available.
-const MINIMUM_DAILY_CHART_THEME_MATCHES = 1;
 
 const slugOf = (name: string) =>
   name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -232,22 +256,62 @@ function getMatchedIntentions(crystal: Crystal, intentions: readonly string[]) {
   });
 }
 
-function getChartThemes(astrology: Calculated | undefined): Set<string> {
-  if (!astrology) return new Set();
-  const themes = new Set<string>();
-  for (const aspect of astrology.aspects.slice(0, 3)) {
-    for (const theme of getTransitAspectThemes(aspect)) themes.add(theme);
-  }
-  return themes;
+function uniqueThemes(themes: readonly string[]): string[] {
+  return [...new Set(themes)];
 }
 
-function stableScore(value: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0) / 0xffffffff;
+function withoutUsedThemes(themes: readonly string[], used: ReadonlySet<string>): string[] {
+  return uniqueThemes(themes).filter((theme) => !used.has(theme));
+}
+
+function factorScore(
+  crystalThemes: ReadonlySet<string>,
+  factorThemes: readonly string[],
+  weight: number,
+): number {
+  if (!factorThemes.length) return 0;
+  const overlap = factorThemes.filter((theme) => crystalThemes.has(theme)).length;
+  return weight * overlap / factorThemes.length;
+}
+
+function getDailyMatchAspects(astrology: Calculated | undefined): {
+  main: TransitAspect | null;
+  supporting: TransitAspect[];
+} {
+  if (!astrology) return { main: null, supporting: [] };
+  const analysis: DailyTransitAnalysis | undefined = astrology.transitAnalysis;
+  const main = analysis?.dominantAspect ?? astrology.aspects[0] ?? null;
+  const candidates = analysis?.supportingAspects ?? astrology.aspects.slice(1, 3);
+  const mainThemes = new Set(main ? getTransitAspectThemes(main) : []);
+  const supporting = candidates.filter((aspect) =>
+    aspect !== main
+    && getTransitAspectThemes(aspect).some((theme) => mainThemes.has(theme)),
+  );
+  return { main, supporting };
+}
+
+function deriveNatalRecommendations(
+  astrology: Calculated | undefined,
+  options: Options,
+  translate: CopyTranslator,
+  translateStoneName: CopyTranslator,
+): readonly NatalCrystalRecommendation[] {
+  if (options.natalCrystalRecommendations) return options.natalCrystalRecommendations;
+  if (!astrology) return [];
+  const balance = calculateNatalElementBalanceFromPlacements(
+    astrology.natalPlacements,
+    astrology.preciseBirthMoment,
+  );
+  return balance.status === 'calculated'
+    ? getNatalCrystalSuggestions(
+        balance,
+        [],
+        8,
+        translate,
+        translateStoneName,
+        [],
+      )
+    : [];
 }
 
 const plainTheme: Record<string, string> = {
@@ -331,19 +395,7 @@ const themeAction: Record<string, string> = {
   growth: 'focus on what you can learn from the next step',
 };
 
-function chartConnection(astrology: Calculated | undefined, crystal: Crystal) {
-  if (!astrology) return null;
-  const matches = astrology.aspects.slice(0, 3).map((aspect: TransitAspect) => {
-    const themes = getTransitAspectThemes(aspect).filter((theme, index, all) =>
-      crystal.themes.includes(theme) && all.indexOf(theme) === index,
-    );
-    return { aspect, themes };
-  }).filter((item) => item.themes.length > 0)
-    .sort((a, b) => b.themes.length - a.themes.length);
-  return matches[0] ?? null;
-}
-
-const DIVERSITY_PENALTY = 1.8;
+const DIVERSITY_PENALTY_POINTS = 1.8;
 
 function symbolicSimilarity(first: Crystal, second: Crystal) {
   const firstThemes = new Set(first.themes);
@@ -381,7 +433,9 @@ function selectDiverseCandidates<T extends { crystal: Crystal; score: number }>(
         (maximum, chosen) => Math.max(maximum, symbolicSimilarity(candidate.crystal, chosen.crystal)),
         0,
       );
-      const adjustedScore = candidate.score - DIVERSITY_PENALTY * strongestOverlap;
+      // This presentation-only adjustment diversifies alternatives after the
+      // suitability score and primary recommendation have already been set.
+      const adjustedScore = candidate.score - DIVERSITY_PENALTY_POINTS * strongestOverlap;
 
       // Original ranking wins ties, so results stay deterministic.
       if (
@@ -399,71 +453,152 @@ function selectDiverseCandidates<T extends { crystal: Crystal; score: number }>(
   return selected;
 }
 
-function labelThemes(themes: readonly string[], translate: CopyTranslator) {
+function labelMatchedThemes(themes: readonly string[], translate: CopyTranslator) {
   return joinCopy(
-    themes.slice(0, 2).map((theme) => translate(plainTheme[theme] ?? theme.replaceAll('-', ' '))),
+    themes.slice(0, 2).map((theme) => translate(theme)),
     translate,
   );
 }
 
 function rank(
   astrology: Calculated | undefined,
-  { intentions = [], hiddenCrystals = [], crystalCollection = [], feeling, dateKey }: Options,
+  options: Options,
   limit = 1,
   translate: CopyTranslator = identityCopy,
   translateStoneName: CopyTranslator = identityCopy,
 ): CrystalRecommendation[] {
+  const {
+    intentions = [],
+    hiddenCrystals = [],
+    crystalCollection = [],
+    feeling,
+  } = options;
   const selectedFeeling = FEELING_OPTIONS.find((option) => option.id === feeling);
   const uniqueIntentions = Array.from(
     new Set(intentions.map(normalize).filter(Boolean)),
   );
-  const hasPersonalContext = Boolean(astrology || selectedFeeling || uniqueIntentions.length);
+  const natalRecommendations = deriveNatalRecommendations(
+    astrology,
+    options,
+    translate,
+    translateStoneName,
+  );
+  const hasPersonalContext = Boolean(
+    astrology || selectedFeeling || uniqueIntentions.length || natalRecommendations.length,
+  );
   if (!hasPersonalContext) return [];
 
   const hidden = new Set(hiddenCrystals);
   const owned = new Set(crystalCollection);
-  const chartTags = getChartThemes(astrology);
-  const feelingTags = new Set<string>(selectedFeeling?.themes ?? []);
-  const leadAspect = astrology?.aspects[0];
-  // Residence affects this daily tie-break only through calculationDate; its
-  // coordinates never enter crystal scoring or the geocentric chart factors.
-  const tieSeed = [
-    astrology?.calculationDate ?? dateKey ?? 'no-chart',
-    leadAspect ? `${leadAspect.transitBody}-${leadAspect.aspect}-${leadAspect.natalBody}` : '',
-    selectedFeeling?.id ?? '',
-    uniqueIntentions.join('|'),
-    astrology?.natalPlacements.map((placement) => `${placement.body}:${placement.sign}`).join('|') ?? '',
-  ].join(':');
+  const { main: mainAspect, supporting: relatedSupportingAspects } =
+    getDailyMatchAspects(astrology);
+  const mainTransitThemes = uniqueThemes(
+    mainAspect ? getTransitAspectThemes(mainAspect) : [],
+  );
+  const usedThemes = new Set(mainTransitThemes);
+  const natalProfileThemes = withoutUsedThemes(
+    natalRecommendations.flatMap(({ crystal }) => crystal.themes),
+    usedThemes,
+  );
+  natalProfileThemes.forEach((theme) => usedThemes.add(theme));
+  const moodThemes = withoutUsedThemes(selectedFeeling?.themes ?? [], usedThemes);
+  moodThemes.forEach((theme) => usedThemes.add(theme));
+  const supportingAspectThemes = withoutUsedThemes(
+    relatedSupportingAspects.flatMap((aspect) => getTransitAspectThemes(aspect)),
+    usedThemes,
+  );
+  supportingAspectThemes.forEach((theme) => usedThemes.add(theme));
+  const intentionThemesForScoring = withoutUsedThemes(
+    uniqueIntentions.flatMap((intention) => [...getIntentionTags(intention)]),
+    usedThemes,
+  );
 
   const rankedCandidates = crystalCatalog
-    .filter((crystal) => !hidden.has(slugOf(crystal.name)))
-    .map((crystal) => {
-      const matched = getMatchedIntentions(crystal, uniqueIntentions);
-      const intentionTags = new Set(matched.flatMap((intention) => [...getIntentionTags(intention)]));
-      const intentionMatchCount = crystal.themes.filter((theme) => intentionTags.has(theme)).length;
-      const feelingMatchCount = crystal.themes.filter((theme) => feelingTags.has(theme)).length;
-      const chartMatchCount = crystal.themes.filter((theme) => chartTags.has(theme)).length;
-      const intentionScore = intentionMatchCount * 2.7;
-      const feelingScore = feelingMatchCount * 1.5;
-      const chartScore = chartMatchCount * 1.7;
-      const tieBreaker = stableScore(`${tieSeed}:${crystal.name}`) * 0.35;
-      const score = intentionScore + feelingScore + chartScore + tieBreaker;
+    .map((crystal, index) => {
+      const crystalThemes = new Set(crystal.themes);
+      const matchedMainTransitThemes = mainTransitThemes.filter((theme) => crystalThemes.has(theme));
+      const matchedNatalProfileThemes = natalProfileThemes.filter((theme) => crystalThemes.has(theme));
+      const matchedMoodThemes = moodThemes.filter((theme) => crystalThemes.has(theme));
+      const matchedSupportingThemes = supportingAspectThemes.filter((theme) => crystalThemes.has(theme));
+      const matchedIntentionThemes = intentionThemesForScoring.filter((theme) => crystalThemes.has(theme));
+      const natalRecommendation = natalRecommendations.find(
+        ({ crystal: natalCrystal }) => slugOf(natalCrystal.name) === slugOf(crystal.name),
+      ) ?? null;
+      const intentionMatches = getMatchedIntentions(crystal, uniqueIntentions).filter((intention) =>
+        [...getIntentionTags(intention)].some((theme) =>
+          intentionThemesForScoring.includes(theme) && crystalThemes.has(theme),
+        ),
+      );
+      const scoreBreakdown = {
+        mainTransit: factorScore(
+          crystalThemes,
+          mainTransitThemes,
+          DAILY_CRYSTAL_SCORE_WEIGHTS.mainTransit,
+        ),
+        natalProfile:
+          (natalRecommendation ? 15 : 0)
+          + factorScore(
+            crystalThemes,
+            natalProfileThemes,
+            DAILY_CRYSTAL_SCORE_WEIGHTS.natalProfile - 15,
+          ),
+        mood: factorScore(
+          crystalThemes,
+          moodThemes,
+          DAILY_CRYSTAL_SCORE_WEIGHTS.mood,
+        ),
+        supportingAspects: factorScore(
+          crystalThemes,
+          supportingAspectThemes,
+          DAILY_CRYSTAL_SCORE_WEIGHTS.supportingAspects,
+        ),
+        intentions: factorScore(
+          crystalThemes,
+          intentionThemesForScoring,
+          DAILY_CRYSTAL_SCORE_WEIGHTS.intentions,
+        ),
+      };
+      const totalScore = Object.values(scoreBreakdown)
+        .reduce((sum, value) => sum + value, 0);
+      const score = Math.round(totalScore * 100) / 100;
+      const supportingAspect = relatedSupportingAspects.find((aspect) =>
+        getTransitAspectThemes(aspect).some((theme) =>
+          matchedSupportingThemes.includes(theme),
+        ),
+      ) ?? null;
+      const matchedThemes = uniqueThemes([
+        ...matchedMainTransitThemes,
+        ...matchedNatalProfileThemes,
+        ...matchedMoodThemes,
+        ...matchedSupportingThemes,
+        ...matchedIntentionThemes,
+      ]);
       return {
         crystal,
-        matched,
+        index,
         score,
+        scoreBreakdown: { ...scoreBreakdown, total: score },
         owned: owned.has(slugOf(crystal.name)),
-        chartMatchCount,
-        feelingMatchCount,
-        intentionMatchCount,
-        // Editorial fit rule, not a scientific compatibility score. A broad
-        // transit overlap alone is insufficient; explicit preferences can
-        // independently provide a direct personal connection.
-        suitable: chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES || feelingMatchCount > 0 || intentionMatchCount > 0,
+        mainAspect,
+        supportingAspect,
+        natalRecommendation,
+        matchedMainTransitThemes,
+        matchedNatalProfileThemes,
+        matchedMoodThemes,
+        matchedSupportingThemes,
+        intentionMatches,
+        matchedThemes,
+        // Suitability is computed independently from hidden/owned availability.
+        suitable: score > 0,
       };
     })
-    .filter((candidate) => candidate.suitable)
-    .sort((first, second) => second.score - first.score);
+    .filter((candidate) => candidate.suitable && !hidden.has(slugOf(candidate.crystal.name)))
+    .sort((first, second) =>
+      second.score - first.score
+      || second.scoreBreakdown.mainTransit - first.scoreBreakdown.mainTransit
+      || second.scoreBreakdown.natalProfile - first.scoreBreakdown.natalProfile
+      || first.index - second.index,
+    );
 
   const ownedCandidates = rankedCandidates.filter((candidate) => candidate.owned);
   const selectedOwned = selectDiverseCandidates(
@@ -478,78 +613,102 @@ function rank(
     Math.max(0, limit - selectedOwned.length),
   );
 
-  return [...selectedOwned, ...selectedOther]
-    .map(({ crystal, matched, chartMatchCount, feelingMatchCount }) => {
-      const stoneName = translateStoneName(crystal.name);
-      const selectedMeaning = crystalMeaning(crystal.note, translate).toLocaleLowerCase();
-      const natalLink = chartConnection(astrology, crystal);
-      const chartThemes = natalLink?.themes ?? [];
-      const feelingThemes = selectedFeeling
-        ? crystal.themes.filter((theme) => selectedFeeling.themes.includes(theme))
-        : [];
-      const additionalFeelingThemes = feelingThemes.filter((theme) => !chartThemes.includes(theme));
-      const action = selectedFeeling
-        ? selectedFeeling.themes
-          .filter((theme) => crystal.themes.includes(theme))
-          .map((theme) => themeAction[theme] ? translate(themeAction[theme]) : '')
-          .find(Boolean)
-        : (chartThemes.length ? chartThemes : feelingThemes)
-          .map((theme) => themeAction[theme] ? translate(themeAction[theme]) : '')
-          .find(Boolean);
-      const intentionText = joinCopy(matched.map((intention) => translate(intention.toLowerCase())), translate);
-      const intentionCopy = matched.length
-         ? fillCopy(translate('This suggestion also reflects your intention: {intentions}.'), {
-          intentions: intentionText,
-        })
-        : null;
-      const feelingCopy = selectedFeeling && feelingMatchCount > 0
-        ? chartThemes.some((theme) => feelingThemes.includes(theme))
-          ? fillCopy(translate('You chose “{feeling},” which also influenced this suggestion.'), {
-            feeling: translate(selectedFeeling.label).toLocaleLowerCase(),
-          })
-          : fillCopy(translate('Your selected feeling connects with these themes: {themes}.'), {
-            themes: labelThemes(feelingThemes, translate),
-          })
-        : null;
-       const chartCopy = natalLink
-         ? fillCopy(
-            translate("Today's planetary connection highlights themes from your birth chart: {themes}."),
-           { themes: labelThemes(chartThemes, translate) },
-         )
-         : null;
-      const intentionReason = intentionCopy
-         ? `${fillCopy(translate('The themes associated with {stone} are: {meaning}.'), {
-          stone: stoneName,
-          meaning: selectedMeaning,
-        })} ${intentionCopy}`
-        : null;
-      const reason = [
-        chartCopy,
-        !chartCopy && !feelingCopy ? intentionReason : null,
-        feelingCopy,
-        chartCopy && feelingCopy && additionalFeelingThemes.length
-          ? fillCopy(translate('This stone also reflects these themes: {themes}.'), {
-            themes: labelThemes(additionalFeelingThemes, translate),
-          })
-          : null,
-        action
-          ? fillCopy(translate('{stone} can remind you of a small step: {action}.'), {
-            stone: stoneName,
-            action,
-          })
-          : fillCopy(translate('{stone} can be a helpful companion. Its themes include: {meaning}. It can remind you to choose one useful next step.'), {
-            stone: stoneName,
-            meaning: selectedMeaning,
-          }),
-      ].filter(Boolean).join(' ');
+  const selected = [...selectedOwned, ...selectedOther];
+  return selected.map((candidate, index) => {
+      const reasons: string[] = [];
+      if (candidate.mainAspect && candidate.matchedMainTransitThemes.length) {
+        reasons.push(fillCopy(translate(
+          'Today’s main chart link (transiting {transitBody}, {aspect}, natal {natalBody}) matches {themes} in this stone’s catalog profile.',
+        ), {
+          transitBody: translate(candidate.mainAspect.transitBody),
+          aspect: translate(candidate.mainAspect.aspect),
+          natalBody: translate(candidate.mainAspect.natalBody),
+          themes: labelMatchedThemes(candidate.matchedMainTransitThemes, translate),
+        }));
+      }
+      if (candidate.natalRecommendation) {
+        reasons.push(fillCopy(translate(
+          'This is also one of your eight birth-chart companions, selected for its connection to {element} themes.',
+        ), {
+          element: translate(candidate.natalRecommendation.element),
+        }));
+      } else if (candidate.matchedNatalProfileThemes.length) {
+        reasons.push(fillCopy(translate(
+          'Its themes overlap with those in your birth-chart companions: {themes}.',
+        ), {
+          themes: labelMatchedThemes(candidate.matchedNatalProfileThemes, translate),
+        }));
+      }
+      if (candidate.supportingAspect && candidate.matchedSupportingThemes.length) {
+        reasons.push(fillCopy(translate(
+          'A related supporting chart link (transiting {transitBody}, {aspect}, natal {natalBody}) also matches {themes}.',
+        ), {
+          transitBody: translate(candidate.supportingAspect.transitBody),
+          aspect: translate(candidate.supportingAspect.aspect),
+          natalBody: translate(candidate.supportingAspect.natalBody),
+          themes: labelMatchedThemes(candidate.matchedSupportingThemes, translate),
+        }));
+      }
+      if (selectedFeeling && candidate.matchedMoodThemes.length) {
+        reasons.push(fillCopy(translate(
+          'Your selected feeling, “{feeling},” also matches {themes}.',
+        ), {
+          feeling: translate(selectedFeeling.label),
+          themes: labelMatchedThemes(candidate.matchedMoodThemes, translate),
+        }));
+      }
+      if (candidate.intentionMatches.length) {
+        reasons.push(fillCopy(translate(
+          'This also matches your intention: {intentions}.',
+        ), {
+          intentions: joinCopy(
+            candidate.intentionMatches.map((intention) => translate(intention)),
+            translate,
+          ),
+        }));
+      }
+      const catalogAssociations = crystalMeaning(candidate.crystal.note, translate);
+      if (catalogAssociations) {
+        reasons.push(fillCopy(translate('Its catalog associations include {themes}.'), {
+          themes: catalogAssociations,
+        }));
+      }
+      const actionTheme = candidate.matchedThemes.find((theme) => themeAction[theme]);
+      if (actionTheme && themeAction[actionTheme]) {
+        reasons.push(fillCopy(translate('A small action for today: {action}.'), {
+          action: translate(themeAction[actionTheme]),
+        }));
+      }
+      const priorThemes = new Set(
+        selected.slice(0, index).flatMap((item) => item.matchedThemes),
+      );
+      const distinctTheme = candidate.matchedThemes.find((theme) => !priorThemes.has(theme))
+        ?? candidate.matchedThemes[0]
+        ?? candidate.crystal.themes[0];
+      const selectionReason = index === 0
+        ? candidate.owned
+          ? translate('Among suitable stones in your collection, this has the strongest combined fit for today.')
+          : translate('This has the strongest combined fit among suitable stones outside your collection.')
+        : fillCopy(translate('It is one of the next-strongest fits, adding a distinct link to {theme}.'), {
+          theme: translate(distinctTheme),
+        });
+      reasons.push(selectionReason);
+      const basis = candidate.matchedMoodThemes.length
+        ? 'feeling'
+        : candidate.matchedMainTransitThemes.length
+          || candidate.matchedNatalProfileThemes.length
+          || candidate.natalRecommendation
+          || candidate.matchedSupportingThemes.length
+          ? 'chart'
+          : 'intention';
       return {
-        crystal,
-        basis: feelingMatchCount > 0
-          ? 'feeling'
-          : chartMatchCount >= MINIMUM_DAILY_CHART_THEME_MATCHES ? 'chart' : 'intention',
-        matchedIntentions: matched,
+        crystal: candidate.crystal,
+        basis,
+        matchedIntentions: candidate.intentionMatches,
         feelingLabel: selectedFeeling?.label,
-        reason,
+        reason: reasons.join(' '),
+        score: candidate.score,
+        scoreBreakdown: candidate.scoreBreakdown,
       };
     });
 }

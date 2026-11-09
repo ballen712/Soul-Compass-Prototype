@@ -1,6 +1,6 @@
 import { getLocalizedCrystalCopy } from '../localization/crystal-copy';
 import type { AppLocale } from '../localization';
-import type { LocalPreferences } from './local';
+import { localDayKey, type LocalPreferences } from './local';
 import {
   calculateNatalElementBalance,
   calculateNatalElementBalanceFromPlacements,
@@ -118,7 +118,20 @@ export function getDailyPersonalizationContext(
     ?? ((name: string) => getLocalizedCrystalCopy(name, locale)?.name ?? name);
   const hiddenCrystals = [...preferences.crystalPreferences.hiddenCrystals];
   const ownedCrystals = [...preferences.crystalCollection];
+  const currentFeeling = preferences.crystalPreferences.feelingDate === localDayKey(now)
+    ? preferences.crystalPreferences.feeling
+    : null;
   const dailyAstrology = astrology?.status === 'calculated' ? astrology : undefined;
+  const natalScoringRecommendations = elementBalance?.status === 'calculated'
+    ? getNatalCrystalSuggestions(
+        elementBalance,
+        [],
+        8,
+        translate,
+        translateStoneName,
+        [],
+      )
+    : [];
   const natalRecommendations = elementBalance?.status === 'calculated'
     ? getNatalCrystalSuggestions(
         elementBalance,
@@ -134,8 +147,9 @@ export function getDailyPersonalizationContext(
     {
       hiddenCrystals,
       crystalCollection: ownedCrystals,
-      feeling: preferences.crystalPreferences.feeling,
+      feeling: currentFeeling,
       dateKey: date,
+      natalCrystalRecommendations: natalScoringRecommendations,
     },
     3,
     translate,
@@ -154,8 +168,8 @@ export function getDailyPersonalizationContext(
       elementBalance,
     },
     mood: {
-      selectedMood: preferences.crystalPreferences.feeling,
-      selectedDay: preferences.crystalPreferences.feelingDate ?? null,
+      selectedMood: currentFeeling,
+      selectedDay: currentFeeling ? preferences.crystalPreferences.feelingDate ?? null : null,
     },
     crystals: {
       ownedCrystals,

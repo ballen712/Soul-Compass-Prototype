@@ -835,7 +835,10 @@ export default function CrystalsScreen() {
                 {t('The guide checks stones in Your Collection first. When one matches your birth chart or today’s themes, it gets priority. If there are not enough suitable stones in your collection, the guide considers matching stones from the full catalog. If nothing fits, it leaves the suggestion empty.')}
               </Text>
               <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
-                {t('With your saved birth chart and current city, the daily reading uses your chart and today’s geocentric planetary positions. Your city’s time zone sets the local date and daily tie-break; its coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
+                {t('With your saved birth chart, the daily reading uses your chart and today’s geocentric planetary positions. Your saved residence’s time zone—or your birthplace’s if you have not added a residence—sets the local date; location coordinates do not directly change the stone match. We do not use GPS. You can also choose how you feel today to guide the suggestion. That choice resets at midnight on your device; without a choice, the guide uses the chart alone.')}
+              </Text>
+              <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
+                {t('Daily ranking weights are: main transit themes 35%, your eight birth-chart companions 25%, today’s feeling 20%, relevant supporting aspects 10%, and your stated intention 10%. We score suitability first; hidden stones are excluded, and stones you own are prioritized only when choosing among suitable matches.')}
               </Text>
               <Text style={[styles.guideModalBody, { color: colors.cosmos.mutedForeground }]}>
                 {t('If there is no calculated chart, today’s selected feeling can still guide a suggestion. Without a clear personal match, no stone is shown—we do not fill the space with samples.')}

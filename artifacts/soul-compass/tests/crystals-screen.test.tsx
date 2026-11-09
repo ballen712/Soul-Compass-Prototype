@@ -474,8 +474,8 @@ test('the Stone Guide explains daily companions and opens from its info button',
   expect(root.findAllByType(Modal)[0].props.visible).toBe(true);
   const modal = root.findByProps({ testID: 'stone-guide-modal' });
   const copy = modal.findAllByType(Text).map((node) => node.props.children).join(' ');
-  expect(copy).toContain('With your saved birth chart and current city');
-  expect(copy).toContain('time zone sets the local date and daily tie-break');
+  expect(copy).toContain('With your saved birth chart');
+  expect(copy).toContain('sets the local date; location coordinates');
   expect(copy).toContain('coordinates do not directly change the stone match');
   expect(copy).toContain('We do not use GPS');
   expect(copy).toContain('pendant, ring, or bracelet');

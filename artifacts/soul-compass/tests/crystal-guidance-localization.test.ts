@@ -23,6 +23,7 @@ import { getCrystalSuggestions, getNatalCrystalSuggestions } from '@/profile/cry
 import { translateText } from '../localization';
 import { getLocalizedCrystalCopy } from '../localization/crystal-copy';
 import guidanceTranslations from '../localization/crystal-guidance-translations.json';
+import { dailyCrystalSourceCopyKeys } from '../localization/daily-crystal-copy';
 
 test('daily crystal recommendation copy localizes without changing which stone matches', () => {
   const options = { feeling: 'tired', dateKey: '2026-11-06' };
@@ -51,11 +52,19 @@ test('all crystal guidance labels and sentence templates have translations in ev
     for (const source of russianKeys) {
       expect(translateText(source, locale)).not.toBe(source);
     }
+    for (const theme of [...new Set(catalogState.flatMap((crystal) => crystal.themes))]) {
+      expect(translateText(theme, locale), `${locale}/${theme}`).not.toBe(theme);
+    }
   }
   expect(translateText('Birth details and places', 'ru')).toBe('Данные рождения и места');
   const collectionPriorityCopy = 'The guide checks stones in Your Collection first. When one matches your birth chart or today’s themes, it gets priority. If there are not enough suitable stones in your collection, the guide considers matching stones from the full catalog. If nothing fits, it leaves the suggestion empty.';
+  const rankingCopy = 'Daily ranking weights are: main transit themes 35%, your eight birth-chart companions 25%, today’s feeling 20%, relevant supporting aspects 10%, and your stated intention 10%. We score suitability first; hidden stones are excluded, and stones you own are prioritized only when choosing among suitable matches.';
   for (const locale of locales) {
     expect(translateText(collectionPriorityCopy, locale)).not.toBe(collectionPriorityCopy);
+    expect(translateText(rankingCopy, locale)).not.toBe(rankingCopy);
+    for (const source of dailyCrystalSourceCopyKeys) {
+      expect(translateText(source, locale)).not.toBe(source);
+    }
   }
 });
 
@@ -136,6 +145,7 @@ test('daily stone reasons keep theme phrases in the selected language and use na
       expect(recommendation).toBeDefined();
       expect(recommendation.reason).not.toMatch(/steady, practical steps|keeping going through difficulty/i);
       expect(recommendation.reason).not.toContain("Today's planetary connection");
+      expect(recommendation.reason).not.toContain('Your selected feeling');
     }
 
     const russian = getCrystalSuggestions(
@@ -145,7 +155,7 @@ test('daily stone reasons keep theme phrases in the selected language and use na
       (source) => translateText(source, 'ru'),
       (name) => getLocalizedCrystalCopy(name, 'ru')?.name ?? name,
     )[0].reason;
-    expect(russian).toContain('Основные темы камня «Сердолик»: жизненная сила и инициатива.');
+    expect(russian).toContain('В каталоге этот камень связан с темами: Жизненная сила и инициатива.');
     expect(russian).not.toContain('для жизненная сила');
   } finally {
     catalogState[0] = original;

@@ -267,10 +267,12 @@ vi.mock('@/profile/daily-personalization', () => ({
     const date = location
       ? state.homeLocalDate(now, location)
       : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const feelingIsCurrent = preferences.crystalPreferences.feelingDate === localDayKey(now);
+    const currentFeeling = feelingIsCurrent ? preferences.crystalPreferences.feeling : null;
     const options = {
       hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
       crystalCollection: preferences.crystalCollection,
-      feeling: preferences.crystalPreferences.feeling,
+      feeling: currentFeeling,
       dateKey: date,
     };
     state.dailyProfile = profile;
@@ -283,8 +285,8 @@ vi.mock('@/profile/daily-personalization', () => ({
       astrology,
       natalProfile: { placements: [], elementBalance: state.natalBalance },
       mood: {
-        selectedMood: preferences.crystalPreferences.feeling,
-        selectedDay: preferences.crystalPreferences.feelingDate ?? null,
+        selectedMood: currentFeeling,
+        selectedDay: currentFeeling ? preferences.crystalPreferences.feelingDate : null,
       },
       crystals: {
         ownedCrystals: preferences.crystalCollection,
@@ -303,6 +305,7 @@ vi.mock('@/hooks/useLocalClock', () => ({
 import CrystalsScreen from '../app/(tabs)/crystals';
 import { TabEdgeSwipe } from '../components/TabEdgeSwipe';
 import { FEELING_OPTIONS } from '../profile/crystal-guidance';
+import { localDayKey } from '../profile/local';
 
 let renderer: ReactTestRenderer | undefined;
 
@@ -748,7 +751,14 @@ test('three daily matches show one main stone, two companions, and the full coll
 test('the Crystals feeling picker uses the Settings choices and updates daily suggestions', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.profileContext.savePreferences.mockImplementation(async (nextPreferences: any) => {
-    state.profileContext.preferences = nextPreferences;
+    const today = localDayKey(new Date('2026-11-05T12:00:00.000Z'));
+    state.profileContext.preferences = {
+      ...nextPreferences,
+      crystalPreferences: {
+        ...nextPreferences.crystalPreferences,
+        feelingDate: nextPreferences.crystalPreferences.feeling ? today : null,
+      },
+    };
   });
   await act(async () => { renderer = create(<CrystalsScreen />); });
   const root = renderer!.root;
@@ -788,6 +798,43 @@ test('the Crystals feeling picker uses the Settings choices and updates daily su
   });
   expect(state.profileContext.preferences.crystalPreferences.feeling).toBeNull();
   expect(state.crystalOptions?.feeling).toBeNull();
+});
+
+test('a mood from yesterday is visibly cleared and can be chosen again today', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const today = localDayKey(new Date('2026-11-05T12:00:00.000Z'));
+  state.profileContext.preferences.crystalPreferences = {
+    intentions: [],
+    hiddenCrystals: [],
+    feeling: 'tired',
+    feelingDate: '2026-11-04',
+  } as any;
+  state.profileContext.savePreferences.mockImplementation(async (nextPreferences: any) => {
+    state.profileContext.preferences = {
+      ...nextPreferences,
+      crystalPreferences: {
+        ...nextPreferences.crystalPreferences,
+        feelingDate: nextPreferences.crystalPreferences.feeling ? today : null,
+      },
+    };
+  });
+
+  await act(async () => { renderer = create(<CrystalsScreen />); });
+  const root = renderer!.root;
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-feeling-picker-toggle' }).props.onPress();
+  });
+  expect(
+    root.findByProps({ testID: 'crystal-feeling-option-tired' }).props.accessibilityState.checked,
+  ).toBe(false);
+
+  await act(async () => {
+    root.findByProps({ testID: 'crystal-feeling-option-tired' }).props.onPress();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(state.profileContext.preferences.crystalPreferences.feeling).toBe('tired');
+  expect((state.profileContext.preferences.crystalPreferences as any).feelingDate).toBe(today);
+  expect(state.crystalOptions?.feeling).toBe('tired');
 });
 
 test('birth-chart companions show image cards and open the matching full-catalog detail', async () => {

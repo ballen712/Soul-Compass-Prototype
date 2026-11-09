@@ -861,9 +861,17 @@ test('ambiguous and skipped daylight-saving birth times are not guessed', () => 
 
 test('Cosmos and Crystals receive the same cached daily context with existing recommendations', () => {
   const profile = makeProfile();
-  const preferences = defaultPreferences();
   const now = new Date('2026-06-01T12:00:00.000Z');
   const translate = (source: string) => source;
+  const defaults = defaultPreferences();
+  const preferences = {
+    ...defaults,
+    crystalPreferences: {
+      ...defaults.crystalPreferences,
+      feeling: 'tired',
+      feelingDate: localDayKey(now),
+    },
+  };
   const input = { profile, preferences, now, locale: 'en' as const, translate };
 
   const cosmosContext = getDailyPersonalizationContext(input);
@@ -874,6 +882,11 @@ test('Cosmos and Crystals receive the same cached daily context with existing re
   assert.equal(cosmosContext.astrology?.status, 'calculated');
   assert.equal(cosmosContext.date, '2026-06-01');
   assert.equal(cosmosContext.timeZone, currentResidence.timeZone);
+  assert.equal(cosmosContext.mood.selectedMood, 'tired');
+  assert.equal(cosmosContext.mood.selectedDay, localDayKey(now));
+  assert.ok(cosmosContext.crystals.dailyCandidates.some(
+    (candidate) => candidate.scoreBreakdown.mood > 0,
+  ));
   assert.equal(cosmosContext.crystals.natalRecommendations.length, 8);
   assert.ok(cosmosContext.crystals.dailyCandidates.length <= 3);
   assert.deepEqual(cosmosContext.crystals.ownedCrystals, preferences.crystalCollection);
@@ -953,6 +966,35 @@ test('daily context refreshes preferences while reusing the same astronomical ca
   assert.equal(withMood.mood.selectedMood, 'tired');
   assert.equal(withMood.mood.selectedDay, '2026-06-01');
   assert.ok(withMood.crystals.dailyCandidates.length > 0);
+});
+
+test('daily chart date follows home timezone while current mood follows device date', () => {
+  const now = new Date('2026-06-02T01:30:00.000Z');
+  const profile = makeProfile({
+    currentResidence: { ...currentResidence, timeZone: 'America/Los_Angeles' },
+  });
+  const defaults = defaultPreferences();
+  const deviceDay = localDayKey(now);
+  const context = getDailyPersonalizationContext({
+    profile,
+    preferences: {
+      ...defaults,
+      crystalPreferences: {
+        ...defaults.crystalPreferences,
+        feeling: 'tired',
+        feelingDate: deviceDay,
+      },
+    },
+    now,
+    locale: 'en',
+    translate: (source) => source,
+  });
+
+  assert.equal(context.timeZone, 'America/Los_Angeles');
+  assert.equal(context.date, '2026-06-01');
+  assert.equal(context.mood.selectedMood, 'tired');
+  assert.equal(context.mood.selectedDay, deviceDay);
+  assert.strictEqual(context.astrology, getDailyAstrology(profile, now));
 });
 
 test('daily context ignores a feeling saved on a prior device day', () => {

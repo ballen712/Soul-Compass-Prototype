@@ -294,27 +294,6 @@ export default function CrystalsScreen() {
   const now = useLocalClock();
   const router = useRouter();
   const hidden = preferences.crystalPreferences.hiddenCrystals;
-  const selectedFeeling = FEELING_OPTIONS.find(
-    (option) => option.id === preferences.crystalPreferences.feeling,
-  );
-  const chooseFeeling = async (id: string) => {
-    if (feelingSaving) return;
-    const feeling = preferences.crystalPreferences.feeling === id ? null : id;
-    setFeelingSaving(true);
-    setFeelingSaveError(null);
-    try {
-      await savePreferences({
-        ...preferences,
-        crystalPreferences: { ...preferences.crystalPreferences, feeling },
-      });
-      setFeelingPickerOpen(false);
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    } catch {
-      setFeelingSaveError(t('That change could not be saved on this device. Please try again.'));
-    } finally {
-      setFeelingSaving(false);
-    }
-  };
   const translateStoneName = useCallback(
     (name: string) => getLocalizedCrystalCopy(name, locale)?.name ?? name,
     [locale],
@@ -330,6 +309,27 @@ export default function CrystalsScreen() {
     }),
     [profile, preferences, now, locale, t, translateStoneName],
   );
+  const selectedFeeling = FEELING_OPTIONS.find(
+    (option) => option.id === dailyContext.mood.selectedMood,
+  );
+  const chooseFeeling = async (id: string) => {
+    if (feelingSaving) return;
+    const feeling = dailyContext.mood.selectedMood === id ? null : id;
+    setFeelingSaving(true);
+    setFeelingSaveError(null);
+    try {
+      await savePreferences({
+        ...preferences,
+        crystalPreferences: { ...preferences.crystalPreferences, feeling },
+      });
+      setFeelingPickerOpen(false);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    } catch {
+      setFeelingSaveError(t('That change could not be saved on this device. Please try again.'));
+    } finally {
+      setFeelingSaving(false);
+    }
+  };
   const natalElementResult = dailyContext.natalProfile.elementBalance;
   const natalStoneSuggestions = dailyContext.crystals.natalRecommendations;
   const astrology = dailyContext.astrology;
@@ -734,7 +734,7 @@ export default function CrystalsScreen() {
                 </Text>
                 <View style={styles.feelingOptionsGrid}>
                   {FEELING_OPTIONS.map((option) => {
-                    const selected = preferences.crystalPreferences.feeling === option.id;
+                    const selected = dailyContext.mood.selectedMood === option.id;
                     return (
                       <Pressable
                         key={option.id}

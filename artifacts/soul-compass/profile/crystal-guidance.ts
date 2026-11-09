@@ -1,5 +1,6 @@
 import { crystalCatalog, type Crystal } from '../constants/content';
 import type { DailyAstrology, NatalElementBalance, TransitAspect, ZodiacElement } from './astrology';
+import { getTransitAspectThemes } from './transit-themes';
 
 type Calculated = Extract<DailyAstrology, { status: 'calculated' }>;
 type Options = {
@@ -204,27 +205,6 @@ const intentionThemes: Record<string, readonly string[]> = {
   change: ['change', 'adaptability', 'renewal', 'curiosity'],
 };
 
-const planetThemes: Record<string, readonly string[]> = {
-  Sun: ['confidence', 'direction', 'courage'],
-  Moon: ['rest', 'reflection', 'connection'],
-  Mercury: ['communication', 'focus', 'learning'],
-  Venus: ['connection', 'values', 'creativity'],
-  Mars: ['energy', 'initiative', 'courage'],
-  Jupiter: ['growth', 'perspective', 'optimism'],
-  Saturn: ['structure', 'patience', 'boundaries'],
-  Uranus: ['change', 'freedom', 'curiosity'],
-  Neptune: ['imagination', 'reflection', 'intuition'],
-  Pluto: ['renewal', 'boundaries', 'resilience'],
-};
-
-const aspectThemes: Record<string, readonly string[]> = {
-  conjunction: ['focus', 'initiative', 'energy'],
-  sextile: ['curiosity', 'opportunity', 'communication'],
-  square: ['patience', 'boundaries', 'resilience'],
-  trine: ['ease', 'confidence', 'balance'],
-  opposition: ['perspective', 'balance', 'communication'],
-};
-
 const allThemes = new Set(
   crystalCatalog.flatMap((crystal) => crystal.themes),
 );
@@ -256,11 +236,7 @@ function getChartThemes(astrology: Calculated | undefined): Set<string> {
   if (!astrology) return new Set();
   const themes = new Set<string>();
   for (const aspect of astrology.aspects.slice(0, 3)) {
-    for (const theme of [
-      ...(planetThemes[aspect.transitBody] ?? []),
-      ...(aspectThemes[aspect.aspect] ?? []),
-      ...(planetThemes[aspect.natalBody] ?? []),
-    ]) themes.add(theme);
+    for (const theme of getTransitAspectThemes(aspect)) themes.add(theme);
   }
   return themes;
 }
@@ -358,11 +334,7 @@ const themeAction: Record<string, string> = {
 function chartConnection(astrology: Calculated | undefined, crystal: Crystal) {
   if (!astrology) return null;
   const matches = astrology.aspects.slice(0, 3).map((aspect: TransitAspect) => {
-    const themes = [
-      ...(planetThemes[aspect.transitBody] ?? []),
-      ...(aspectThemes[aspect.aspect] ?? []),
-      ...(planetThemes[aspect.natalBody] ?? []),
-    ].filter((theme, index, all) =>
+    const themes = getTransitAspectThemes(aspect).filter((theme, index, all) =>
       crystal.themes.includes(theme) && all.indexOf(theme) === index,
     );
     return { aspect, themes };

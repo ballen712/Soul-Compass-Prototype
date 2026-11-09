@@ -6,6 +6,7 @@ import {
 } from '../constants/content';
 import type { HomeLocation, UserProfile } from './profile';
 import { getChartPrecision } from './profile';
+import { getTransitAspectThemes } from './transit-themes';
 
 export const EPHEMERIS_SOURCE = {
   name: 'Astronomy Engine 2.1.19',
@@ -50,8 +51,31 @@ const MAJOR_ASPECTS = [
   { name: 'opposition', angle: 180, quality: 'challenging' },
 ] as const;
 
-type Planet = (typeof PLANETS)[number];
-type AspectName = (typeof MAJOR_ASPECTS)[number]['name'];
+/**
+ * Transit rules are deliberately explicit and bounded:
+ * - Keep the existing 3° daily orb for compatibility.
+ * - Treat <=0.05° as exact (three times the documented ~1 arcminute model accuracy).
+ * - Compare real Astronomy Engine positions 12 hours before and after for motion.
+ * - Sample duration from actual positions, at <=1 day and about <=0.5° of motion,
+ *   for at most 90 days on either side; beyond that, expose only a lower bound.
+ * - Call a sampled window long-term at two weeks, and round ranking orbs to 0.1°
+ *   so negligible numerical changes do not reorder otherwise similar factors.
+ */
+export const TRANSIT_ANALYSIS_CONFIG = {
+  orbLimitDegrees: 3,
+  exactThresholdDegrees: 0.05,
+  motionSampleHours: 12,
+  motionEpsilonDegrees: 0.005,
+  durationSearchHorizonDays: 90,
+  maximumDurationSampleDays: 1,
+  targetAngularChangePerDurationSampleDegrees: 0.5,
+  rankingOrbResolutionDegrees: 0.1,
+  longTermMinimumDays: 14,
+} as const;
+
+export type PlanetaryBody = (typeof PLANETS)[number];
+type Planet = PlanetaryBody;
+export type AspectName = (typeof MAJOR_ASPECTS)[number]['name'];
 export type ZodiacElement = 'Fire' | 'Air' | 'Water' | 'Earth';
 
 export type NatalElementBalance = {
@@ -100,6 +124,53 @@ export type TransitAspect = {
   maxOrb: number;
 };
 
+export type TransitMotion = 'applying' | 'exact' | 'separating' | 'uncertain';
+export type TransitReliability = 'high' | 'limited';
+export type TransitDuration = {
+  /** A coarse, sampled duration estimate; never an exact prediction. */
+  category: 'brief' | 'days' | 'weeks' | 'long-term';
+  /** Approximate total window when both boundaries were observed within the search horizon. */
+  estimatedDays: number | null;
+  /** Conservative span observed inside the configured orb at sampled dates. */
+  minimumObservedDays: number;
+  /** True if one or both boundaries lay beyond the bounded search horizon. */
+  isLowerBound: boolean;
+  /** Maximum time interval between samples used to bracket a boundary. */
+  resolutionDays: number;
+};
+
+export type AnalyzedTransitAspect = TransitAspect & {
+  /** Null when the birth-time range does not support a single exact separation. */
+  angularSeparationDegrees: number | null;
+  separationRangeDegrees: { min: number; max: number };
+  minimumOrb: number;
+  motion: TransitMotion;
+  duration: TransitDuration;
+  themeTags: readonly string[];
+  reliability: TransitReliability;
+  priorityReason: 'exact' | 'applying' | 'closest' | 'uncertain';
+};
+
+export type DailyTransitAnalysis = {
+  /** Every planet-to-planet aspect inside the documented orb limit. */
+  activeAspects: AnalyzedTransitAspect[];
+  dominantAspect: AnalyzedTransitAspect | null;
+  supportingAspects: AnalyzedTransitAspect[];
+  longTermAspects: AnalyzedTransitAspect[];
+  mainThemes: string[];
+  supportingThemes: string[];
+  longTermThemes: string[];
+  themeEvidence: {
+    theme: string;
+    aspectCount: number;
+    appearsInMain: boolean;
+    supportingAspectCount: number;
+    longTermAspectCount: number;
+    reinforced: boolean;
+  }[];
+  reliability: TransitReliability;
+};
+
 export type CalculatedReading = {
   label: string;
   title: string;
@@ -117,6 +188,8 @@ export type DailyAstrology =
       natalPlacements: NatalPlacement[];
       transits: { body: Planet; longitude: number; sign: (typeof ZODIAC_SIGNS)[number] }[];
       aspects: TransitAspect[];
+      /** Always populated by calculateDailyAstrology; optional for legacy synthetic fixtures. */
+      transitAnalysis?: DailyTransitAnalysis;
       preciseBirthMoment: boolean;
       /** The saved residence's local calendar day; coordinates do not affect planetary factors. */
       calculationDate: string;
@@ -331,25 +404,187 @@ function angularSeparation(first: number, second: number): number {
   return Math.min(difference, 360 - difference);
 }
 
+type TransitPosition = {
+  body: Planet;
+  longitude: number;
+  speedDegreesPerDay: number;
+  sign: (typeof ZODIAC_SIGNS)[number];
+};
+
+type DurationBoundary = {
+  insideDays: number;
+  estimatedDays: number | null;
+  capped: boolean;
+};
+
+type LongitudeAt = (body: Planet, date: Date) => number;
+
+function aspectOrb(longitude: number, natalLongitude: number, angle: number) {
+  return Math.abs(angularSeparation(longitude, natalLongitude) - angle);
+}
+
+export function classifyTransitMotion(
+  currentOrbs: readonly number[],
+  beforeOrbs: readonly number[],
+  afterOrbs: readonly number[],
+): TransitMotion {
+  if (
+    currentOrbs.length > 0
+    && Math.max(...currentOrbs) <= TRANSIT_ANALYSIS_CONFIG.exactThresholdDegrees
+  ) {
+    return 'exact';
+  }
+
+  const statuses = currentOrbs.map((currentOrb, index): TransitMotion => {
+    const beforeChange = currentOrb - beforeOrbs[index];
+    const afterChange = afterOrbs[index] - currentOrb;
+    const epsilon = TRANSIT_ANALYSIS_CONFIG.motionEpsilonDegrees;
+    if (beforeChange < -epsilon && afterChange < -epsilon) return 'applying';
+    if (beforeChange > epsilon && afterChange > epsilon) return 'separating';
+    return 'uncertain';
+  });
+  const first = statuses[0];
+  return first && statuses.every((status) => status === first) ? first : 'uncertain';
+}
+
+function durationSampleStep(speedDegreesPerDay: number) {
+  const speed = Math.max(Math.abs(speedDegreesPerDay), 0.05);
+  return Math.max(
+    1 / 24,
+    Math.min(
+      TRANSIT_ANALYSIS_CONFIG.maximumDurationSampleDays,
+      TRANSIT_ANALYSIS_CONFIG.targetAngularChangePerDurationSampleDegrees / speed,
+    ),
+  );
+}
+
+function scanDurationBoundary(
+  direction: -1 | 1,
+  transitBody: Planet,
+  natal: NatalPlacement,
+  aspectAngle: number,
+  now: Date,
+  stepDays: number,
+  longitudeAt: LongitudeAt,
+): DurationBoundary {
+  const horizon = TRANSIT_ANALYSIS_CONFIG.durationSearchHorizonDays;
+  let lastInsideDays = 0;
+  for (let elapsedDays = stepDays; elapsedDays <= horizon + 1e-9;) {
+    const sampleDays = Math.min(elapsedDays, horizon);
+    const sampleDate = new Date(now.getTime() + direction * sampleDays * 24 * 60 * 60 * 1000);
+    const longitude = longitudeAt(transitBody, sampleDate);
+    const maximumOrb = Math.max(
+      ...natal.possibleLongitudes.map((natalLongitude) =>
+        aspectOrb(longitude, natalLongitude, aspectAngle),
+      ),
+    );
+    if (maximumOrb > TRANSIT_ANALYSIS_CONFIG.orbLimitDegrees) {
+      return {
+        insideDays: lastInsideDays,
+        estimatedDays: (lastInsideDays + sampleDays) / 2,
+        capped: false,
+      };
+    }
+    lastInsideDays = sampleDays;
+    if (sampleDays >= horizon) break;
+    elapsedDays = Math.min(elapsedDays + stepDays, horizon);
+  }
+  return { insideDays: horizon, estimatedDays: null, capped: true };
+}
+
+function estimateTransitDuration(
+  transit: TransitPosition,
+  natal: NatalPlacement,
+  aspectAngle: number,
+  now: Date,
+  longitudeAt: LongitudeAt,
+): TransitDuration {
+  const stepDays = durationSampleStep(transit.speedDegreesPerDay);
+  const before = scanDurationBoundary(
+    -1, transit.body, natal, aspectAngle, now, stepDays, longitudeAt,
+  );
+  const after = scanDurationBoundary(
+    1, transit.body, natal, aspectAngle, now, stepDays, longitudeAt,
+  );
+  const isLowerBound = before.capped || after.capped;
+  const estimatedDays = isLowerBound || before.estimatedDays === null || after.estimatedDays === null
+    ? null
+    : before.estimatedDays + after.estimatedDays;
+  const minimumObservedDays = before.insideDays + after.insideDays;
+  const durationForCategory = estimatedDays ?? minimumObservedDays;
+  const category: TransitDuration['category'] = durationForCategory >= TRANSIT_ANALYSIS_CONFIG.longTermMinimumDays
+    ? 'long-term'
+    : durationForCategory >= 7
+      ? 'weeks'
+      : durationForCategory >= 1
+        ? 'days'
+        : 'brief';
+
+  return {
+    category,
+    estimatedDays: estimatedDays === null ? null : Number(estimatedDays.toFixed(1)),
+    minimumObservedDays: Number(minimumObservedDays.toFixed(1)),
+    isLowerBound,
+    resolutionDays: Number((stepDays * 2).toFixed(3)),
+  };
+}
+
 function getTransitAspects(
   natalPlacements: NatalPlacement[],
-  transits: { body: Planet; longitude: number; sign: (typeof ZODIAC_SIGNS)[number] }[],
-): TransitAspect[] {
-  const candidates: TransitAspect[] = [];
+  transits: TransitPosition[],
+  now: Date,
+  longitudeAt: LongitudeAt,
+  preciseBirthMoment: boolean,
+): AnalyzedTransitAspect[] {
+  const candidates: AnalyzedTransitAspect[] = [];
+  const motionOffsetMs = TRANSIT_ANALYSIS_CONFIG.motionSampleHours * 60 * 60 * 1000;
   for (const transit of transits) {
     for (const natal of natalPlacements) {
       const matches = MAJOR_ASPECTS.map((aspect) => ({
         aspect,
-        maxOrb: Math.max(
-          ...natal.possibleLongitudes.map((longitude) =>
-            Math.abs(angularSeparation(transit.longitude, longitude) - aspect.angle),
-          ),
+        orbs: natal.possibleLongitudes.map((longitude) =>
+          aspectOrb(transit.longitude, longitude, aspect.angle),
+        ),
+        separations: natal.possibleLongitudes.map((longitude) =>
+          angularSeparation(transit.longitude, longitude),
         ),
       }))
-        .filter((match) => match.maxOrb <= 3)
+        .map((match) => ({
+          ...match,
+          maxOrb: Math.max(...match.orbs),
+          minimumOrb: Math.min(...match.orbs),
+        }))
+        .filter((match) => match.maxOrb <= TRANSIT_ANALYSIS_CONFIG.orbLimitDegrees)
         .sort((first, second) => first.maxOrb - second.maxOrb);
       const closest = matches[0];
       if (!closest) continue;
+      const longitudeBefore = longitudeAt(
+        transit.body,
+        new Date(now.getTime() - motionOffsetMs),
+      );
+      const longitudeAfter = longitudeAt(
+        transit.body,
+        new Date(now.getTime() + motionOffsetMs),
+      );
+      const beforeOrbs = natal.possibleLongitudes.map((longitude) =>
+        aspectOrb(longitudeBefore, longitude, closest.aspect.angle),
+      );
+      const currentOrbs = closest.orbs;
+      const afterOrbs = natal.possibleLongitudes.map((longitude) =>
+        aspectOrb(longitudeAfter, longitude, closest.aspect.angle),
+      );
+      const motion = classifyTransitMotion(currentOrbs, beforeOrbs, afterOrbs);
+      const separationRangeDegrees = {
+        min: Math.min(...closest.separations),
+        max: Math.max(...closest.separations),
+      };
+      const priorityReason: AnalyzedTransitAspect['priorityReason'] = motion === 'exact'
+        ? 'exact'
+        : motion === 'applying'
+          ? 'applying'
+          : motion === 'uncertain'
+            ? 'uncertain'
+            : 'closest';
       candidates.push({
         transitBody: transit.body,
         transitSign: transit.sign,
@@ -358,10 +593,150 @@ function getTransitAspects(
         aspect: closest.aspect.name,
         quality: closest.aspect.quality,
         maxOrb: closest.maxOrb,
+        themeTags: getTransitAspectThemes({
+          transitBody: transit.body,
+          aspect: closest.aspect.name,
+          natalBody: natal.body,
+        }),
+        angularSeparationDegrees: natal.possibleLongitudes.length === 1
+          ? closest.separations[0]
+          : null,
+        separationRangeDegrees,
+        minimumOrb: closest.minimumOrb,
+        motion,
+        duration: estimateTransitDuration(
+          transit,
+          natal,
+          closest.aspect.angle,
+          now,
+          longitudeAt,
+        ),
+        reliability: preciseBirthMoment ? 'high' : 'limited',
+        priorityReason,
       });
     }
   }
-  return candidates.sort((first, second) => first.maxOrb - second.maxOrb).slice(0, 4);
+  return candidates.sort((first, second) => first.maxOrb - second.maxOrb);
+}
+
+function transitPriority(aspect: AnalyzedTransitAspect) {
+  const roundedOrb = Math.round(
+    aspect.maxOrb / TRANSIT_ANALYSIS_CONFIG.rankingOrbResolutionDegrees,
+  );
+  const motionPriority: Record<TransitMotion, number> = {
+    exact: 0,
+    applying: 1,
+    separating: 2,
+    uncertain: 3,
+  };
+  return [
+    aspect.motion === 'exact' ? 0 : 1,
+    roundedOrb,
+    motionPriority[aspect.motion],
+    PLANETS.indexOf(aspect.transitBody),
+    MAJOR_ASPECTS.findIndex((item) => item.name === aspect.aspect),
+    PLANETS.indexOf(aspect.natalBody),
+  ];
+}
+
+function compareTransitPriority(
+  first: AnalyzedTransitAspect,
+  second: AnalyzedTransitAspect,
+) {
+  // Lexicographic order, not a weighted score: exactness, rounded orb,
+  // applying/separating state, then stable body/aspect order.
+  const firstPriority = transitPriority(first);
+  const secondPriority = transitPriority(second);
+  for (let index = 0; index < firstPriority.length; index += 1) {
+    if (firstPriority[index] !== secondPriority[index]) {
+      return firstPriority[index] - secondPriority[index];
+    }
+  }
+  return 0;
+}
+
+function uniqueThemes(aspects: readonly AnalyzedTransitAspect[]) {
+  return [...new Set(aspects.flatMap((aspect) => aspect.themeTags ?? []))];
+}
+
+function buildThemeEvidence(
+  aspects: readonly AnalyzedTransitAspect[],
+  dominantAspect: AnalyzedTransitAspect | null,
+  supportingAspects: readonly AnalyzedTransitAspect[],
+) {
+  const supportingSet = new Set(supportingAspects);
+  const evidence = new Map<string, {
+    theme: string;
+    aspectCount: number;
+    appearsInMain: boolean;
+    supportingAspectCount: number;
+    longTermAspectCount: number;
+  }>();
+
+  for (const aspect of aspects) {
+    for (const theme of new Set(aspect.themeTags ?? [])) {
+      const entry = evidence.get(theme) ?? {
+        theme,
+        aspectCount: 0,
+        appearsInMain: false,
+        supportingAspectCount: 0,
+        longTermAspectCount: 0,
+      };
+      entry.aspectCount += 1;
+      if (aspect === dominantAspect) entry.appearsInMain = true;
+      if (supportingSet.has(aspect)) entry.supportingAspectCount += 1;
+      if (aspect.duration.category === 'long-term') entry.longTermAspectCount += 1;
+      evidence.set(theme, entry);
+    }
+  }
+
+  return [...evidence.values()].map((entry) => ({
+    ...entry,
+    reinforced: entry.aspectCount > 1,
+  }));
+}
+
+function createTransitAnalysis(
+  aspects: AnalyzedTransitAspect[],
+  preciseBirthMoment: boolean,
+): DailyTransitAnalysis {
+  const ranked = [...aspects].sort(compareTransitPriority);
+  const shortTerm = ranked.filter((aspect) => aspect.duration.category !== 'long-term');
+  const longTerm = ranked.filter((aspect) => aspect.duration.category === 'long-term');
+  const dominantAspect = shortTerm[0] ?? ranked[0] ?? null;
+  const supportingAspects = shortTerm.filter((aspect) => aspect !== dominantAspect);
+  const longTermAspects = longTerm.filter((aspect) => aspect !== dominantAspect);
+  const mainThemes = dominantAspect?.themeTags ? [...dominantAspect.themeTags] : [];
+  const mainThemeSet = new Set(mainThemes);
+  const supportingThemes = uniqueThemes(supportingAspects)
+    .filter((theme) => !mainThemeSet.has(theme));
+  const usedThemes = new Set([...mainThemes, ...supportingThemes]);
+  const longTermThemes = uniqueThemes(longTermAspects)
+    .filter((theme) => !usedThemes.has(theme));
+
+  return {
+    activeAspects: ranked,
+    dominantAspect,
+    supportingAspects,
+    longTermAspects,
+    mainThemes,
+    supportingThemes,
+    longTermThemes,
+    themeEvidence: buildThemeEvidence(ranked, dominantAspect, supportingAspects),
+    reliability: preciseBirthMoment ? 'high' : 'limited',
+  };
+}
+
+function toLegacyTransitAspect(aspect: AnalyzedTransitAspect): TransitAspect {
+  return {
+    transitBody: aspect.transitBody,
+    transitSign: aspect.transitSign,
+    natalBody: aspect.natalBody,
+    natalSign: aspect.natalSign,
+    aspect: aspect.aspect,
+    quality: aspect.quality,
+    maxOrb: aspect.maxOrb,
+  };
 }
 
 export function makeCalculatedReading(
@@ -484,11 +859,46 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
       };
     }
 
-    const transits = PLANETS.map((body) => {
-      const longitude = normalizeLongitude(geocentricEclipticLongitude(body, now));
-      return { body, longitude, sign: signForLongitude(longitude) };
+    const longitudeCache = new Map<string, number>();
+    const longitudeAt: LongitudeAt = (body, date) => {
+      const key = `${body}:${date.getTime()}`;
+      const cached = longitudeCache.get(key);
+      if (cached !== undefined) return cached;
+      const longitude = normalizeLongitude(geocentricEclipticLongitude(body, date));
+      longitudeCache.set(key, longitude);
+      return longitude;
+    };
+    const halfDayMs = 12 * 60 * 60 * 1000;
+    const transitPositions: TransitPosition[] = PLANETS.map((body) => {
+      const longitude = longitudeAt(body, now);
+      const longitudeBefore = longitudeAt(body, new Date(now.getTime() - halfDayMs));
+      const longitudeAfter = longitudeAt(body, new Date(now.getTime() + halfDayMs));
+      const speedDegreesPerDay = normalizeLongitude(
+        longitudeAfter - longitudeBefore + 180,
+      ) - 180;
+      return {
+        body,
+        longitude,
+        speedDegreesPerDay,
+        sign: signForLongitude(longitude),
+      };
     });
-    const aspects = getTransitAspects(natalPlacements, transits);
+    const transits = transitPositions.map(({ body, longitude, sign }) => ({
+      body,
+      longitude,
+      sign,
+    }));
+    const analyzedAspects = getTransitAspects(
+      natalPlacements,
+      transitPositions,
+      now,
+      longitudeAt,
+      preciseBirthMoment,
+    );
+    const transitAnalysis = createTransitAnalysis(analyzedAspects, preciseBirthMoment);
+    // Keep the existing four-aspect input and closest-orb ordering for current
+    // screen copy and crystal scoring. The full analysis is available separately.
+    const aspects = analyzedAspects.slice(0, 4).map(toLegacyTransitAspect);
 
     return {
       status: 'calculated',
@@ -496,6 +906,7 @@ export function calculateDailyAstrology(profile: UserProfile, now = new Date()):
       natalPlacements,
       transits,
       aspects,
+      transitAnalysis,
       preciseBirthMoment,
       calculationDate: localDateLabel(now, dailyLocation.timeZone),
       sourceLabel: `${EPHEMERIS_SOURCE.name} · geocentric tropical positions · ${EPHEMERIS_SOURCE.models} · documented ±1 arcminute · ${EPHEMERIS_SOURCE.url}`,

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateDailyAstrology, calculateNatalElementBalance, calculateNatalElementBalanceFromPlacements, EPHEMERIS_SOURCE, makeCalculatedReading } from './astrology';
+import { calculateDailyAstrology, calculateNatalElementBalance, calculateNatalElementBalanceFromPlacements, classifyTransitMotion, EPHEMERIS_SOURCE, makeCalculatedReading, TRANSIT_ANALYSIS_CONFIG } from './astrology';
 import type { NatalElementBalance } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
 import { FEELING_OPTIONS, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
 import { getDailyPersonalizationContext } from './daily-personalization';
+import { getTransitAspectThemes } from './transit-themes';
 import { defaultPreferences } from './local';
 import { crystalCatalog, dailyReading } from '../constants/content';
 
@@ -117,6 +118,122 @@ test('daily calculation date follows the saved home time zone', () => {
   assert.equal(londonResult.calculationDate, 'June 1, 2026');
   assert.deepEqual(result.transits, londonResult.transits);
   assert.deepEqual(result.aspects, londonResult.aspects);
+});
+
+test('applying, exact, separating, and uncertain status use observed motion on both sides', () => {
+  assert.equal(classifyTransitMotion([1], [1.2], [0.8]), 'applying');
+  assert.equal(classifyTransitMotion([1], [0.8], [1.2]), 'separating');
+  assert.equal(classifyTransitMotion([0.04], [0.2], [0.2]), 'exact');
+  assert.equal(classifyTransitMotion([1], [1.01], [1.02]), 'uncertain');
+  assert.equal(classifyTransitMotion([1, 1], [1.2, 0.8], [0.8, 1.2]), 'uncertain');
+});
+
+test('transit analysis ranks multiple synthetic charts and separates long-term context', () => {
+  const scenarios = [
+    {
+      profile: makeProfile(),
+      now: new Date('2026-06-01T12:00:00.000Z'),
+    },
+    {
+      profile: makeProfile({
+        birthDate: '1988-05-17',
+        birthTime: { status: 'known', localTime: '08:20' },
+      }),
+      now: new Date('2026-11-09T12:00:00.000Z'),
+    },
+    {
+      profile: makeProfile({
+        birthDate: '1994-11-29',
+        birthTime: { status: 'unknown' },
+      }),
+      now: new Date('2026-03-21T12:00:00.000Z'),
+    },
+  ];
+  let sawMoreThanFourAspects = false;
+  let sawLongTermTransit = false;
+  let sawCappedDurationLowerBound = false;
+
+  for (const { profile, now } of scenarios) {
+    const result = calculateDailyAstrology(profile, now);
+    assert.equal(result.status, 'calculated');
+    if (result.status !== 'calculated') continue;
+
+    const analysis = result.transitAnalysis;
+    assert.ok(analysis);
+    sawMoreThanFourAspects ||= analysis.activeAspects.length > 4;
+    sawLongTermTransit ||= analysis.longTermAspects.length > 0;
+    sawCappedDurationLowerBound ||= analysis.activeAspects.some((aspect) =>
+      aspect.duration.isLowerBound,
+    );
+    assert.ok(analysis.activeAspects.every((aspect) =>
+      aspect.maxOrb <= TRANSIT_ANALYSIS_CONFIG.orbLimitDegrees,
+    ));
+    assert.equal(
+      result.aspects.length,
+      Math.min(4, analysis.activeAspects.length),
+      'legacy daily reading keeps its existing four-aspect limit',
+    );
+
+    const closestFour = [...analysis.activeAspects]
+      .sort((first, second) => first.maxOrb - second.maxOrb)
+      .slice(0, 4);
+    assert.deepEqual(
+      result.aspects.map(({ transitBody, natalBody, aspect }) => `${transitBody}:${natalBody}:${aspect}`),
+      closestFour.map(({ transitBody, natalBody, aspect }) => `${transitBody}:${natalBody}:${aspect}`),
+      'legacy screen inputs retain their prior closest-orb order',
+    );
+
+    for (const aspect of analysis.activeAspects) {
+      assert.ok(aspect.themeTags?.length);
+      assert.deepEqual(
+        aspect.themeTags,
+        getTransitAspectThemes(aspect),
+        'transit analysis and crystal scoring use the same theme vocabulary',
+      );
+      assert.ok(aspect.separationRangeDegrees.min <= aspect.separationRangeDegrees.max);
+      assert.ok(aspect.minimumOrb <= aspect.maxOrb);
+      assert.ok(aspect.duration.minimumObservedDays >= 0);
+      assert.ok(aspect.duration.resolutionDays > 0);
+      assert.equal(
+        aspect.duration.estimatedDays === null,
+        aspect.duration.isLowerBound,
+        'a capped search is reported as a lower bound, not a precise duration',
+      );
+      if (aspect.motion === 'exact') {
+        assert.ok(aspect.maxOrb <= TRANSIT_ANALYSIS_CONFIG.exactThresholdDegrees);
+      }
+      if (aspect.motion === 'applying') assert.equal(aspect.priorityReason, 'applying');
+      if (aspect.motion === 'uncertain') assert.equal(aspect.priorityReason, 'uncertain');
+      if (!result.preciseBirthMoment) {
+        assert.equal(aspect.angularSeparationDegrees, null);
+        assert.equal(aspect.reliability, 'limited');
+      }
+    }
+
+    const grouped = [
+      ...(analysis.dominantAspect ? [analysis.dominantAspect] : []),
+      ...analysis.supportingAspects,
+      ...analysis.longTermAspects,
+    ];
+    assert.equal(
+      new Set(grouped).size,
+      analysis.activeAspects.length,
+      'dominant, supporting, and background groups cover every active aspect once',
+    );
+    assert.equal(
+      analysis.reliability,
+      result.preciseBirthMoment ? 'high' : 'limited',
+    );
+    for (const evidence of analysis.themeEvidence) {
+      assert.equal(evidence.reinforced, evidence.aspectCount > 1);
+      assert.ok(evidence.supportingAspectCount <= evidence.aspectCount);
+      assert.ok(evidence.longTermAspectCount <= evidence.aspectCount);
+    }
+  }
+
+  assert.ok(sawMoreThanFourAspects, 'analysis includes relevant aspects beyond the legacy screen limit');
+  assert.ok(sawLongTermTransit, 'at least one synthetic chart exercises the long-term layer');
+  assert.ok(sawCappedDurationLowerBound, 'long windows are exposed as observed lower bounds');
 });
 
 test('current-city coordinates do not change geocentric factors or stone matches', () => {

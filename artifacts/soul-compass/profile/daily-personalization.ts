@@ -5,6 +5,7 @@ import {
   calculateNatalElementBalance,
   calculateNatalElementBalanceFromPlacements,
   getHomeLocalDate,
+  type DailyTransitAnalysis,
   type DailyAstrology,
   type NatalElementResult,
   type NatalPlacement,
@@ -27,6 +28,8 @@ export type DailyPersonalizationContext = {
   timeZone: string | null;
   /** The existing local astrology result, including an explicit unavailable state. */
   astrology: DailyAstrology | null;
+  /** Full, ranked transit analysis; null when chart calculation is unavailable. */
+  transitAnalysis: DailyTransitAnalysis | null;
   natalProfile: {
     placements: readonly NatalPlacement[];
     elementBalance: NatalElementResult | null;
@@ -143,6 +146,9 @@ export function getDailyPersonalizationContext(
     date,
     timeZone,
     astrology,
+    transitAnalysis: astrology?.status === 'calculated'
+      ? astrology.transitAnalysis ?? null
+      : null,
     natalProfile: {
       placements: astrology?.status === 'calculated' ? astrology.natalPlacements : [],
       elementBalance,

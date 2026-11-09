@@ -15,7 +15,20 @@ const state = vi.hoisted(() => ({
   appStateListeners: new Set<(nextState: string) => void>(),
   focusCallback: null as null | (() => void),
   scrollToTopRef: null as null | { current: unknown },
-  dailyAstrology: { status: 'unavailable' as const, message: 'No current transit fixture.' },
+  dailyAstrology: null as null | {
+    status: 'unavailable' | 'calculated';
+    message?: string;
+    transits?: Array<{ body: string; longitude: number; sign: string }>;
+    transitAnalysis?: {
+      activeAspects?: Array<{
+        transitBody: string;
+        natalBody: string;
+        aspect: string;
+        maxOrb: number;
+        reliability: 'high' | 'limited';
+      }>;
+    };
+  },
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -153,7 +166,21 @@ const wheelPalette = {
   aspectConjunction: '#D9C49B',
 };
 
-async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true, withTransits = true) {
+async function renderInteractionWheel(
+  locale: AppLocale = 'en',
+  timeKnown = true,
+  withTransits = true,
+  overrides: {
+    transitPlanets?: Array<{ body: string; longitude: number; sign: string }>;
+    transitAspects?: Array<{
+      transitBody: string;
+      natalBody: string;
+      aspect: string;
+      maxOrb: number;
+      reliability: 'high' | 'limited';
+    }>;
+  } = {},
+) {
   const translateCopy = (source: string) => (
     locale === 'en' ? source : natalTranslations[locale][source] ?? source
   );
@@ -167,11 +194,11 @@ async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true
         moonSignRange={[]}
         timeKnown={timeKnown}
         majorAspects={interactionAspects}
-        transitPlanets={withTransits ? [
+        transitPlanets={overrides.transitPlanets ?? (withTransits ? [
           { body: 'Mars', longitude: 14.4, sign: 'Aries' },
           { body: 'Venus', longitude: 205, sign: 'Libra' },
-        ] : []}
-        transitAspects={withTransits ? [
+        ] : [])}
+        transitAspects={overrides.transitAspects ?? (withTransits ? [
           {
             transitBody: 'Mars',
             natalBody: 'Moon',
@@ -179,7 +206,7 @@ async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true
             maxOrb: 0.6,
             reliability: 'high',
           },
-        ] : []}
+        ] : [])}
         houseByPlanet={new Map([['sun', 5], ['moon', 9]])}
         houseCusps={interactionHouseCusps}
         angles={{ ascendant: 0, descendant: 180, midheaven: 270, imumCoeli: 90 }}
@@ -309,6 +336,7 @@ beforeEach(() => {
   state.scrollToTopRef = null;
   state.platformOS = 'web';
   state.windowWidth = 402;
+  state.dailyAstrology = { status: 'unavailable', message: 'No current transit fixture.' };
   state.calculate.mockReset().mockResolvedValue(chartResult);
   const profile = {
     birthDate: '2000-01-01',
@@ -479,6 +507,50 @@ test('previously granted current-version permission refreshes automatically at a
     );
   });
 
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+});
+
+test('Natal Chart reuses local transit data without another server calculation', async () => {
+  const record = JSON.parse(state.storage.get(LOCAL_KEY)!);
+  record.privacy = {
+    astrologyApiConsent: true,
+    consentTimestamp: new Date().toISOString(),
+    consentVersion: CONSENT_VERSION,
+    revokedAt: null,
+  };
+  state.storage.set(LOCAL_KEY, JSON.stringify(record));
+  state.dailyAstrology = {
+    status: 'calculated',
+    transits: [{ body: 'Mars', longitude: 14.4, sign: 'Aries' }],
+    transitAnalysis: {
+      activeAspects: [{
+        transitBody: 'Mars',
+        natalBody: 'Moon',
+        aspect: 'trine',
+        maxOrb: 0.6,
+        reliability: 'high',
+      }],
+    },
+  };
+
+  await act(async () => {
+    renderer = create(
+      <ProfileProvider>
+        <NatalCalculationProvider>
+          <NatalAutoRefresh />
+          <NatalScreen />
+        </NatalCalculationProvider>
+      </ProfileProvider>,
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+
+  const root = renderer!.root;
+  expect(state.calculate).toHaveBeenCalledTimes(1);
+  const transitsMode = root.findByProps({ testID: 'natal-chart-mode-transits' });
+  expect(transitsMode.props.accessibilityState.disabled).toBe(false);
+  await act(async () => { transitsMode.props.onPress(); });
+  expect(root.findByProps({ testID: 'natal-transit-planet-marker-mars' })).toBeDefined();
   expect(state.calculate).toHaveBeenCalledTimes(1);
 });
 
@@ -1087,6 +1159,127 @@ test('transit and combined modes draw the current positions and aspects to natal
   expect(root.findByProps({ testID: 'natal-transit-aspect-line-trine-mars-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
 });
+
+test.each([
+  { longitude: -0.01, expected: '29° 59′ Pisces' },
+  { longitude: 0, expected: '00° 00′ Aries' },
+  { longitude: 29.9999, expected: '00° 00′ Taurus' },
+  { longitude: 30, expected: '00° 00′ Taurus' },
+  { longitude: 359.9999, expected: '00° 00′ Aries' },
+  { longitude: 360, expected: '00° 00′ Aries' },
+])('transit position $longitude° formats correctly across sign boundaries', async ({ longitude, expected }) => {
+  const root = await renderInteractionWheel('en', true, true, {
+    transitPlanets: [{ body: 'Mars', longitude, sign: 'Aries' }],
+    transitAspects: [],
+  });
+  await act(async () => { root.findByProps({ testID: 'natal-chart-mode-transits' }).props.onPress(); });
+  await act(async () => { root.findByProps({ testID: 'natal-transit-planet-hit-area-mars' }).props.onPress(); });
+  expect(root.findByProps({ testID: 'natal-transit-planet-detail-position' }).props.children)
+    .toBe(expected);
+});
+
+test('transit markers preserve cardinal longitude directions when no birth time is known', async () => {
+  const transitPlanets = [
+    { body: 'Sun', longitude: 0, sign: 'Aries' },
+    { body: 'Moon', longitude: 90, sign: 'Cancer' },
+    { body: 'Mercury', longitude: 180, sign: 'Libra' },
+    { body: 'Venus', longitude: 270, sign: 'Capricorn' },
+  ];
+  const root = await renderInteractionWheel('en', false, true, {
+    transitPlanets,
+    transitAspects: [],
+  });
+  await act(async () => { root.findByProps({ testID: 'natal-chart-mode-transits' }).props.onPress(); });
+
+  const svg = root.findByProps({ testID: 'natal-chart-wheel-svg' });
+  const size = Number(svg.props.width);
+  const center = size / 2;
+  const radius = center * 0.39;
+  const expectedCoordinates = {
+    sun: { x: center, y: center - radius },
+    moon: { x: center + radius, y: center },
+    mercury: { x: center, y: center + radius },
+    venus: { x: center - radius, y: center },
+  };
+  for (const [planet, expected] of Object.entries(expectedCoordinates)) {
+    const marker = root.findByProps({ testID: `natal-transit-planet-marker-${planet}` }).props;
+    expect(marker.cx).toBeCloseTo(expected.x, 4);
+    expect(marker.cy).toBeCloseTo(expected.y, 4);
+  }
+  expect(root.findAllByProps({ testID: 'natal-wheel-house-hit-area-1' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-axis-asc-dsc' })).toHaveLength(0);
+});
+
+test('unknown-time transit aspects to the natal Moon remain visibly lower-confidence', async () => {
+  const root = await renderInteractionWheel('en', false, true, {
+    transitAspects: [{
+      transitBody: 'Mars',
+      natalBody: 'Moon',
+      aspect: 'trine',
+      maxOrb: 0.6,
+      reliability: 'limited',
+    }],
+  });
+  await act(async () => { root.findByProps({ testID: 'natal-chart-mode-transits' }).props.onPress(); });
+
+  const aspectLine = root.findByProps({ testID: 'natal-transit-aspect-line-trine-mars-moon' });
+  expect(aspectLine.props.strokeDasharray).toBe('1 5');
+  expect(aspectLine.props.opacity).toBe(0.18);
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-aspect-hit-trine-mars-moon' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-aspect-detail-trine-mars-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-transit-aspect-line-trine-mars-moon' }).props.opacity)
+    .toBe(0.5);
+});
+
+test('Russian transit details use localized signs and aspect labels', async () => {
+  const root = await renderInteractionWheel('ru');
+  await act(async () => { root.findByProps({ testID: 'natal-chart-mode-transits' }).props.onPress(); });
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-planet-hit-area-mars' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-planet-detail-position' }).props.children)
+    .toBe(`14° 24′ ${natalTranslations.ru.Aries}`);
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-planet-detail-aspect-0' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-aspect-detail-title' }).props.children)
+    .toBe(`${natalTranslations.ru.Mars} ${natalTranslations.ru.trine} ${natalTranslations.ru.Moon}`);
+  expect(root.findByProps({ testID: 'natal-transit-aspect-detail-context' }).props.children)
+    .toBe(natalTranslations.ru['Transit aspect']);
+});
+
+test.each([320, 375, 393, 402])(
+  'transit markers and aspect lines stay inside the wheel at %i-point width',
+  async (screenWidth) => {
+    state.windowWidth = screenWidth;
+    const root = await renderInteractionWheel();
+    await act(async () => {
+      root.findByProps({ testID: 'natal-planet-wheel' }).props.onLayout({
+        nativeEvent: { layout: { width: screenWidth - 76 } },
+      });
+      root.findByProps({ testID: 'natal-chart-mode-combined' }).props.onPress();
+    });
+
+    const svg = root.findByProps({ testID: 'natal-chart-wheel-svg' });
+    const size = Number(svg.props.width);
+    for (const planet of ['mars', 'venus']) {
+      const marker = root.findByProps({ testID: `natal-transit-planet-marker-${planet}` }).props;
+      expect(marker.cx - marker.r).toBeGreaterThanOrEqual(0);
+      expect(marker.cy - marker.r).toBeGreaterThanOrEqual(0);
+      expect(marker.cx + marker.r).toBeLessThanOrEqual(size);
+      expect(marker.cy + marker.r).toBeLessThanOrEqual(size);
+    }
+    const transitLine = root.findByProps({
+      testID: 'natal-transit-aspect-line-trine-mars-moon',
+    }).props;
+    for (const value of [transitLine.x1, transitLine.x2, transitLine.y1, transitLine.y2]) {
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(size);
+    }
+  },
+);
 
 test('transit modes are disabled when no current positions are available', async () => {
   const root = await renderInteractionWheel('en', true, false);

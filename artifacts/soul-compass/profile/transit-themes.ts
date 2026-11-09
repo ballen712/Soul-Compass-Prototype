@@ -21,6 +21,19 @@ const aspectThemes: Record<AspectName, readonly string[]> = {
   opposition: ['perspective', 'balance', 'communication'],
 };
 
+export const planetDailyThemeCopy: Record<PlanetaryBody, string> = {
+  Sun: 'confidence and direction',
+  Moon: 'feelings and daily needs',
+  Mercury: 'conversation and attention',
+  Venus: 'connection and values',
+  Mars: 'energy and initiative',
+  Jupiter: 'growth and perspective',
+  Saturn: 'commitment and structure',
+  Uranus: 'change and independence',
+  Neptune: 'imagination and uncertainty',
+  Pluto: 'deep change and boundaries',
+};
+
 /** Shared tag vocabulary for transit analysis and crystal matching. */
 export function getTransitAspectThemes(
   aspect: Pick<TransitAspect, 'transitBody' | 'aspect' | 'natalBody'>,

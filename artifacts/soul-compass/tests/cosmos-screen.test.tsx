@@ -81,6 +81,7 @@ vi.mock('@/profile/daily-personalization', () => ({
     date: `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
     timeZone: null,
     astrology: profile ? state.getDailyAstrology(profile, now) : null,
+    transitAnalysis: profile ? state.getDailyAstrology(profile, now)?.transitAnalysis ?? null : null,
     natalProfile: { placements: [], elementBalance: null },
     mood: { selectedMood: null, selectedDay: null },
     crystals: {
@@ -259,6 +260,48 @@ test('calculated focus and caution are both visible and readable in the Cosmos c
       root.findByProps({ accessibilityLabel: 'Close explanation' }).props.onPress();
     });
   }
+});
+
+test('Cosmos displays the transit-to-natal reading composed from shared context', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  state.profile = {};
+  state.getDailyAstrology.mockReturnValue({
+    status: 'calculated',
+    reading: {
+      label: 'TODAY’S REFLECTION',
+      title: 'Treat tension as information.',
+      body: 'Older generic reading.',
+      favorableFocus: 'Older focus.',
+      gentleCaution: 'Older caution.',
+      reflection: 'Where could you pause before responding?',
+      factorSummary: 'Mars square natal Moon.',
+    },
+    transitAnalysis: {
+      dominantAspect: {
+        transitBody: 'Mars',
+        transitSign: 'Gemini',
+        natalBody: 'Moon',
+        natalSign: 'Pisces',
+        aspect: 'square',
+        themeTags: ['energy', 'initiative', 'patience'],
+      },
+      supportingAspects: [],
+    },
+  });
+
+  await act(async () => {
+    renderer = create(<CosmosScreen />);
+  });
+
+  const visibleCopy = renderer!.root.findAllByType(Text)
+    .map((node) => node.props.children)
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ');
+  expect(visibleCopy).toContain(
+    'Mars in Gemini forms a square with your natal Moon in Pisces.',
+  );
+  expect(visibleCopy).toContain('links energy and initiative with feelings and daily needs');
+  expect(visibleCopy).toContain('eases the tension');
 });
 
 test('the ritual belongs to the day card while other ideas remain a separate action', async () => {

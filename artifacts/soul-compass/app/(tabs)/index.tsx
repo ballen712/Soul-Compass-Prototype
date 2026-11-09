@@ -14,6 +14,7 @@ import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/con
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
 import { getDailyPersonalizationContext } from '@/profile/daily-personalization';
+import { composeDailyReflection } from '@/profile/daily-reading-composer';
 import { useLocalClock } from '@/hooks/useLocalClock';
 import { formatAppText, useAppLocale, useAppText } from '@/localization';
 
@@ -111,8 +112,21 @@ export default function CosmosScreen() {
   const astrology = dailyContext.astrology;
   const calculatedReading =
     astrology?.status === 'calculated' ? astrology.reading : null;
-  const reading = calculatedReading ?? dailyReading;
-  const readingBody = (() => {
+  const composedReading = useMemo(
+    () => calculatedReading
+      ? composeDailyReflection({
+          baseReading: calculatedReading,
+          analysis: dailyContext.transitAnalysis,
+          mood: dailyContext.mood,
+          now,
+          translate: t,
+          format: (source, values) => formatAppText(source, locale, values),
+        })
+      : null,
+    [calculatedReading, dailyContext.mood, dailyContext.transitAnalysis, locale, now, t],
+  );
+  const reading = composedReading ?? calculatedReading ?? dailyReading;
+  const readingBody = composedReading?.body ?? (() => {
     const transitBody = /^Today highlights (.+?)\. (.+)$/.exec(reading.body);
     if (transitBody) {
       return formatAppText('Today highlights {theme}. {explanation}', locale, {

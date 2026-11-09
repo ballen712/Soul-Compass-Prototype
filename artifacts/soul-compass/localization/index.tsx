@@ -7,6 +7,7 @@ import { onboardingTranslations } from './onboarding';
 import { screenTranslations } from './screen-copy';
 import { natalTranslations } from './natal-copy';
 import { dailyReadingTranslations } from './daily-copy';
+import { dailyComposerTranslations } from './daily-composer-copy';
 
 export const APP_LOCALES = ['en', 'hu', 'it', 'de', 'fr', 'es', 'ru'] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
@@ -408,6 +409,7 @@ export function translateText(source: string, locale: AppLocale): string {
     ?? screenTranslations[locale][source]
     ?? natalTranslations[locale][source]
     ?? dailyReadingTranslations[locale][source]
+    ?? dailyComposerTranslations[locale][source]
     ?? source;
 }
 

@@ -6,7 +6,7 @@ import {
 } from '../constants/content';
 import type { HomeLocation, UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { getTransitAspectThemes } from './transit-themes';
+import { getTransitAspectThemes, planetDailyThemeCopy } from './transit-themes';
 
 export const EPHEMERIS_SOURCE = {
   name: 'Astronomy Engine 2.1.19',
@@ -745,18 +745,6 @@ export function makeCalculatedReading(
 ): CalculatedReading {
   const leadingAspect = aspects[0];
   if (leadingAspect) {
-    const transitTheme: Record<Planet, string> = {
-      Sun: 'confidence and direction',
-      Moon: 'feelings and daily needs',
-      Mercury: 'conversation and attention',
-      Venus: 'connection and values',
-      Mars: 'energy and initiative',
-      Jupiter: 'growth and perspective',
-      Saturn: 'commitment and structure',
-      Uranus: 'change and independence',
-      Neptune: 'imagination and uncertainty',
-      Pluto: 'deep change and boundaries',
-    };
     const aspectAdvice = {
       conjunction: {
         title: 'Notice what is taking center stage.',
@@ -797,7 +785,7 @@ export function makeCalculatedReading(
     return {
       label: 'TODAY’S REFLECTION',
       title: aspectAdvice.title,
-      body: `Today highlights ${transitTheme[leadingAspect.transitBody]}. ${aspectAdvice.explanation}`,
+      body: `Today highlights ${planetDailyThemeCopy[leadingAspect.transitBody]}. ${aspectAdvice.explanation}`,
       favorableFocus: aspectAdvice.favorableFocus,
       gentleCaution: aspectAdvice.gentleCaution,
       reflection: `${aspectAdvice.question} today?`,

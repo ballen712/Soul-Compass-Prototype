@@ -1,5 +1,4 @@
 import { crystalCatalog, type Crystal } from '../constants/content';
-import { calculateNatalElementBalanceFromPlacements } from './astrology';
 import type {
   DailyAstrology,
   DailyTransitAnalysis,
@@ -22,6 +21,15 @@ type CopyTranslator = (source: string) => string;
 
 const identityCopy: CopyTranslator = (source) => source;
 
+/**
+ * Daily relevance points sum to 100. Each tag-based factor receives its
+ * weight multiplied by the share of its unique tags matched by the stone.
+ * Natal profile weight is split into 15 points for membership in the stable
+ * eight-companion set and 10 for matched natal-companion themes. Theme tags
+ * are assigned by priority (main transit, natal, mood, supporting aspects,
+ * intention), so one tag cannot score twice. Collection/hidden state is kept
+ * outside this suitability score.
+ */
 export const DAILY_CRYSTAL_SCORE_WEIGHTS = {
   mainTransit: 35,
   natalProfile: 25,
@@ -29,6 +37,8 @@ export const DAILY_CRYSTAL_SCORE_WEIGHTS = {
   supportingAspects: 10,
   intentions: 10,
 } as const;
+
+const NATAL_COMPANION_MEMBERSHIP_POINTS = 15;
 
 export type DailyCrystalScoreBreakdown = {
   mainTransit: number;
@@ -290,30 +300,6 @@ function getDailyMatchAspects(astrology: Calculated | undefined): {
   return { main, supporting };
 }
 
-function deriveNatalRecommendations(
-  astrology: Calculated | undefined,
-  options: Options,
-  translate: CopyTranslator,
-  translateStoneName: CopyTranslator,
-): readonly NatalCrystalRecommendation[] {
-  if (options.natalCrystalRecommendations) return options.natalCrystalRecommendations;
-  if (!astrology) return [];
-  const balance = calculateNatalElementBalanceFromPlacements(
-    astrology.natalPlacements,
-    astrology.preciseBirthMoment,
-  );
-  return balance.status === 'calculated'
-    ? getNatalCrystalSuggestions(
-        balance,
-        [],
-        8,
-        translate,
-        translateStoneName,
-        [],
-      )
-    : [];
-}
-
 const plainTheme: Record<string, string> = {
   energy: 'Crystal theme: energy',
   initiative: 'Crystal theme: taking a first step',
@@ -477,12 +463,7 @@ function rank(
   const uniqueIntentions = Array.from(
     new Set(intentions.map(normalize).filter(Boolean)),
   );
-  const natalRecommendations = deriveNatalRecommendations(
-    astrology,
-    options,
-    translate,
-    translateStoneName,
-  );
+  const natalRecommendations = options.natalCrystalRecommendations ?? [];
   const hasPersonalContext = Boolean(
     astrology || selectedFeeling || uniqueIntentions.length || natalRecommendations.length,
   );
@@ -536,11 +517,11 @@ function rank(
           DAILY_CRYSTAL_SCORE_WEIGHTS.mainTransit,
         ),
         natalProfile:
-          (natalRecommendation ? 15 : 0)
+          (natalRecommendation ? NATAL_COMPANION_MEMBERSHIP_POINTS : 0)
           + factorScore(
             crystalThemes,
             natalProfileThemes,
-            DAILY_CRYSTAL_SCORE_WEIGHTS.natalProfile - 15,
+            DAILY_CRYSTAL_SCORE_WEIGHTS.natalProfile - NATAL_COMPANION_MEMBERSHIP_POINTS,
           ),
         mood: factorScore(
           crystalThemes,

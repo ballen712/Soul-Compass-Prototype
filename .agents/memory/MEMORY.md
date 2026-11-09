@@ -15,4 +15,4 @@
 - [Tab navigation](equal-width-tab-navigation.md) — Use Liquid Glass when supported, classic tabs elsewhere, and keep the established icons consistent.
 - [Natal chart wheel](astrology-profile-rules.md) — Keep the chart graphic minimal: zodiac ring, planet orbit, aspect lines, and plain labels inside.
 - [Localization dictionary precedence](localization-dictionary-precedence.md) — Keep established locale maps ahead of supplemental screen, natal, and daily-copy dictionaries to avoid overwriting reviewed wording.
-- [Transit analysis boundaries](transit-analysis.md) — Use real local ephemeris samples and transparent ranking; unknown birth times stay limited-confidence, and duration beyond the sample horizon is only a lower bound.
+- [Transit analysis boundaries](transit-analysis.md) — Use real ephemeris data and documented non-overlapping crystal weights; stale mood and collection availability must not distort chart suitability.

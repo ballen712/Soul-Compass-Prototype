@@ -4,12 +4,47 @@ import { calculateDailyAstrology, calculateNatalElementBalance, calculateNatalEl
 import type { NatalElementBalance } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
-import { DAILY_CRYSTAL_SCORE_WEIGHTS, FEELING_OPTIONS, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
+import { DAILY_CRYSTAL_SCORE_WEIGHTS, FEELING_OPTIONS, getCrystalRecommendation, getCrystalSuggestions as rankDailyCrystals, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
 import { getDailyPersonalizationContext } from './daily-personalization';
 import { getTransitAspectThemes } from './transit-themes';
 import { defaultPreferences, localDayKey } from './local';
 import { crystalCatalog, dailyReading } from '../constants/content';
+
+type CrystalOptions = Parameters<typeof rankDailyCrystals>[1];
+
+function getCrystalSuggestions(
+  astrology: Parameters<typeof rankDailyCrystals>[0],
+  options: CrystalOptions = {},
+  limit = 3,
+  translate: Parameters<typeof rankDailyCrystals>[3] = (source) => source,
+  translateStoneName: Parameters<typeof rankDailyCrystals>[4] = (name) => name,
+) {
+  if (astrology && options.natalCrystalRecommendations === undefined) {
+    const balance = calculateNatalElementBalanceFromPlacements(
+      astrology.natalPlacements,
+      astrology.preciseBirthMoment,
+    );
+    const natalCrystalRecommendations = balance.status === 'calculated'
+      ? getNatalCrystalSuggestions(
+          balance,
+          [],
+          8,
+          translate,
+          translateStoneName,
+          [],
+        )
+      : [];
+    return rankDailyCrystals(
+      astrology,
+      { ...options, natalCrystalRecommendations },
+      limit,
+      translate,
+      translateStoneName,
+    );
+  }
+  return rankDailyCrystals(astrology, options, limit, translate, translateStoneName);
+}
 
 const currentResidence = {
   city: 'New York',

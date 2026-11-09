@@ -6,6 +6,8 @@ import Svg, { Circle, Line, Text as SvgText, TSpan } from 'react-native-svg';
 
 type PlanetPosition = NatalChartResponse['planets'][number];
 type Aspect = NatalChartResponse['aspects'][number];
+type HouseCusp = NatalChartResponse['houseCusps'][number];
+type ChartAngles = NonNullable<NatalChartResponse['angles']>;
 type PlanetLabel = {
   planet: PlanetPosition;
   name: string;
@@ -66,8 +68,8 @@ function normalizedPlanetName(value: string) {
   return value ? `${value[0].toUpperCase()}${value.slice(1).toLowerCase()}` : value;
 }
 
-function polarPoint(longitude: number, radius: number, center: number) {
-  const radians = (((longitude % 360) + 360) % 360 - 90) * Math.PI / 180;
+function polarPoint(longitude: number, radius: number, center: number, rotation = 0) {
+  const radians = (normalizeDegrees(longitude) + rotation - 90) * Math.PI / 180;
   return {
     x: center + Math.cos(radians) * radius,
     y: center + Math.sin(radians) * radius,
@@ -76,6 +78,32 @@ function polarPoint(longitude: number, radius: number, center: number) {
 
 function normalizeDegrees(value: number) {
   return ((value % 360) + 360) % 360;
+}
+
+function orderedHouseCusps(cusps: HouseCusp[]) {
+  if (cusps.length !== 12) return [];
+  const ordered = cusps.slice().sort((first, second) => first.house - second.house);
+  if (ordered.some((cusp, index) =>
+    cusp.house !== index + 1 || !Number.isFinite(cusp.longitude))) return [];
+  const spans = ordered.map((cusp, index) =>
+    normalizeDegrees(ordered[(index + 1) % ordered.length].longitude - cusp.longitude),
+  );
+  return spans.every((span) => span > 1e-8) ? ordered : [];
+}
+
+function midpointLongitude(first: number, second: number) {
+  return normalizeDegrees(first + normalizeDegrees(second - first) / 2);
+}
+
+function boxesOverlap(
+  first: { left: number; right: number; top: number; bottom: number },
+  second: { left: number; right: number; top: number; bottom: number },
+  padding = 0,
+) {
+  return first.left < second.right + padding
+    && first.right + padding > second.left
+    && first.top < second.bottom + padding
+    && first.bottom + padding > second.top;
 }
 
 function formatPlanetPosition(longitude: number, locale: string, translate: (source: string) => string) {
@@ -93,8 +121,21 @@ function layoutPlanetLabels(
   baseSize: number,
   scale: number,
   translate: (source: string) => string,
+  rotation: number,
+  houseMidpoints: number[],
 ) {
   const fontSize = (baseSize < 260 ? 6.8 : 7.6) * scale;
+  const houseNumberFontSize = (baseSize < 260 ? 8 : 9) * scale;
+  const houseLabelBoxes = houseMidpoints.map((longitude) => {
+    const point = polarPoint(longitude, center * 0.545, center, rotation);
+    const width = 7 * scale;
+    return {
+      left: point.x - width / 2,
+      right: point.x + width / 2,
+      top: point.y - houseNumberFontSize + 2 * scale,
+      bottom: point.y + 3 * scale,
+    };
+  });
   const labels: PlanetLabel[] = planets
     .map((planet) => {
       const name = normalizedPlanetName(planet.planet);
@@ -104,7 +145,7 @@ function layoutPlanetLabels(
         name,
         label,
         width: Math.max(32, Math.min(68, 20 + label.length * 4.2)) * scale,
-        targetAngle: normalizeDegrees(planet.longitude),
+        targetAngle: normalizeDegrees(planet.longitude + rotation),
       };
     })
     .sort((first, second) =>
@@ -120,7 +161,7 @@ function layoutPlanetLabels(
   }> = [];
 
   for (const label of labels) {
-    const marker = polarPoint(label.planet.longitude, markerRadius, center);
+    const marker = polarPoint(label.planet.longitude, markerRadius, center, rotation);
     const ringCandidates = radii.flatMap((radius) => angleOffsets.map((offset) => {
       const angle = label.targetAngle + offset;
       const point = polarPoint(angle, radius, center);
@@ -181,12 +222,8 @@ function layoutPlanetLabels(
     );
 
     const available = candidates.find(({ box }) =>
-      placed.every((other) =>
-        box.right + 2 <= other.box.left
-        || box.left - 2 >= other.box.right
-        || box.bottom + 2 <= other.box.top
-        || box.top - 2 >= other.box.bottom,
-      ),
+      !houseLabelBoxes.some((houseBox) => boxesOverlap(box, houseBox, 2 * scale))
+      && placed.every((other) => !boxesOverlap(box, other.box, 2 * scale)),
     );
     const candidate = available;
     if (!candidate) continue;
@@ -208,6 +245,8 @@ export function NatalChartWheel({
   timeKnown,
   majorAspects,
   houseByPlanet,
+  houseCusps = [],
+  angles = null,
   formatText,
 }: {
   planets: PlanetPosition[];
@@ -218,6 +257,8 @@ export function NatalChartWheel({
   timeKnown: boolean;
   majorAspects: Aspect[];
   houseByPlanet?: Map<string, number>;
+  houseCusps?: HouseCusp[];
+  angles?: ChartAngles | null;
   formatText?: (source: string, values: Record<string, string | number>) => string;
 }) {
   const [aspectsVisible, setAspectsVisible] = useState(true);
@@ -227,21 +268,59 @@ export function NatalChartWheel({
   const size = Math.min(450, width - 12, Math.round(baseSize * 1.18));
   const scale = size / baseSize;
   const center = size / 2;
+  const validAngles = angles
+    && [angles.ascendant, angles.descendant, angles.midheaven, angles.imumCoeli].every(Number.isFinite)
+    ? angles
+    : null;
+  const actualHouseCusps = orderedHouseCusps(houseCusps);
+  const houseMidpoints = actualHouseCusps.map((cusp, index) =>
+    midpointLongitude(cusp.longitude, actualHouseCusps[(index + 1) % actualHouseCusps.length].longitude),
+  );
+  const rotation = validAngles ? normalizeDegrees(270 - validAngles.ascendant) : 0;
   const zodiacOuterRadius = center * 0.74;
   const zodiacInnerRadius = center * 0.59;
   const signRadius = center * 0.665;
   const planetRadius = center * 0.5;
+  const houseLabelRadius = center * 0.545;
+  const axisLineRadius = center * 0.79;
+  const axisLabelRadius = center * 0.84;
   const labels = useMemo(
-    () => layoutPlanetLabels(planets, center, baseSize, scale, translate),
-    [planets, center, baseSize, scale, translate],
+    () => layoutPlanetLabels(planets, center, baseSize, scale, translate, rotation, houseMidpoints),
+    [planets, center, baseSize, scale, translate, rotation, houseMidpoints],
   );
   const markers = useMemo(
     () => planets.map((planet) => ({
       planet,
-      ...polarPoint(planet.longitude, planetRadius, center),
+      ...polarPoint(planet.longitude, planetRadius, center, rotation),
     })),
-    [planets, planetRadius, center],
+    [planets, planetRadius, center, rotation],
   );
+  const houseLabels = actualHouseCusps.map((cusp, index) => {
+    const point = polarPoint(houseMidpoints[index], houseLabelRadius, center, rotation);
+    return { house: cusp.house, ...point };
+  });
+  const axes = validAngles ? [
+    {
+      key: 'asc-dsc',
+      first: validAngles.ascendant,
+      second: validAngles.descendant,
+      color: palette.secondary,
+      dash: undefined,
+    },
+    {
+      key: 'mc-ic',
+      first: validAngles.midheaven,
+      second: validAngles.imumCoeli,
+      color: palette.mutedForeground,
+      dash: '3 3',
+    },
+  ] : [];
+  const angleLabels = validAngles ? [
+    { key: 'asc', short: 'ASC', long: 'Ascendant', longitude: validAngles.ascendant, color: palette.secondary },
+    { key: 'dsc', short: 'DSC', long: 'Descendant', longitude: validAngles.descendant, color: palette.secondary },
+    { key: 'mc', short: 'MC', long: 'Midheaven', longitude: validAngles.midheaven, color: palette.mutedForeground },
+    { key: 'ic', short: 'IC', long: 'Imum Coeli', longitude: validAngles.imumCoeli, color: palette.mutedForeground },
+  ] : [];
   const labelsByPlanet = useMemo(
     () => new Map(labels.map((label) => [label.planet.planet.toLowerCase(), label])),
     [labels],
@@ -363,8 +442,8 @@ export function NatalChartWheel({
           opacity={0.7}
         />
         {SIGN_GLYPHS.map((_, index) => {
-          const innerPoint = polarPoint(index * 30, zodiacInnerRadius, center);
-          const outerPoint = polarPoint(index * 30, zodiacOuterRadius, center);
+          const innerPoint = polarPoint(index * 30, zodiacInnerRadius, center, rotation);
+          const outerPoint = polarPoint(index * 30, zodiacOuterRadius, center, rotation);
           return (
             <Line
               key={`zodiac-divider-${index}`}
@@ -377,8 +456,59 @@ export function NatalChartWheel({
             />
           );
         })}
+        {actualHouseCusps.map((cusp) => {
+          const innerPoint = polarPoint(cusp.longitude, planetRadius, center, rotation);
+          const outerPoint = polarPoint(cusp.longitude, zodiacInnerRadius, center, rotation);
+          return (
+            <Line
+              key={`house-cusp-${cusp.house}`}
+              testID={`natal-wheel-house-cusp-${cusp.house}`}
+              x1={innerPoint.x}
+              y1={innerPoint.y}
+              x2={outerPoint.x}
+              y2={outerPoint.y}
+              stroke={palette.border}
+              strokeWidth={0.75 * scale}
+              opacity={0.8}
+            />
+          );
+        })}
+        {houseLabels.map(({ house, x, y }) => (
+          <SvgText
+            key={`house-number-${house}`}
+            testID={`natal-wheel-house-number-${house}`}
+            x={x}
+            y={y + 2.7 * scale}
+            textAnchor="middle"
+            fontFamily="Inter"
+            fontSize={(baseSize < 260 ? 8 : 9) * scale}
+            fill={palette.mutedForeground}
+            accessible
+            accessibilityLabel={format('House {number}', { number: house })}
+          >
+            {house.toLocaleString(locale)}
+          </SvgText>
+        ))}
+        {axes.map(({ key, first, second, color, dash }) => {
+          const firstPoint = polarPoint(first, axisLineRadius, center, rotation);
+          const secondPoint = polarPoint(second, axisLineRadius, center, rotation);
+          return (
+            <Line
+              key={`angle-axis-${key}`}
+              testID={`natal-angle-axis-${key}`}
+              x1={firstPoint.x}
+              y1={firstPoint.y}
+              x2={secondPoint.x}
+              y2={secondPoint.y}
+              stroke={color}
+              strokeWidth={(key === 'asc-dsc' ? 1.35 : 1.05) * scale}
+              strokeDasharray={dash}
+              opacity={0.78}
+            />
+          );
+        })}
         {SIGN_GLYPHS.map((glyph, index) => {
-          const point = polarPoint(index * 30 + 15, signRadius, center);
+          const point = polarPoint(index * 30 + 15, signRadius, center, rotation);
           return (
             <SvgText
               key={`zodiac-sign-${index}`}
@@ -391,6 +521,26 @@ export function NatalChartWheel({
               fill={palette.secondary}
             >
               {`${glyph}\uFE0E`}
+            </SvgText>
+          );
+        })}
+        {angleLabels.map(({ key, short, long, longitude, color }) => {
+          const point = polarPoint(longitude, axisLabelRadius, center, rotation);
+          return (
+            <SvgText
+              key={`angle-label-${key}`}
+              testID={`natal-angle-label-${key}`}
+              x={point.x}
+              y={point.y + 2.5 * scale}
+              textAnchor="middle"
+              fontFamily="Inter"
+              fontSize={(baseSize < 260 ? 6.8 : 7.6) * scale}
+              fontWeight="600"
+              fill={color}
+              accessible
+              accessibilityLabel={translate(long)}
+            >
+              {short}
             </SvgText>
           );
         })}

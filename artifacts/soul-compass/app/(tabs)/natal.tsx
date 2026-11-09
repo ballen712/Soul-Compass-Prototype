@@ -790,9 +790,17 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
   const hasKnownBirthMoment = timeKnown
     && data.input.birthTimeKnown
     && data.calculation.birthTimeResolution === 'known';
+  const completeHouseCusps = data.houseCusps.length === 12
+    && data.houseCusps.every((cusp) =>
+      Number.isInteger(cusp.house)
+      && cusp.house >= 1
+      && cusp.house <= 12
+      && Number.isFinite(cusp.longitude),
+    )
+    && new Set(data.houseCusps.map((cusp) => cusp.house)).size === 12;
   const housesAvailable = hasKnownBirthMoment
     && data.calculation.houseStatus === 'available'
-    && data.houseCusps.length > 0;
+    && completeHouseCusps;
   const houses = useMemo(
     () => new Map((housesAvailable ? data.planetaryHouses : []).map((h) => [h.planet.toLowerCase(), h.house])),
     [data.planetaryHouses, housesAvailable],
@@ -846,6 +854,8 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
           timeKnown={hasKnownBirthMoment}
           majorAspects={aspects}
           houseByPlanet={housesAvailable ? houses : undefined}
+          houseCusps={housesAvailable ? data.houseCusps : []}
+          angles={angles}
           formatText={(source, values) => formatAppText(source, locale, values)}
         />
       </Card>

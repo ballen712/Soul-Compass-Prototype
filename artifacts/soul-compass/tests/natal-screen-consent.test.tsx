@@ -463,10 +463,15 @@ test('planet, angle and aspect taps use chart placements and the centered explan
   expect(root.findByProps({ testID: 'natal-planet-label-moon' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-0' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-zodiac-sign-11' })).toBeDefined();
-  expect(root.findAll((node) =>
-    typeof node.props.testID === 'string'
-      && /^(natal-house-(number|tick)|natal-angle-marker)-/.test(node.props.testID),
-  )).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-wheel-house-number-1' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-wheel-house-number-12' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-wheel-house-cusp-1' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-axis-asc-dsc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-axis-mc-ic' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-label-asc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-label-dsc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-label-mc' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-label-ic' })).toBeDefined();
   expect(root.findAll((node) =>
     typeof node.props.testID === 'string'
       && node.props.testID.startsWith('natal-planet-leader-'),
@@ -614,6 +619,8 @@ test('timed chart keeps angles but omits Placidus houses when the location canno
   expect(root.findByProps({ testID: 'natal-angle-ascendant' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-angle-midheaven' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-wheel-house-number-1' })).toHaveLength(0);
+  expect(root.findByProps({ testID: 'natal-angle-axis-asc-dsc' })).toBeDefined();
   expect(root.findByProps({ testID: 'natal-planet-sun' }).props.accessibilityLabel).not.toContain('house');
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('no substitute house system was used'),
@@ -646,6 +653,8 @@ test('timed chart omits angle tiles when the calculation cannot provide angles',
   expect(root.findAllByProps({ testID: 'natal-angle-ascendant' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-angle-midheaven' })).toHaveLength(0);
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-wheel-house-number-1' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-axis-asc-dsc' })).toHaveLength(0);
   expect(root.findAllByType(Text).some((node) =>
     String(node.props.children).includes('Angle values could not be calculated'),
   )).toBe(true);
@@ -687,6 +696,9 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   expect(findText(root, 'ASCENDANT')).toBeUndefined();
   expect(findText(root, 'MIDHEAVEN')).toBeUndefined();
   expect(root.findAllByProps({ testID: 'natal-house-cusp-12' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-wheel-house-number-1' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-axis-asc-dsc' })).toHaveLength(0);
+  expect(root.findAllByProps({ testID: 'natal-angle-label-asc' })).toHaveLength(0);
   expect(root.findByProps({ testID: 'natal-planet-marker-moon' }).props.strokeDasharray).toBe('2 2');
   expect(root.findByProps({ testID: 'natal-planet-glyph-moon' })).toBeDefined();
   expect(root.findAllByProps({ testID: 'natal-angle-marker-asc' })).toHaveLength(0);
@@ -700,6 +712,80 @@ test('unknown-time chart omits angles and houses and clearly marks personalized 
   await act(async () => { root.findByProps({ testID: 'natal-planet-moon' }).props.onPress(); });
   expect(findText(root, 'Moon sign range')).toBeDefined();
   expect(root.findAllByType(Text).some((node) => String(node.props.children).includes('Aquarius or Pisces'))).toBe(true);
+});
+
+test('house ring uses unequal cusp longitudes and the calculated angle axes', async () => {
+  const planets = [
+    { planet: 'Sun', sign: 'Taurus', degreeInSign: 0, longitude: 30, latitude: 0, speedDegreesPerDay: 1, retrograde: false },
+  ] as unknown as NatalChartResponse['planets'];
+  const houseCusps = [
+    30, 50, 95, 120, 150, 180, 210, 230, 275, 300, 330, 0,
+  ].map((longitude, index) => ({ house: index + 1, longitude }));
+  const angles = {
+    ascendant: 30,
+    descendant: 210,
+    midheaven: 300,
+    imumCoeli: 120,
+  };
+
+  await act(async () => {
+    renderer = create(
+      <NatalChartWheel
+        planets={planets}
+        palette={{
+          card: '#192A42',
+          border: '#304158',
+          foreground: '#F4F0E7',
+          secondary: '#D9C49B',
+          mutedForeground: '#AAB5C5',
+          aspectTension: '#E48E83',
+          aspectFlow: '#91B3CC',
+          aspectConjunction: '#D9C49B',
+        }}
+        translate={(copy) => copy}
+        locale="en"
+        moonSignRange={[]}
+        timeKnown
+        majorAspects={[]}
+        houseCusps={houseCusps}
+        angles={angles}
+      />,
+    );
+  });
+
+  const root = renderer!.root;
+  const size = Number(root.findByProps({ testID: 'natal-chart-wheel-svg' }).props.width);
+  const center = size / 2;
+  const baseSize = Math.min(380, Math.max(220, 402 - 64));
+  const scale = size / baseSize;
+  const ascendantAxis = root.findByProps({ testID: 'natal-angle-axis-asc-dsc' }).props;
+  expect(ascendantAxis.x1).toBeLessThan(center);
+  expect(ascendantAxis.x2).toBeGreaterThan(center);
+  expect(ascendantAxis.y1).toBeCloseTo(center, 4);
+  expect(ascendantAxis.y2).toBeCloseTo(center, 4);
+  expect(root.findByProps({ testID: 'natal-angle-axis-mc-ic' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-angle-label-asc' }).props.accessibilityLabel).toBe('Ascendant');
+  expect(root.findByProps({ testID: 'natal-angle-label-dsc' }).props.accessibilityLabel).toBe('Descendant');
+
+  const cuspOne = root.findByProps({ testID: 'natal-wheel-house-cusp-1' }).props;
+  expect(Math.hypot(cuspOne.x1 - center, cuspOne.y1 - center)).toBeCloseTo(center * 0.5, 2);
+  expect(Math.hypot(cuspOne.x2 - center, cuspOne.y2 - center)).toBeCloseTo(center * 0.59, 2);
+  for (let house = 1; house <= 12; house += 1) {
+    expect(root.findByProps({ testID: `natal-wheel-house-number-${house}` }).props.accessibilityLabel)
+      .toBe(`House ${house}`);
+  }
+
+  const houseOne = root.findByProps({ testID: 'natal-wheel-house-number-1' }).props;
+  const houseTwo = root.findByProps({ testID: 'natal-wheel-house-number-2' }).props;
+  const labelAngle = (label: { x: number; y: number }) => (
+    (Math.atan2(label.y - 2.7 * scale - center, label.x - center) * 180 / Math.PI + 360) % 360
+  );
+  const houseAngleDifference = (
+    labelAngle(houseTwo as { x: number; y: number })
+    - labelAngle(houseOne as { x: number; y: number })
+    + 360
+  ) % 360;
+  expect(houseAngleDifference).toBeCloseTo(32.5, 1);
 });
 
 test('the wheel labels a tight planet cluster without overlap and dots every major aspect', async () => {

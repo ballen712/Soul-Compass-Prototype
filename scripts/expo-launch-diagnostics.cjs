@@ -160,6 +160,20 @@ function main() {
   );
 
   const workspace = findWorkspaceFile(cwd);
+  const initCwd = process.env.INIT_CWD;
+  const initCwdWorkspace = initCwd ? findWorkspaceFile(initCwd) : null;
+  output(
+    'workspace found relative to working directory',
+    workspace.filePath ? `yes (${workspace.filePath})` : 'no',
+  );
+  output(
+    'workspace found relative to INIT_CWD',
+    initCwdWorkspace
+      ? initCwdWorkspace.filePath
+        ? `yes (${initCwdWorkspace.filePath})`
+        : 'no'
+      : 'unavailable (INIT_CWD not set)',
+  );
   output('current directory contains pnpm-workspace.yaml', workspace.currentDirectoryHasFile ? 'yes' : 'no');
   output('a parent directory contains pnpm-workspace.yaml', workspace.parentDirectoryHasFile ? 'yes' : 'no');
   output('discovered workspace file', workspace.filePath || 'none');

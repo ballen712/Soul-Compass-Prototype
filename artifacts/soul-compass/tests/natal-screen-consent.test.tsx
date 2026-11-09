@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
   appStateListeners: new Set<(nextState: string) => void>(),
   focusCallback: null as null | (() => void),
   scrollToTopRef: null as null | { current: unknown },
+  dailyAstrology: { status: 'unavailable' as const, message: 'No current transit fixture.' },
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -26,6 +27,9 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 vi.mock('@expo/vector-icons', () => ({ Feather: 'Feather' }));
 vi.mock('@workspace/api-client-react', () => ({
   calculateNatalChart: (...args: unknown[]) => state.calculate(...args),
+}));
+vi.mock('../profile/daily-cache', () => ({
+  getDailyAstrology: () => state.dailyAstrology,
 }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
@@ -149,7 +153,7 @@ const wheelPalette = {
   aspectConjunction: '#D9C49B',
 };
 
-async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true) {
+async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true, withTransits = true) {
   const translateCopy = (source: string) => (
     locale === 'en' ? source : natalTranslations[locale][source] ?? source
   );
@@ -163,6 +167,19 @@ async function renderInteractionWheel(locale: AppLocale = 'en', timeKnown = true
         moonSignRange={[]}
         timeKnown={timeKnown}
         majorAspects={interactionAspects}
+        transitPlanets={withTransits ? [
+          { body: 'Mars', longitude: 14.4, sign: 'Aries' },
+          { body: 'Venus', longitude: 205, sign: 'Libra' },
+        ] : []}
+        transitAspects={withTransits ? [
+          {
+            transitBody: 'Mars',
+            natalBody: 'Moon',
+            aspect: 'trine',
+            maxOrb: 0.6,
+            reliability: 'high',
+          },
+        ] : []}
         houseByPlanet={new Map([['sun', 5], ['moon', 9]])}
         houseCusps={interactionHouseCusps}
         angles={{ ascendant: 0, descendant: 180, midheaven: 270, imumCoeli: 90 }}
@@ -1022,6 +1039,60 @@ test('unknown birth time never exposes house or angle controls', async () => {
     typeof node.props.testID === 'string'
       && node.props.testID.startsWith('natal-angle-axis-'),
   )).toHaveLength(0);
+});
+
+test('chart modes localize labels in all seven app languages', () => {
+  const keys = [
+    'Natal',
+    'Transits',
+    'Combined',
+    'Current transiting planets',
+    'Current position',
+    'Transit aspect',
+    'Transit views are unavailable right now.',
+    'No current transit aspects are close to your natal planets.',
+  ];
+  for (const locale of ['hu', 'it', 'de', 'fr', 'es', 'ru'] as const) {
+    for (const key of keys) {
+      expect(natalTranslations[locale][key], `${locale} translation for ${key}`).toBeTruthy();
+    }
+  }
+});
+
+test('transit and combined modes draw the current positions and aspects to natal planets', async () => {
+  const root = await renderInteractionWheel();
+  await act(async () => {
+    root.findByProps({ testID: 'natal-chart-mode-transits' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-planet-marker-mars' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-transit-aspect-line-trine-mars-moon' })).toBeDefined();
+  expect(root.findAllByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toHaveLength(0);
+
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-planet-hit-area-mars' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-planet-detail-mars' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-transit-planet-detail-position' }).props.children)
+    .toBe('14° 24′ Aries');
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-planet-detail-aspect-0' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-aspect-detail-trine-mars-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-transit-aspect-detail-context' }).props.children)
+    .toBe('Transit aspect');
+  await act(async () => {
+    root.findByProps({ testID: 'natal-transit-aspect-detail-close' }).props.onPress();
+    root.findByProps({ testID: 'natal-chart-mode-combined' }).props.onPress();
+  });
+  expect(root.findByProps({ testID: 'natal-transit-aspect-line-trine-mars-moon' })).toBeDefined();
+  expect(root.findByProps({ testID: 'natal-aspect-line-trine-sun-moon' })).toBeDefined();
+});
+
+test('transit modes are disabled when no current positions are available', async () => {
+  const root = await renderInteractionWheel('en', true, false);
+  expect(root.findByProps({ testID: 'natal-chart-mode-transits' }).props.accessibilityState.disabled).toBe(true);
+  expect(root.findByProps({ testID: 'natal-transit-unavailable' }).props.children)
+    .toBe('Transit views are unavailable right now.');
 });
 
 test('aspect lines and planet aspect rows open the same accessible detail panel', async () => {

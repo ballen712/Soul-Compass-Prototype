@@ -15,10 +15,14 @@ import { useColors } from '@/hooks/useColors';
 import { screenTypography } from '@/constants/typography';
 import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 import { useProfile } from '@/profile/ProfileContext';
+import { getDailyAstrology } from '@/profile/daily-cache';
+import type { DailyAstrology } from '@/profile/astrology';
+import { useLocalClock } from '@/hooks/useLocalClock';
 import { formatAppText, useAppLocale, useAppText } from '@/localization';
 
 type Disambiguation = 'earlier' | 'later';
 type Palette = ReturnType<typeof useColors>['cosmos'];
+type CalculatedDailyAstrology = Extract<DailyAstrology, { status: 'calculated' }>;
 
 const MAJOR = new Set(['conjunction', 'opposition', 'trine', 'square', 'sextile']);
 const backgroundStars = Array.from({ length: 24 }, (_, index) => ({
@@ -493,6 +497,14 @@ export default function NatalScreen() {
   const router = useRouter();
   const { profile, loaded, privacy, setConsent, canCalculate } = useProfile();
   const chart = useNatalCalculation();
+  const now = useLocalClock();
+  const dailyAstrology = useMemo(
+    () => profile ? getDailyAstrology(profile, now) : null,
+    [profile, now],
+  );
+  const currentAstrology = dailyAstrology?.status === 'calculated'
+    ? dailyAstrology
+    : null;
   const [disambiguation, setDisambiguation] = useState<Disambiguation | null>(null);
   const [activeExplanation, setActiveExplanation] = useState<ChartExplanation | null>(null);
   const [declined, setDeclined] = useState(false);
@@ -636,6 +648,8 @@ export default function NatalScreen() {
                 timeKnown={timeKnown}
                 disambiguation={savedChoice}
                 onExplain={setActiveExplanation}
+                transitPlanets={currentAstrology?.transits ?? []}
+                transitAspects={currentAstrology?.transitAnalysis?.activeAspects ?? []}
               />
             </>
           ) : !privacy.astrologyApiConsent || !canCalculate() ? (
@@ -776,8 +790,14 @@ export default function NatalScreen() {
   );
 }
 
-function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
-  c: Palette; data: NatalChartResponse; timeKnown: boolean; disambiguation: Disambiguation | null; onExplain: (explanation: ChartExplanation) => void;
+function ChartView({ c, data, timeKnown, disambiguation, onExplain, transitPlanets, transitAspects }: {
+  c: Palette;
+  data: NatalChartResponse;
+  timeKnown: boolean;
+  disambiguation: Disambiguation | null;
+  onExplain: (explanation: ChartExplanation) => void;
+  transitPlanets: CalculatedDailyAstrology['transits'];
+  transitAspects: NonNullable<CalculatedDailyAstrology['transitAnalysis']>['activeAspects'];
 }) {
   const t = useAppText();
   const locale = useAppLocale();
@@ -847,6 +867,8 @@ function ChartView({ c, data, timeKnown, disambiguation, onExplain }: {
         </Text>
         <NatalChartWheel
           planets={data.planets}
+          transitPlanets={transitPlanets}
+          transitAspects={transitAspects}
           palette={c}
           translate={t}
           locale={locale}

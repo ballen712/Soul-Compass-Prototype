@@ -1,14 +1,41 @@
 import { Feather } from '@expo/vector-icons';
 import type { NatalChartResponse } from '@workspace/api-client-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, TSpan } from 'react-native-svg';
 import { SCREEN_HORIZONTAL_GUTTER } from '@/constants/screen-layout';
+import type { DailyAstrology } from '@/profile/astrology';
 
-type PlanetPosition = NatalChartResponse['planets'][number];
-type Aspect = NatalChartResponse['aspects'][number];
+type CalculatedDailyAstrology = Extract<DailyAstrology, { status: 'calculated' }>;
+type PlanetPosition = Pick<NatalChartResponse['planets'][number], 'planet' | 'longitude'> & { sign?: string };
+type NatalAspect = NatalChartResponse['aspects'][number];
 type HouseCusp = NatalChartResponse['houseCusps'][number];
 type ChartAngles = NonNullable<NatalChartResponse['angles']>;
+type TransitPlanetPosition = { body: string; longitude: number; sign: string };
+type TransitAspect = {
+  transitBody: string;
+  natalBody: string;
+  aspect: string;
+  maxOrb: number;
+  reliability: 'high' | 'limited';
+};
+type ChartMode = 'natal' | 'transits' | 'combined';
+type WheelAspect = {
+  first: string;
+  second: string;
+  type: string;
+  orb: number;
+  strength: number;
+  kind: 'natal' | 'transit';
+};
+type AspectLine = {
+  aspect: WheelAspect;
+  index: number;
+  key: string;
+  first: { x: number; y: number };
+  second: { x: number; y: number };
+  uncertainMoon: boolean;
+};
 type PlanetLabel = {
   planet: PlanetPosition;
   label: string;
@@ -258,6 +285,8 @@ function layoutPlanetLabels(
 
 export function NatalChartWheel({
   planets,
+  transitPlanets = [],
+  transitAspects = [],
   palette,
   translate,
   locale,
@@ -270,12 +299,14 @@ export function NatalChartWheel({
   formatText,
 }: {
   planets: PlanetPosition[];
+  transitPlanets?: TransitPlanetPosition[];
+  transitAspects?: TransitAspect[];
   palette: Palette;
   translate: (source: string) => string;
   locale: string;
   moonSignRange: string[];
   timeKnown: boolean;
-  majorAspects: Aspect[];
+  majorAspects: NatalAspect[];
   houseByPlanet?: Map<string, number>;
   houseCusps?: HouseCusp[];
   angles?: ChartAngles | null;
@@ -283,8 +314,19 @@ export function NatalChartWheel({
 }) {
   const [aspectsVisible, setAspectsVisible] = useState(true);
   const [selectedPlanetName, setSelectedPlanetName] = useState<string | null>(null);
+  const [selectedPlanetKind, setSelectedPlanetKind] = useState<'natal' | 'transit'>('natal');
   const [selectedHouseNumber, setSelectedHouseNumber] = useState<number | null>(null);
   const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
+  const [chartMode, setChartMode] = useState<ChartMode>('natal');
+  const transitsAvailable = transitPlanets.length > 0;
+  useEffect(() => {
+    if (!transitsAvailable && chartMode !== 'natal') {
+      setChartMode('natal');
+      setSelectedPlanetName(null);
+      setSelectedAspectKey(null);
+      setSelectedHouseNumber(null);
+    }
+  }, [chartMode, transitsAvailable]);
   const { width } = useWindowDimensions();
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   const fallbackWidth = Math.max(180, width - 2 * (SCREEN_HORIZONTAL_GUTTER + 14));
@@ -307,6 +349,7 @@ export function NatalChartWheel({
   const zodiacInnerRadius = center * 0.73;
   const signRadius = center * 0.805;
   const planetRadius = center * 0.52;
+  const transitPlanetRadius = center * 0.39;
   const houseLabelRadius = center * 0.625;
   const axisLineRadius = center * 0.9;
   const axisLabelRadius = center * 0.93;
@@ -320,6 +363,15 @@ export function NatalChartWheel({
       ...polarPoint(planet.longitude, planetRadius, center, rotation),
     })),
     [planets, planetRadius, center, rotation],
+  );
+  const transitMarkers = useMemo(
+    () => transitPlanets.map(({ body, longitude, sign }) => ({
+      planet: body,
+      longitude,
+      sign,
+      ...polarPoint(longitude, transitPlanetRadius, center, rotation),
+    })),
+    [transitPlanets, transitPlanetRadius, center, rotation],
   );
   const houseLabels = actualHouseCusps.map((cusp, index) => {
     const point = polarPoint(houseMidpoints[index], houseLabelRadius, center, rotation);
@@ -355,35 +407,97 @@ export function NatalChartWheel({
     () => new Map(markers.map((marker) => [marker.planet.planet.toLowerCase(), marker])),
     [markers],
   );
-  const aspectLines = useMemo(() => {
+  const transitMarkersByPlanet = useMemo(
+    () => new Map(transitMarkers.map((marker) => [marker.planet.toLowerCase(), marker])),
+    [transitMarkers],
+  );
+  const natalAspectModels: WheelAspect[] = useMemo(() => majorAspects
+    .filter((aspect) => SUPPORTED_ASPECTS.has(aspect.type.toLowerCase()))
+    .map((aspect) => ({
+      first: aspect.first,
+      second: aspect.second,
+      type: aspect.type,
+      orb: aspect.orb,
+      strength: aspect.strength,
+      kind: 'natal',
+    })), [majorAspects]);
+  const transitAspectModels: WheelAspect[] = useMemo(() => transitAspects
+    .filter((aspect) => SUPPORTED_ASPECTS.has(aspect.aspect.toLowerCase()))
+    .map((aspect) => ({
+      first: aspect.transitBody,
+      second: aspect.natalBody,
+      type: aspect.aspect,
+      orb: aspect.maxOrb,
+      strength: 0.65,
+      kind: 'transit',
+    })), [transitAspects]);
+  const natalAspectLines: AspectLine[] = useMemo(() => {
     return majorAspects.flatMap((aspect, index) => {
       if (!SUPPORTED_ASPECTS.has(aspect.type.toLowerCase())) return [];
       const first = markersByPlanet.get(aspect.first.toLowerCase());
       const second = markersByPlanet.get(aspect.second.toLowerCase());
       if (!first || !second) return [];
       return [{
-        aspect,
+        aspect: natalAspectModels.find((model) =>
+          model.first === aspect.first && model.second === aspect.second && model.type === aspect.type,
+        )!,
         index,
-        key: `${aspect.first.toLowerCase()}-${aspect.type.toLowerCase()}-${aspect.second.toLowerCase()}-${index}`,
+        key: `natal-${aspect.first.toLowerCase()}-${aspect.type.toLowerCase()}-${aspect.second.toLowerCase()}-${index}`,
         first: { x: first.x, y: first.y },
         second: { x: second.x, y: second.y },
         uncertainMoon: !timeKnown
           && (aspect.first.toLowerCase() === 'moon' || aspect.second.toLowerCase() === 'moon'),
       }];
     });
-  }, [majorAspects, markersByPlanet, timeKnown]);
-
-  const accessiblePositions = planets.map((planet) => {
-    const name = normalizedPlanetName(planet.planet);
-    const isUncertainMoon = !timeKnown && name === 'Moon';
-    const position = `${translate(name)} ${formatPlanetPosition(planet.longitude, locale, translate)}`;
-    const possibleSigns = isUncertainMoon && moonSignRange.length > 1
-      ? ` (${moonSignRange.map((possibleSign) => translate(normalizedPlanetName(possibleSign))).join(', ')})`
-      : '';
-    return isUncertainMoon ? `${position}?${possibleSigns}` : position;
-  }).join(', ');
+  }, [majorAspects, markersByPlanet, natalAspectModels, timeKnown]);
+  const transitAspectLines: AspectLine[] = useMemo(() => {
+    return transitAspects.flatMap((aspect, index) => {
+      if (!SUPPORTED_ASPECTS.has(aspect.aspect.toLowerCase())) return [];
+      const first = transitMarkersByPlanet.get(aspect.transitBody.toLowerCase());
+      const second = markersByPlanet.get(aspect.natalBody.toLowerCase());
+      if (!first || !second) return [];
+      const model = transitAspectModels.find((candidate) =>
+        candidate.first === aspect.transitBody
+        && candidate.second === aspect.natalBody
+        && candidate.type === aspect.aspect,
+      );
+      if (!model) return [];
+      return [{
+        aspect: model,
+        index,
+        key: `transit-${aspect.transitBody.toLowerCase()}-${aspect.aspect.toLowerCase()}-${aspect.natalBody.toLowerCase()}-${index}`,
+        first: { x: first.x, y: first.y },
+        second: { x: second.x, y: second.y },
+        uncertainMoon: aspect.reliability === 'limited',
+      }];
+    });
+  }, [transitAspects, transitMarkersByPlanet, markersByPlanet, transitAspectModels]);
+  const aspectLines = chartMode === 'natal'
+    ? natalAspectLines
+    : chartMode === 'transits'
+      ? transitAspectLines
+      : [...natalAspectLines, ...transitAspectLines];
+  const selectedPlanetAspects = selectedPlanetName
+    ? selectedPlanetKind === 'transit'
+      ? transitAspectModels.filter((aspect) =>
+        aspect.first.toLowerCase() === selectedPlanetName,
+      )
+      : [
+        ...natalAspectModels.filter((aspect) =>
+          aspect.first.toLowerCase() === selectedPlanetName
+          || aspect.second.toLowerCase() === selectedPlanetName,
+        ),
+        ...(chartMode === 'combined'
+          ? transitAspectModels.filter((aspect) =>
+            aspect.second.toLowerCase() === selectedPlanetName,
+          )
+          : []),
+      ].sort((first, second) => first.orb - second.orb)
+    : [];
   const selectedPlanet = selectedPlanetName
-    ? planets.find((planet) => planet.planet.toLowerCase() === selectedPlanetName)
+    ? selectedPlanetKind === 'transit'
+      ? transitMarkers.find((marker) => marker.planet.toLowerCase() === selectedPlanetName)
+      : planets.find((planet) => planet.planet.toLowerCase() === selectedPlanetName)
     : undefined;
   const selectedHouseCusp = selectedHouseNumber === null
     ? undefined
@@ -397,51 +511,84 @@ export function NatalChartWheel({
     ? undefined
     : aspectLines.find((line) => line.key === selectedAspectKey);
   const selectedPlanetIsUncertainMoon = Boolean(
-    selectedPlanet && !timeKnown && selectedPlanet.planet.toLowerCase() === 'moon',
+    selectedPlanet
+      && selectedPlanetKind === 'natal'
+      && !timeKnown
+      && selectedPlanet.planet.toLowerCase() === 'moon',
   );
-  const selectedPlanetAspects = selectedPlanet
-    ? majorAspects
-      .filter((aspect) => SUPPORTED_ASPECTS.has(aspect.type.toLowerCase())
-        && (aspect.first.toLowerCase() === selectedPlanetName
-          || aspect.second.toLowerCase() === selectedPlanetName))
-      .slice()
-      .sort((first, second) => first.orb - second.orb)
-    : [];
   const format = formatText ?? ((source: string, values: Record<string, string | number>) =>
     Object.entries(values).reduce(
       (copy, [key, value]) => copy.replaceAll(`{${key}}`, String(value)),
       translate(source),
     ));
-  const formatAspectTitle = (aspect: Aspect) => format('{first} {aspect} {second}', {
+  const formatAspectTitle = (aspect: WheelAspect) => format('{first} {aspect} {second}', {
     first: translate(normalizedPlanetName(aspect.first)),
     aspect: translate(aspect.type.toLowerCase()),
     second: translate(normalizedPlanetName(aspect.second)),
   });
-  const formatAspectOrb = (aspect: Aspect) => {
+  const formatAspectOrb = (aspect: WheelAspect) => {
     const orb = aspect.orb.toLocaleString(locale, {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
     return `${translate('orb')} ${orb}°`;
   };
-  const formatAspectAccessibilityLabel = (aspect: Aspect) =>
-    `${formatAspectTitle(aspect)}, ${formatAspectOrb(aspect)}`;
-  const selectPlanet = (planet: PlanetPosition) => {
+  const formatAspectAccessibilityLabel = (aspect: WheelAspect) =>
+    `${aspect.kind === 'transit' ? `${translate('Transit aspect')}, ` : ''}${formatAspectTitle(aspect)}, ${formatAspectOrb(aspect)}`;
+  const selectPlanet = (planet: PlanetPosition, kind: 'natal' | 'transit' = 'natal') => {
     const key = planet.planet.toLowerCase();
     setSelectedHouseNumber(null);
     setSelectedAspectKey(null);
-    setSelectedPlanetName((current) => current === key ? null : key);
+    if (selectedPlanetName === key && selectedPlanetKind === kind) {
+      setSelectedPlanetName(null);
+    } else {
+      setSelectedPlanetKind(kind);
+      setSelectedPlanetName(key);
+    }
   };
   const selectHouse = (house: number) => {
     setSelectedPlanetName(null);
     setSelectedAspectKey(null);
     setSelectedHouseNumber((current) => current === house ? null : house);
   };
-  const selectAspect = (line: typeof aspectLines[number]) => {
+  const selectAspect = (line: AspectLine) => {
     setSelectedPlanetName(null);
     setSelectedHouseNumber(null);
     setSelectedAspectKey((current) => current === line.key ? null : line.key);
   };
+  const summarizePositions = (positions: PlanetPosition[], kind: 'natal' | 'transit') =>
+    positions.map((planet) => {
+      const name = normalizedPlanetName(planet.planet);
+      const isUncertainMoon = kind === 'natal' && !timeKnown && name === 'Moon';
+      const position = `${translate(name)} ${formatPlanetPosition(planet.longitude, locale, translate)}`;
+      const possibleSigns = isUncertainMoon && moonSignRange.length > 1
+        ? ` (${moonSignRange.map((possibleSign) => translate(normalizedPlanetName(possibleSign))).join(', ')})`
+        : '';
+      return `${position}${isUncertainMoon ? `?${possibleSigns}` : ''}`;
+    }).join(', ');
+  const natalPositionSummary = summarizePositions(planets, 'natal');
+  const transitPositionSummary = summarizePositions(transitMarkers, 'transit');
+  const accessiblePositions = chartMode === 'natal'
+    ? natalPositionSummary
+    : chartMode === 'transits'
+      ? transitPositionSummary
+      : `${translate('Natal')}: ${natalPositionSummary}. ${translate('Transits')}: ${transitPositionSummary}`;
+  const accessibleHeading = chartMode === 'transits'
+    ? translate('Current transiting planets')
+    : translate('PLANETS');
+  const selectMode = (mode: ChartMode) => {
+    if (mode !== 'natal' && !transitsAvailable) return;
+    setChartMode(mode);
+    setSelectedPlanetName(null);
+    setSelectedPlanetKind('natal');
+    setSelectedHouseNumber(null);
+    setSelectedAspectKey(null);
+  };
+  const modeOptions: { id: ChartMode; label: string }[] = [
+    { id: 'natal', label: 'Natal' },
+    { id: 'transits', label: 'Transits' },
+    { id: 'combined', label: 'Combined' },
+  ];
 
   return (
     <View
@@ -460,11 +607,55 @@ export function NatalChartWheel({
         testID="natal-planet-wheel-summary"
         accessible
         accessibilityRole="text"
-        accessibilityLabel={`${translate('PLANETS')}: ${accessiblePositions}`}
+        accessibilityLabel={`${accessibleHeading}: ${accessiblePositions}`}
         style={styles.accessibilitySummary}
       >
-        {`${translate('PLANETS')}: ${accessiblePositions}`}
+        {`${accessibleHeading}: ${accessiblePositions}`}
       </Text>
+      <View testID="natal-chart-mode-switch" style={styles.modeSwitch}>
+        {modeOptions.map(({ id, label }) => {
+          const selected = chartMode === id;
+          const disabled = id !== 'natal' && !transitsAvailable;
+          return (
+            <Pressable
+              key={id}
+              testID={`natal-chart-mode-${id}`}
+              accessibilityRole="button"
+              accessibilityLabel={translate(label)}
+              accessibilityState={{ selected, disabled }}
+              disabled={disabled}
+              onPress={() => selectMode(id)}
+              style={({ pressed }) => [
+                styles.modeOption,
+                {
+                  backgroundColor: selected ? palette.secondary : 'transparent',
+                  borderColor: selected ? palette.secondary : palette.border,
+                  opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[
+                  styles.modeOptionLabel,
+                  { color: selected ? palette.card : palette.mutedForeground },
+                ]}
+              >
+                {translate(label)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {!transitsAvailable ? (
+        <Text
+          testID="natal-transit-unavailable"
+          style={[styles.transitUnavailable, { color: palette.mutedForeground }]}
+        >
+          {translate('Transit views are unavailable right now.')}
+        </Text>
+      ) : null}
       <Pressable
         testID="natal-aspect-toggle"
         accessibilityRole="switch"
@@ -639,17 +830,24 @@ export function NatalChartWheel({
             ? Math.max(0, Math.min(1, aspect.strength))
             : 0.5;
           const selectedByPlanet = selectedPlanetName !== null
-            && (aspect.first.toLowerCase() === selectedPlanetName
-              || aspect.second.toLowerCase() === selectedPlanetName);
+            && (aspect.kind === 'transit'
+              ? (selectedPlanetKind === 'transit' && aspect.first.toLowerCase() === selectedPlanetName)
+                || (chartMode === 'combined'
+                  && selectedPlanetKind === 'natal'
+                  && aspect.second.toLowerCase() === selectedPlanetName)
+              : selectedPlanetKind === 'natal'
+                && (aspect.first.toLowerCase() === selectedPlanetName
+                  || aspect.second.toLowerCase() === selectedPlanetName));
           const selectedByAspect = selectedAspectLine?.key === line.key;
           const selected = selectedByPlanet || selectedByAspect;
           const hasSelection = selectedPlanetName !== null || selectedAspectLine !== undefined;
           const dimmed = hasSelection && !selected;
           const hitLabel = formatAspectAccessibilityLabel(aspect);
+          const testPrefix = aspect.kind === 'transit' ? 'natal-transit-aspect' : 'natal-aspect';
           return (
             <React.Fragment key={line.key}>
               <Line
-                testID={`natal-aspect-line-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
+                testID={`${testPrefix}-line-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
                 x1={first.x}
                 y1={first.y}
                 x2={second.x}
@@ -659,7 +857,11 @@ export function NatalChartWheel({
                   0.7,
                   (selected ? 1.25 + strength * 0.55 : 0.75 + strength * 0.45) * scale,
                 )}
-                strokeDasharray={uncertainMoon ? '1 5' : ASPECT_DASHES[aspect.type.toLowerCase()]}
+                strokeDasharray={uncertainMoon
+                  ? '1 5'
+                  : aspect.kind === 'transit'
+                    ? '2 3'
+                    : ASPECT_DASHES[aspect.type.toLowerCase()]}
                 strokeLinecap="round"
                 opacity={uncertainMoon
                   ? selected ? 0.5 : 0.18
@@ -667,7 +869,7 @@ export function NatalChartWheel({
                 accessible={false}
               />
               <Line
-                testID={`natal-aspect-hit-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
+                testID={`${testPrefix}-hit-${aspect.type.toLowerCase()}-${aspect.first.toLowerCase()}-${aspect.second.toLowerCase()}`}
                 x1={first.x}
                 y1={first.y}
                 x2={second.x}
@@ -687,7 +889,7 @@ export function NatalChartWheel({
           const name = normalizedPlanetName(planet.planet);
           const isUncertainMoon = !timeKnown && name === 'Moon';
           const label = labelsByPlanet.get(name.toLowerCase());
-          const selected = selectedPlanetName === name.toLowerCase();
+          const selected = selectedPlanetKind === 'natal' && selectedPlanetName === name.toLowerCase();
           const position = formatPlanetPosition(planet.longitude, locale, translate);
           const summary = `${translate(name)} · ${position}`;
           return (
@@ -710,9 +912,9 @@ export function NatalChartWheel({
                 cy={y}
                 r={Math.max(12, 12 * scale)}
                 fill="transparent"
-                accessible
+                  accessible={chartMode !== 'transits'}
                 accessibilityLabel={summary}
-                onPress={() => selectPlanet(planet)}
+                  onPress={chartMode === 'transits' ? undefined : () => selectPlanet(planet, 'natal')}
               />
               <Circle
                 testID={`natal-planet-marker-${name.toLowerCase()}`}
@@ -723,9 +925,9 @@ export function NatalChartWheel({
                 stroke={isUncertainMoon ? palette.mutedForeground : palette.secondary}
                 strokeWidth={1.2 * scale}
                 strokeDasharray={isUncertainMoon ? '2 2' : undefined}
-                accessible
+                accessible={chartMode !== 'transits'}
                 accessibilityLabel={summary}
-                onPress={() => selectPlanet(planet)}
+                onPress={chartMode === 'transits' ? undefined : () => selectPlanet(planet, 'natal')}
               />
               {label ? (
                 <SvgText
@@ -735,9 +937,10 @@ export function NatalChartWheel({
                   textAnchor="middle"
                   fontFamily="Inter"
                   fontSize={label.fontSize}
-                  accessible
+                  opacity={chartMode === 'transits' ? 0.42 : 1}
+                  accessible={chartMode !== 'transits'}
                   accessibilityLabel={summary}
-                  onPress={() => selectPlanet(planet)}
+                  onPress={chartMode === 'transits' ? undefined : () => selectPlanet(planet, 'natal')}
                 >
                   <TSpan
                     testID={`natal-planet-glyph-${name.toLowerCase()}`}
@@ -751,10 +954,73 @@ export function NatalChartWheel({
             </React.Fragment>
           );
         })}
+        {chartMode !== 'natal' ? transitMarkers.map(({ planet, longitude, x, y }) => {
+          const name = normalizedPlanetName(planet);
+          const selected = selectedPlanetKind === 'transit' && selectedPlanetName === name.toLowerCase();
+          const position = formatPlanetPosition(longitude, locale, translate);
+          const summary = `${translate('Current position')}: ${translate(name)} · ${position}`;
+          const glyph = PLANET_GLYPHS[name] ?? name.slice(0, 1);
+          return (
+            <React.Fragment key={`transit-${planet}`}>
+              {selected ? (
+                <Circle
+                  testID={`natal-transit-planet-selection-${name.toLowerCase()}`}
+                  cx={x}
+                  cy={y}
+                  r={Math.max(10, 11 * scale)}
+                  fill="none"
+                  stroke={palette.secondary}
+                  strokeWidth={1.2 * scale}
+                  opacity={0.9}
+                />
+              ) : null}
+              <Circle
+                testID={`natal-transit-planet-hit-area-${name.toLowerCase()}`}
+                cx={x}
+                cy={y}
+                r={Math.max(13, 14 * scale)}
+                fill="transparent"
+                accessible
+                accessibilityLabel={summary}
+                onPress={() => selectPlanet({ planet, longitude }, 'transit')}
+              />
+              <Circle
+                testID={`natal-transit-planet-marker-${name.toLowerCase()}`}
+                cx={x}
+                cy={y}
+                r={Math.max(7, 8 * scale)}
+                fill={palette.card}
+                stroke={palette.secondary}
+                strokeWidth={1.25 * scale}
+                accessible={false}
+              />
+              <SvgText
+                testID={`natal-transit-planet-glyph-${name.toLowerCase()}`}
+                x={x}
+                y={y + Math.max(3, 3.5 * scale)}
+                textAnchor="middle"
+                fontFamily="Georgia"
+                fontSize={Math.max(9, 10 * scale)}
+                fill={palette.secondary}
+                accessible={false}
+              >
+                {`${glyph}\uFE0E`}
+              </SvgText>
+            </React.Fragment>
+          );
+        }) : null}
       </Svg>
+      {chartMode !== 'natal' && transitAspectLines.length === 0 ? (
+        <Text
+          testID="natal-transit-no-aspects"
+          style={[styles.transitUnavailable, { color: palette.mutedForeground }]}
+        >
+          {translate('No current transit aspects are close to your natal planets.')}
+        </Text>
+      ) : null}
       {selectedPlanet ? (
         <View
-          testID={`natal-planet-detail-${selectedPlanet.planet.toLowerCase()}`}
+          testID={`${selectedPlanetKind === 'transit' ? 'natal-transit-planet-detail' : 'natal-planet-detail'}-${selectedPlanet.planet.toLowerCase()}`}
           accessibilityLiveRegion="polite"
           style={[styles.detailPanel, { borderColor: palette.border }]}
         >
@@ -768,7 +1034,7 @@ export function NatalChartWheel({
               </Text>
             </View>
             <Pressable
-              testID="natal-planet-detail-close"
+              testID={selectedPlanetKind === 'transit' ? 'natal-transit-planet-detail-close' : 'natal-planet-detail-close'}
               accessibilityRole="button"
               accessibilityLabel={translate('Close planet details')}
               hitSlop={8}
@@ -780,10 +1046,10 @@ export function NatalChartWheel({
           </View>
           <View style={styles.detailPositionRow}>
             <Text style={[styles.detailMeta, { color: palette.mutedForeground }]}>
-              {translate('Position')}
+              {translate(selectedPlanetKind === 'transit' ? 'Current position' : 'Position')}
             </Text>
             <Text
-              testID="natal-planet-detail-position"
+              testID={selectedPlanetKind === 'transit' ? 'natal-transit-planet-detail-position' : 'natal-planet-detail-position'}
               style={[styles.detailPosition, { color: palette.foreground }]}
             >
               {selectedPlanetIsUncertainMoon && moonSignRange.length > 1
@@ -796,7 +1062,7 @@ export function NatalChartWheel({
               {translate('All placements and aspects represent the reference instant; their exact degrees and motion are time-dependent.')}
             </Text>
           ) : null}
-          {houseByPlanet?.has(selectedPlanet.planet.toLowerCase()) ? (
+          {selectedPlanetKind === 'natal' && houseByPlanet?.has(selectedPlanet.planet.toLowerCase()) ? (
             <Text style={[styles.detailHouse, { color: palette.mutedForeground }]}>
               {format('House {number}', {
                 number: houseByPlanet.get(selectedPlanet.planet.toLowerCase())!,
@@ -819,7 +1085,7 @@ export function NatalChartWheel({
             return (
               <Pressable
                 key={`${aspect.first}-${aspect.type}-${aspect.second}-${index}`}
-                testID={`natal-planet-detail-aspect-${index}`}
+                testID={`${selectedPlanetKind === 'transit' ? 'natal-transit-planet-detail-aspect' : 'natal-planet-detail-aspect'}-${index}`}
                 accessibilityRole="button"
                 accessibilityLabel={formatAspectAccessibilityLabel(aspect)}
                 disabled={!aspectLine}
@@ -896,7 +1162,7 @@ export function NatalChartWheel({
       ) : null}
       {selectedAspectLine ? (
         <View
-          testID={`natal-aspect-detail-${selectedAspectLine.aspect.type.toLowerCase()}-${selectedAspectLine.aspect.first.toLowerCase()}-${selectedAspectLine.aspect.second.toLowerCase()}`}
+          testID={`${selectedAspectLine.aspect.kind === 'transit' ? 'natal-transit-aspect-detail' : 'natal-aspect-detail'}-${selectedAspectLine.aspect.type.toLowerCase()}-${selectedAspectLine.aspect.first.toLowerCase()}-${selectedAspectLine.aspect.second.toLowerCase()}`}
           accessibilityLiveRegion="polite"
           style={[styles.detailPanel, { borderColor: palette.border }]}
         >
@@ -908,7 +1174,7 @@ export function NatalChartWheel({
               {formatAspectTitle(selectedAspectLine.aspect)}
             </Text>
             <Pressable
-              testID="natal-aspect-detail-close"
+              testID={selectedAspectLine.aspect.kind === 'transit' ? 'natal-transit-aspect-detail-close' : 'natal-aspect-detail-close'}
               accessibilityRole="button"
               accessibilityLabel={translate('Close aspect details')}
               hitSlop={8}
@@ -918,6 +1184,14 @@ export function NatalChartWheel({
               <Feather name="x" size={17} color={palette.secondary} />
             </Pressable>
           </View>
+          {selectedAspectLine.aspect.kind === 'transit' ? (
+            <Text
+              testID="natal-transit-aspect-detail-context"
+              style={[styles.detailMeta, { color: palette.mutedForeground }]}
+            >
+              {translate('Transit aspect')}
+            </Text>
+          ) : null}
           <Text
             testID="natal-aspect-detail-orb"
             style={[styles.detailMeta, { color: palette.mutedForeground }]}
@@ -952,6 +1226,34 @@ const styles = StyleSheet.create({
     width: 1,
     opacity: 0.01,
     position: 'absolute',
+  },
+  modeSwitch: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 4,
+  },
+  modeOption: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minWidth: 0,
+    minHeight: 32,
+    paddingHorizontal: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+  },
+  modeOptionLabel: {
+    fontFamily: 'Inter',
+    fontSize: 10.5,
+    fontWeight: '600',
+  },
+  transitUnavailable: {
+    alignSelf: 'stretch',
+    fontFamily: 'Inter',
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 4,
   },
   aspectToggle: {
     alignSelf: 'flex-end',

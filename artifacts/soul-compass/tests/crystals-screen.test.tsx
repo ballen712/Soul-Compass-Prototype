@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
   crystalOptions: null as null | Record<string, unknown>,
   dailyProfile: null as null | Record<string, unknown>,
   crystalAstrology: null as null | Record<string, unknown>,
-  homeLocalDate: vi.fn(() => '2026-11-06'),
+  homeLocalDate: vi.fn((_date?: Date, _location?: unknown) => '2026-11-06'),
   natalBalance: null as null | Record<string, unknown>,
   natalRecommendations: [] as Array<{ crystal: Record<string, unknown>; element: string; reason: string }>,
   natalCollection: [] as string[],
@@ -256,6 +256,44 @@ vi.mock('@/profile/daily-cache', () => ({
   getDailyAstrology: (profile: Record<string, unknown> | null) => {
     state.dailyProfile = profile;
     return profile ? { status: 'calculated', birthDate: profile.birthDate } : null;
+  },
+}));
+vi.mock('@/profile/daily-personalization', () => ({
+  getDailyPersonalizationContext: ({ profile, preferences, now }: any) => {
+    const astrology = profile ? { status: 'calculated', birthDate: profile.birthDate } : null;
+    const location = profile
+      ? profile.currentResidence ?? profile.birthPlace
+      : null;
+    const date = location
+      ? state.homeLocalDate(now, location)
+      : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const options = {
+      hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
+      crystalCollection: preferences.crystalCollection,
+      feeling: preferences.crystalPreferences.feeling,
+      dateKey: date,
+    };
+    state.dailyProfile = profile;
+    state.crystalAstrology = astrology;
+    state.crystalOptions = options;
+    state.natalCollection = preferences.crystalCollection;
+    return {
+      date,
+      timeZone: location?.timeZone ?? null,
+      astrology,
+      natalProfile: { placements: [], elementBalance: state.natalBalance },
+      mood: {
+        selectedMood: preferences.crystalPreferences.feeling,
+        selectedDay: preferences.crystalPreferences.feelingDate ?? null,
+      },
+      crystals: {
+        ownedCrystals: preferences.crystalCollection,
+        hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
+        intentions: preferences.crystalPreferences.intentions,
+        natalRecommendations: state.natalRecommendations,
+        dailyCandidates: state.suggestions,
+      },
+    };
   },
 }));
 vi.mock('@/hooks/useLocalClock', () => ({

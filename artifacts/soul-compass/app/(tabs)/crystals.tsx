@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import {
@@ -24,14 +24,9 @@ import { screenTypography } from '@/constants/typography';
 import { useProfile } from '@/profile/ProfileContext';
 import { getLocalizedCrystalCopy, type CrystalLocale, type LocalizedCrystalCopy } from '@/localization/crystal-copy';
 import { useAppLocale, useAppText } from '@/localization';
-import {
-  calculateNatalElementBalance,
-  getCrystalSuggestions,
-  getHomeLocalDate,
-  getNatalCrystalSuggestions,
-} from '@/profile/astrology';
+import type { NatalElementBalance } from '@/profile/astrology';
 import { FEELING_OPTIONS } from '@/profile/crystal-guidance';
-import { getDailyAstrology } from '@/profile/daily-cache';
+import { getDailyPersonalizationContext } from '@/profile/daily-personalization';
 import { useLocalClock } from '@/hooks/useLocalClock';
 
 import { TabScreenHeader } from '@/components/TabScreenHeader';
@@ -241,7 +236,7 @@ function titleCaseCrystalTag(value: string, locale: string) {
 }
 
 function describeElementBalance(
-  balance: Extract<ReturnType<typeof calculateNatalElementBalance>, { status: 'calculated' }>,
+  balance: NatalElementBalance,
   suggestionCount: number,
   t: (source: string) => string,
 ) {
@@ -320,46 +315,25 @@ export default function CrystalsScreen() {
       setFeelingSaving(false);
     }
   };
-  const translateStoneName = (name: string) =>
-    getLocalizedCrystalCopy(name, locale)?.name ?? name;
-  const natalElementResult = useMemo(
-    () => profile ? calculateNatalElementBalance(profile) : null,
-    [profile],
+  const translateStoneName = useCallback(
+    (name: string) => getLocalizedCrystalCopy(name, locale)?.name ?? name,
+    [locale],
   );
-  const natalStoneSuggestions = useMemo(
-    () => natalElementResult?.status === 'calculated'
-      ? getNatalCrystalSuggestions(
-        natalElementResult,
-        hidden,
-        8,
-        t,
-        translateStoneName,
-        preferences.crystalCollection,
-      )
-      : [],
-    [natalElementResult, hidden, preferences.crystalCollection, t, locale],
-  );
-  const astrology = useMemo(
-    () => (profile ? getDailyAstrology(profile, now) : null),
-    [profile, now],
-  );
-  const crystalSuggestions = useMemo(
-    () => getCrystalSuggestions(
-      astrology?.status === 'calculated' ? astrology : undefined,
-      {
-        hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
-        crystalCollection: preferences.crystalCollection,
-        feeling: preferences.crystalPreferences.feeling,
-        dateKey: profile
-          ? getHomeLocalDate(now, profile.currentResidence ?? profile.birthPlace)
-          : `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
-      },
-      3,
-      t,
+  const dailyContext = useMemo(
+    () => getDailyPersonalizationContext({
+      profile,
+      preferences,
+      now,
+      locale,
+      translate: t,
       translateStoneName,
-    ),
-    [astrology, preferences.crystalPreferences, preferences.crystalCollection, now, t, locale],
+    }),
+    [profile, preferences, now, locale, t, translateStoneName],
   );
+  const natalElementResult = dailyContext.natalProfile.elementBalance;
+  const natalStoneSuggestions = dailyContext.crystals.natalRecommendations;
+  const astrology = dailyContext.astrology;
+  const crystalSuggestions = dailyContext.crystals.dailyCandidates;
   const recommendation = crystalSuggestions[0] ?? null;
   const catalog = crystalCatalog;
   const alternativeCandidates = crystalSuggestions.length > 0

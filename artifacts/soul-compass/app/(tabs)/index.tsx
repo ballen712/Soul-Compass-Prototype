@@ -13,7 +13,7 @@ import { getDailyRituals } from '@/constants/daily-rituals';
 import { SCREEN_HORIZONTAL_GUTTER, TAB_SCREEN_SCROLL_BOTTOM_GUTTER } from '@/constants/screen-layout';
 import { useColors } from '@/hooks/useColors';
 import { useProfile } from '@/profile/ProfileContext';
-import { getDailyAstrology } from '@/profile/daily-cache';
+import { getDailyPersonalizationContext } from '@/profile/daily-personalization';
 import { useLocalClock } from '@/hooks/useLocalClock';
 import { formatAppText, useAppLocale, useAppText } from '@/localization';
 
@@ -98,16 +98,17 @@ export default function CosmosScreen() {
   const locale = useAppLocale();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const { profile } = useProfile();
+  const { profile, preferences } = useProfile();
   const router = useRouter();
   const [activeDetail, setActiveDetail] = useState<
     'reflection' | 'focus' | 'caution' | 'moment' | 'ritual' | 'ideas' | null
   >(null);
   const now = useLocalClock();
-  const astrology = useMemo(
-    () => (profile ? getDailyAstrology(profile, now) : null),
-    [profile, now],
+  const dailyContext = useMemo(
+    () => getDailyPersonalizationContext({ profile, preferences, now, locale, translate: t }),
+    [profile, preferences, now, locale, t],
   );
+  const astrology = dailyContext.astrology;
   const calculatedReading =
     astrology?.status === 'calculated' ? astrology.reading : null;
   const reading = calculatedReading ?? dailyReading;

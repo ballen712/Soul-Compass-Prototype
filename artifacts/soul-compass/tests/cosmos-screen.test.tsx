@@ -7,6 +7,11 @@ const state = vi.hoisted(() => ({
   push: vi.fn(),
   getDailyAstrology: vi.fn(),
   profile: null as unknown,
+  preferences: {
+    language: 'en',
+    crystalCollection: [] as string[],
+    crystalPreferences: { intentions: [] as string[], hiddenCrystals: [] as string[], feeling: null as string | null, feelingDate: null as string | null },
+  },
   scrollToTopRef: null as null | { current: unknown },
 }));
 
@@ -67,8 +72,26 @@ vi.mock('@/hooks/useColors', () => ({
     },
   }),
 }));
-vi.mock('@/profile/ProfileContext', () => ({ useProfile: () => ({ profile: state.profile }) }));
+vi.mock('@/profile/ProfileContext', () => ({
+  useProfile: () => ({ profile: state.profile, preferences: state.preferences }),
+}));
 vi.mock('@/profile/daily-cache', () => ({ getDailyAstrology: state.getDailyAstrology }));
+vi.mock('@/profile/daily-personalization', () => ({
+  getDailyPersonalizationContext: ({ profile, now }: any) => ({
+    date: `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
+    timeZone: null,
+    astrology: profile ? state.getDailyAstrology(profile, now) : null,
+    natalProfile: { placements: [], elementBalance: null },
+    mood: { selectedMood: null, selectedDay: null },
+    crystals: {
+      ownedCrystals: [],
+      hiddenCrystals: [],
+      intentions: [],
+      natalRecommendations: [],
+      dailyCandidates: [],
+    },
+  }),
+}));
 vi.mock('@/hooks/useLocalClock', () => ({ useLocalClock: () => new Date('2026-11-05T12:00:00.000Z') }));
 
 import CosmosScreen from '../app/(tabs)/index';

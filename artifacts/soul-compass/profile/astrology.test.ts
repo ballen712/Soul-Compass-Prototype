@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateDailyAstrology, calculateNatalElementBalance, EPHEMERIS_SOURCE, makeCalculatedReading } from './astrology';
+import { calculateDailyAstrology, calculateNatalElementBalance, calculateNatalElementBalanceFromPlacements, EPHEMERIS_SOURCE, makeCalculatedReading } from './astrology';
 import type { NatalElementBalance } from './astrology';
 import type { UserProfile } from './profile';
 import { getChartPrecision } from './profile';
 import { FEELING_OPTIONS, getCrystalRecommendation, getCrystalSuggestions, getIntentionRecommendation, getNatalCrystalSuggestions } from './crystal-guidance';
 import { getDailyAstrology } from './daily-cache';
+import { getDailyPersonalizationContext } from './daily-personalization';
+import { defaultPreferences } from './local';
 import { crystalCatalog, dailyReading } from '../constants/content';
 
 const currentResidence = {
@@ -589,4 +591,158 @@ test('ambiguous and skipped daylight-saving birth times are not guessed', () => 
 
   assert.equal(repeatedHour.status, 'unavailable');
   assert.equal(skippedHour.status, 'unavailable');
+});
+
+test('Cosmos and Crystals receive the same cached daily context with existing recommendations', () => {
+  const profile = makeProfile();
+  const preferences = defaultPreferences();
+  const now = new Date('2026-06-01T12:00:00.000Z');
+  const translate = (source: string) => source;
+  const input = { profile, preferences, now, locale: 'en' as const, translate };
+
+  const cosmosContext = getDailyPersonalizationContext(input);
+  const crystalsContext = getDailyPersonalizationContext(input);
+
+  assert.strictEqual(crystalsContext, cosmosContext);
+  assert.strictEqual(cosmosContext.astrology, getDailyAstrology(profile, now));
+  assert.equal(cosmosContext.astrology?.status, 'calculated');
+  assert.equal(cosmosContext.date, '2026-06-01');
+  assert.equal(cosmosContext.timeZone, currentResidence.timeZone);
+  assert.equal(cosmosContext.crystals.natalRecommendations.length, 8);
+  assert.ok(cosmosContext.crystals.dailyCandidates.length <= 3);
+  assert.deepEqual(cosmosContext.crystals.ownedCrystals, preferences.crystalCollection);
+  assert.deepEqual(cosmosContext.crystals.hiddenCrystals, preferences.crystalPreferences.hiddenCrystals);
+
+  const directBalance = calculateNatalElementBalance(profile);
+  assert.deepEqual(cosmosContext.natalProfile.elementBalance, directBalance);
+  if (directBalance.status === 'calculated') {
+    assert.deepEqual(
+      cosmosContext.crystals.natalRecommendations,
+      getNatalCrystalSuggestions(
+        directBalance,
+        preferences.crystalPreferences.hiddenCrystals,
+        8,
+        translate,
+        translate,
+        preferences.crystalCollection,
+      ),
+    );
+  }
+  assert.deepEqual(
+    cosmosContext.crystals.dailyCandidates,
+    getCrystalSuggestions(
+      cosmosContext.astrology?.status === 'calculated' ? cosmosContext.astrology : undefined,
+      {
+        hiddenCrystals: preferences.crystalPreferences.hiddenCrystals,
+        crystalCollection: preferences.crystalCollection,
+        feeling: preferences.crystalPreferences.feeling,
+        dateKey: cosmosContext.date,
+      },
+      3,
+      translate,
+      translate,
+    ),
+  );
+
+  if (cosmosContext.astrology?.status === 'calculated') {
+    assert.deepEqual(
+      cosmosContext.natalProfile.elementBalance,
+      calculateNatalElementBalanceFromPlacements(
+        cosmosContext.astrology.natalPlacements,
+        cosmosContext.astrology.preciseBirthMoment,
+      ),
+    );
+  }
+});
+
+test('daily context refreshes preferences while reusing the same astronomical calculation', () => {
+  const profile = makeProfile();
+  const now = new Date('2026-06-01T12:00:00.000Z');
+  const preferences = defaultPreferences();
+  const translate = (source: string) => source;
+  const initial = getDailyPersonalizationContext({
+    profile,
+    preferences,
+    now,
+    locale: 'en',
+    translate,
+  });
+  const withMood = getDailyPersonalizationContext({
+    profile,
+    preferences: {
+      ...preferences,
+      crystalPreferences: {
+        ...preferences.crystalPreferences,
+        feeling: 'tired',
+        feelingDate: '2026-06-01',
+      },
+    },
+    now,
+    locale: 'en',
+    translate,
+  });
+
+  assert.notStrictEqual(withMood, initial);
+  assert.strictEqual(withMood.astrology, initial.astrology);
+  assert.equal(withMood.mood.selectedMood, 'tired');
+  assert.equal(withMood.mood.selectedDay, '2026-06-01');
+  assert.ok(withMood.crystals.dailyCandidates.length > 0);
+});
+
+test('daily context invalidates for collection changes and a newly saved birth profile', () => {
+  const profile = makeProfile();
+  const preferences = defaultPreferences();
+  const now = new Date('2026-06-01T12:00:00.000Z');
+  const translate = (source: string) => source;
+  const initial = getDailyPersonalizationContext({
+    profile,
+    preferences,
+    now,
+    locale: 'en',
+    translate,
+  });
+  const withCollection = getDailyPersonalizationContext({
+    profile,
+    preferences: { ...preferences, crystalCollection: ['rose-quartz'] },
+    now,
+    locale: 'en',
+    translate,
+  });
+  const withUpdatedProfile = getDailyPersonalizationContext({
+    profile: { ...profile, birthDate: '1991-06-15' },
+    preferences,
+    now,
+    locale: 'en',
+    translate,
+  });
+
+  assert.notStrictEqual(withCollection, initial);
+  assert.strictEqual(withCollection.astrology, initial.astrology);
+  assert.deepEqual(withCollection.crystals.ownedCrystals, ['rose-quartz']);
+  assert.notStrictEqual(withUpdatedProfile, initial);
+  assert.notStrictEqual(withUpdatedProfile.astrology, initial.astrology);
+});
+
+test('daily context supports mood-only recommendations without a profile', () => {
+  const preferences = {
+    ...defaultPreferences(),
+    crystalPreferences: {
+      ...defaultPreferences().crystalPreferences,
+      feeling: 'tired',
+      feelingDate: '2026-06-01',
+    },
+  };
+  const now = new Date('2026-06-01T12:00:00.000Z');
+  const context = getDailyPersonalizationContext({
+    profile: null,
+    preferences,
+    now,
+    locale: 'en',
+    translate: (source) => source,
+  });
+
+  assert.equal(context.astrology, null);
+  assert.equal(context.natalProfile.elementBalance, null);
+  assert.equal(context.mood.selectedMood, 'tired');
+  assert.equal(context.crystals.dailyCandidates.length, 3);
 });

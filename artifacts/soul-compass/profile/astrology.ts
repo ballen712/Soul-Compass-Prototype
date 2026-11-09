@@ -290,6 +290,13 @@ export function calculateNatalElementBalance(profile: UserProfile): NatalElement
   }
 
   const placements = getNatalPlacements(profile, preciseBirthMoment, birthInstant);
+  return calculateNatalElementBalanceFromPlacements(placements, preciseBirthMoment);
+}
+
+export function calculateNatalElementBalanceFromPlacements(
+  placements: readonly NatalPlacement[],
+  preciseBirthMoment: boolean,
+): NatalElementResult {
   if (placements.length === 0) {
     return {
       status: 'unavailable',

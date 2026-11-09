@@ -2,7 +2,7 @@
 - [TestFlight builds in Replit](expo-testflight-launch.md) — Use Publishing → Launch; Replit does not support EAS CLI or EAS project linking for Expo builds.
 - [Astrology profile rules](astrology-profile-rules.md) — Residence is optional in Settings; daily dates use its time zone when set, otherwise the birthplace time zone.
 - [Security boundaries](security-boundaries.md) — No paid security products, unnecessary third-party birth-data disclosure, or weakened protections to clear scans.
-- [Local-first product](local-first-product.md) — Registration-free AsyncStorage app; birth-data requests require revocable consent; dormant Supabase infrastructure stays untouched.
+- [Local-first product](local-first-product.md) — Keep profile and shared Cosmos/Crystals personalization local; birth-data requests require revocable consent.
 - [Post-merge verification](post-merge-verification.md) — Setup success alone does not guarantee services started; check actual workflow status and logs.
 - [Launch boundaries](launch-scope.md) — Keep app copy simple, idiomatic in all seven languages, and crystal catalog details distinct and easy to scan.
 - [City-provider scope](city-provider-scope.md) — Geoapify Free is owner-approved; keep keys server-only and distinguish public terms from unverified account-wide usage.

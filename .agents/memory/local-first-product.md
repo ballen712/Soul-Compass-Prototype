@@ -9,6 +9,12 @@ Soul Compass initially works without registration, Google sign-in, email OTP, Ma
 
 **How to apply:** preserve existing local records and legacy residence/birthplace separation. Keep cloud-only records untouched; starting a new local profile is acceptable. Do not automatically recover, download or merge cloud profiles. Export/import and optional accounts/sync remain future features. For paid native Tarot readings, use RevenueCat only after the user accepts its integration; keep all chart personalization on-device and never send birth details to the billing provider.
 
+Daily personalization is a local-only context shared by Cosmos and Crystals. It may combine the existing daily chart calculation with mood, owned stones, hidden stones and other preferences, but must not send those values to the API or retain them in a server cache.
+
+**Why:** the approved personalization specification requires one shared local source of truth and explicitly excludes new data transmission or storage.
+
+**How to apply:** reuse the existing AsyncStorage-backed profile and local astronomy cache; keep the shared context ephemeral and add tests that prove preference changes refresh it without network calls.
+
 Preserve server-side astronomy calculations, but send personal birth inputs only after explicit, locally saved and revocable consent. Once current-version consent is granted, refresh the natal chart automatically once per app launch. Do not queue or retry requests on reconnection. No automatic profile upload or cloud synchronization.
 
 **Why:** the user chose to retain the existing calculation engine and requested one-time consent for future automatic chart refreshes, while keeping that permission revocable.

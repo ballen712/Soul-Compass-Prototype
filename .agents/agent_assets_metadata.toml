@@ -168,3 +168,17 @@ mtime_ms = 1793986745348
 storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/10da09d1-354b-400a-9e8c-d4698f63b107/12544140-61a4-4ad2-a291-48f1f553745d"
 storage_version_token = "1793986775721044"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "JYqgNt6kWMsoU7W3OMFQf"
+uri = "file://generated-artifacts/soul-compass-portable-eas-source.zip"
+type = "unspecified"
+title = "Soul Compass portable source ZIP"
+description = "Complete tracked repository source and workspace configuration at HEAD f64fa94c5fc390291941f261de1d9e3c0abad561, with dependencies, caches, build outputs, and credentials excluded."
+logical_id = "7b0cff59-5899-4f0a-af86-a4ba9036fbe7"
+content_hash = "sha256:0638e20b5b2583f3873cf1209175c8006376e3da8ed883cc9372bbc7e785b47e"
+size = 10543669
+mtime_ms = 1794256072168
+storage_uri = "gcs://replit-rams-assets-archer/rams/assets/repl:18553180-b3aa-482f-b49e-30d7349b28c3/7b0cff59-5899-4f0a-af86-a4ba9036fbe7/01229b21-0ad2-4fbc-b59e-aafefbfa0c6d"
+storage_version_token = "1794256103827810"
+content_type = "application/octet-stream"

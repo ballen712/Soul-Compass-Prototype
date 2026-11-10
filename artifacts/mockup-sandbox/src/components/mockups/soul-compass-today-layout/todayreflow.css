@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+.today-reflow {
+  --tr-ink: #f4efe5;
+  --tr-muted: #b8b5b2;
+  --tr-gold: #d9c49b;
+  --tr-line: rgba(217, 196, 155, .24);
+  min-height: 100dvh;
+  overflow: hidden;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 78% 7%, rgba(98, 91, 126, .28), transparent 32%),
+    radial-gradient(ellipse at 5% 55%, rgba(64, 92, 107, .16), transparent 38%),
+    #111b2b;
+  color: var(--tr-ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.today-reflow, .today-reflow * { box-sizing: border-box; }
+.today-reflow button { font: inherit; }
+.tr-sky { position: absolute; inset: 0; pointer-events: none; overflow: hidden; opacity: .8; }
+.tr-star { position: absolute; color: var(--tr-gold); }
+.tr-star-a { top: 94px; right: 43px; font-size: 12px; opacity: .7; }
+.tr-star-b { top: 237px; left: 21px; font-size: 27px; opacity: .55; }
+.tr-star-c { top: 365px; right: 19px; font-size: 9px; opacity: .62; }
+.tr-orbit { width: 242px; height: 242px; border: 1px solid rgba(217,196,155,.07); border-radius: 50%; position: absolute; top: -118px; right: -116px; }
+.tr-shell { position: relative; width: min(100%, 480px); min-height: 100dvh; margin: auto; padding: 25px 24px 17px; display: flex; flex-direction: column; }
+.tr-header { height: 28px; display: flex; justify-content: space-between; align-items: center; }
+.tr-brand { display: flex; gap: 8px; align-items: center; font-size: 9px; letter-spacing: 1.7px; font-weight: 700; color: #e7dfd2; }
+.tr-mark { color: var(--tr-gold); font-size: 15px; }
+.tr-date { color: #aaaeb5; background: none; border: 0; font-size: 8px; letter-spacing: 1.2px; padding: 8px 0; cursor: pointer; }
+.tr-date span { color: var(--tr-gold); padding: 0 4px; }
+.tr-intro { margin-top: 32px; padding-bottom: 23px; border-bottom: 1px solid var(--tr-line); }
+.tr-eyebrow { color: var(--tr-gold); font-size: 9px; font-weight: 600; letter-spacing: 2px; margin: 0 0 11px; }
+.tr-intro h1 { font: 400 43px/.99 'Instrument Serif', Georgia, serif; letter-spacing: -.8px; margin: 0; color: #f4efe5; }
+.tr-intro h1 em { color: #d8c8aa; }
+.tr-intro-foot { display: flex; align-items: center; margin-top: 19px; gap: 12px; }
+.tr-moon { font-size: 24px; color: var(--tr-gold); width: 27px; text-align: center; }
+.tr-intro-foot p { color: #bdc0c3; font-size: 11px; line-height: 1.55; margin: 0; flex: 1; }
+.tr-info { background: transparent; border: 1px solid rgba(217,196,155,.46); border-radius: 50%; color: var(--tr-gold); font: italic 13px Georgia, serif; width: 23px; height: 23px; cursor: pointer; }
+.tr-note { position: relative; margin: 12px 0 -2px; border: 1px solid var(--tr-line); background: #1c2939; color: #c9c7c3; padding: 12px 38px 12px 14px; border-radius: 10px; font-size: 10px; line-height: 1.55; }
+.tr-note button { position: absolute; top: 5px; right: 8px; border: 0; background: none; color: var(--tr-gold); font-size: 18px; cursor: pointer; }
+.tr-guidance { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--tr-line); }
+.tr-guidance-item { min-height: 117px; position: relative; padding: 13px 12px 12px; border-radius: 11px; background: rgba(37, 51, 68, .72); border: 1px solid rgba(202, 190, 170, .12); }
+.tr-later { background: rgba(30, 44, 59, .54); }
+.tr-label { font-size: 8px; letter-spacing: 1px; line-height: 1.4; color: var(--tr-gold); font-weight: 600; }
+.tr-label span { color: #858f9a; margin-right: 5px; font-size: 7px; }
+.tr-guidance-item p { margin: 15px 0 0; font: 18px/1.11 'Instrument Serif', Georgia, serif; max-width: 145px; color: #f0eade; }
+.tr-arrow { position: absolute; right: 11px; bottom: 10px; color: #b9aa8d; font-size: 13px; }
+.tr-keepsake { position: relative; margin-top: 17px; padding: 14px 16px 13px; border-radius: 12px; background: #d7c9ad; color: #202d3b; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.tr-keepsake-top, .tr-keepsake-bottom { display: flex; justify-content: space-between; align-items: center; }
+.tr-keepsake .tr-label { color: #675d4d; }
+.tr-keepsake .tr-label span { color: #807562; }
+.tr-ornament { color: #9a8562; font-size: 15px; }
+.tr-keepsake blockquote { font: 27px/1.04 'Instrument Serif', Georgia, serif; letter-spacing: -.3px; margin: 11px 0 12px; }
+.tr-keepsake-bottom { border-top: 1px solid rgba(54,54,45,.17); padding-top: 8px; color: #766d5c; font-size: 7px; letter-spacing: 1.15px; }
+.tr-keepsake-bottom button { background: none; border: 0; color: #645b4c; font-size: 7px; letter-spacing: 1px; cursor: pointer; padding: 3px 0; }
+.tr-ritual { display: flex; align-items: center; gap: 13px; margin-top: 15px; padding: 13px 12px; border: 1px solid var(--tr-line); border-radius: 11px; background: rgba(23, 36, 52, .58); }
+.tr-ritual-icon { width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(217,196,155,.32); border-radius: 50%; display: grid; place-items: center; color: var(--tr-gold); font-size: 23px; }
+.tr-ritual-copy { flex: 1; min-width: 0; }
+.tr-ritual-copy p { color: #dedbd4; font-size: 10px; line-height: 1.45; margin: 5px 0 0; }
+.tr-next { border: 1px solid rgba(217,196,155,.35); background: transparent; color: var(--tr-gold); border-radius: 50%; width: 31px; height: 31px; font-size: 17px; cursor: pointer; transition: transform .2s ease, opacity .2s ease; }
+.tr-next:hover { transform: rotate(45deg); }
+.tr-footer { display: flex; justify-content: space-between; color: #78828d; font-size: 7px; letter-spacing: 1.5px; padding: 15px 1px 0; }
+.tr-footer-star { color: var(--tr-gold); }
+.tr-tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: auto -24px 0; padding: 12px 17px 2px; border-top: 1px solid rgba(217,196,155,.14); }
+.tr-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: #77828e; cursor: pointer; font-size: 8px; letter-spacing: .3px; padding: 0 0 3px; }
+.tr-tab span { font-size: 17px; line-height: 19px; }
+.tr-tab-active { color: var(--tr-gold); }
+@media (max-height: 820px) {
+  .tr-shell { padding-top: 18px; }
+  .tr-intro { margin-top: 23px; padding-bottom: 16px; }
+  .tr-intro h1 { font-size: 39px; }
+  .tr-intro-foot { margin-top: 13px; }
+  .tr-guidance { padding: 12px 0; }
+  .tr-guidance-item { min-height: 105px; }
+  .tr-guidance-item p { margin-top: 11px; font-size: 17px; }
+  .tr-keepsake { margin-top: 13px; }
+  .tr-keepsake blockquote { font-size: 24px; }
+  .tr-ritual { margin-top: 11px; padding: 10px 12px; }
+}
+@media (max-width: 360px) {
+  .tr-shell { padding-left: 18px; padding-right: 18px; }
+  .tr-tabs { margin-left: -18px; margin-right: -18px; }
+  .tr-intro h1 { font-size: 39px; }
+  .tr-guidance-item { padding-left: 9px; padding-right: 9px; }
+  .tr-guidance-item p { font-size: 16px; }
+}
